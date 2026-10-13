@@ -39,8 +39,8 @@ select is(jsonb_array_length(public.listar_profesores('2025/26')), 2, 'direcció
 -- Coordinación de PAI
 reset role; select pg_temp.como('coord_pai'); set local role authenticated;
 select lives_ok($$ select public.resultados_profesor('2025/26', (select uno from ids)) $$, 'coordinación de PAI ve a un profesor de PAI');
-select ok(not (public.resultados_profesor('2025/26', (select uno from ids)) -> 'comparacion' ? 'colegio'),
-  'coordinación no recibe la media del colegio, solo la de su etapa');
+select ok(public.resultados_profesor('2025/26', (select uno from ids)) -> 'comparacion' ? 'colegio',
+  'coordinación recibe la media del colegio como referencia');
 select is(jsonb_array_length(public.listar_profesores('2025/26')), 2, 'coordinación de PAI ve los profesores de PAI');
 select is((public.resultados('{"curso":"2025/26","colectivo":"alumnos"}', '{"tipo":"personas"}') -> 'total' ->> 'n')::int, 29,
   'coordinación de PAI ve los alumnos de PAI');
