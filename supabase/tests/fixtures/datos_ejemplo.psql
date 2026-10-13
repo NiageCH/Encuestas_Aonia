@@ -1,0 +1,209 @@
+-- Datos de ejemplo INVENTADOS para los tests. Nada de esto viene de las encuestas reales.
+-- Se carga dentro de la transacción de cada test (que acaba en rollback).
+--
+-- Diseño, pensado para provocar cada caso del §5:
+--
+-- Alumnos, cuestionario PAI_T (etapa PAI), cuatro grupos:
+--   Y7 A 12 alumnos · Y7 B 8 · Y7 C 3 (menos de 5) · Y7 D 6
+--   Por grupos (personas): C se suprime por mínimo y D (la más pequeña visible) por complementaria.
+--   Profesorado por asignatura (personas con alguna valoración válida):
+--               Y7 A   Y7 B   Y7 C   Y7 D
+--     Mates      12      8      3      6
+--     Lengua      4      8      3      6      (en Y7 A, 8 alumnos contestan NS/NC a Lengua)
+--   centro_ambiente en Y7 B: 4 valoraciones válidas (el resto NS/NC): el grupo es visible
+--   pero la pregunta no.
+-- Familias, cuestionario FAM_T: Infantil 6 · Primaria 10 · PAI 9 · Bachillerato 3.
+-- Personal, cuestionario PER_T, 24 personas: docentes 20 y no docentes 4; primer año 3 y
+--   más de un año 21; departamento Ciencias 10, Letras 9 y sin dato 5; 2 en inglés.
+--   Recomendación: 10 dieces, 4 nueves, 5 sietes y 5 treses (NPS 37,5; media 7,75).
+
+create extension if not exists pgtap with schema extensions;
+
+do $fixture$
+declare
+  v_curso smallint;
+  v_pai integer; v_fam integer; v_per integer;
+  b_prof integer; b_centro integer; b_gen integer; b_rec integer; b_val integer; b_ib integer;
+  b_fcentro integer; b_frec integer; b_fval integer; b_sup integer; b_pcentro integer; b_prec integer;
+  q_clar integer; q_trato integer; q_amb integer; q_sat integer; q_rec integer; q_val integer;
+  q_ib integer; q_frec integer; q_sup integer; q_prec integer;
+  o_prof integer; o_inst integer; o_amb integer;
+  a_mat integer; a_len integer;
+  g record; r bigint; s integer; v_n integer;
+  v_dep integer; v_uno integer; v_dos integer;
+begin
+  insert into public.curso (nombre) values ('2025/26') returning id into v_curso;
+
+  -- Diccionario
+  insert into public.pregunta (codigo_diccionario, texto_es, tipo, escala_min, escala_max)
+    values ('prof_claridad', 'Explica con claridad', 'escala', 1, 6) returning id into q_clar;
+  insert into public.pregunta (codigo_diccionario, texto_es, tipo, escala_min, escala_max)
+    values ('prof_trato', 'El trato es respetuoso', 'escala', 1, 6) returning id into q_trato;
+  insert into public.pregunta (codigo_diccionario, texto_es, tipo, escala_min, escala_max)
+    values ('centro_ambiente', 'El ambiente del Colegio es de respeto y convivencia', 'escala', 1, 6) returning id into q_amb;
+  insert into public.pregunta (codigo_diccionario, texto_es, tipo, escala_min, escala_max, escala_pendiente)
+    values ('sat_general', 'Satisfacción general', 'escala', 1, 6, true) returning id into q_sat;
+  insert into public.pregunta (codigo_diccionario, texto_es, tipo, escala_min, escala_max)
+    values ('rec_alumnos', 'Recomendaría el colegio', 'recomendacion', 0, 10) returning id into q_rec;
+  insert into public.pregunta (codigo_diccionario, texto_es, tipo)
+    values ('mas_valorado', 'Lo más valorado', 'seleccion_multiple') returning id into q_val;
+  insert into public.pregunta (codigo_diccionario, texto_es, tipo, escala_min, escala_max)
+    values ('ib_autoeval', 'Autoevaluación IB', 'escala', 1, 4) returning id into q_ib;
+  insert into public.pregunta (codigo_diccionario, texto_es, tipo, escala_min, escala_max)
+    values ('rec_familias', 'Recomendaría el colegio', 'recomendacion', 1, 10) returning id into q_frec;
+  insert into public.pregunta (codigo_diccionario, texto_es, tipo, escala_min, escala_max)
+    values ('sup_trato', 'Mi superior me trata con respeto', 'escala', 1, 6) returning id into q_sup;
+  insert into public.pregunta (codigo_diccionario, texto_es, tipo, escala_min, escala_max)
+    values ('rec_personal', 'Recomendaría el colegio', 'recomendacion', 1, 10) returning id into q_prec;
+
+  insert into public.opcion (pregunta_id, codigo, texto_es) values (q_val, 'profesorado', 'Profesorado') returning id into o_prof;
+  insert into public.opcion (pregunta_id, codigo, texto_es) values (q_val, 'instalaciones', 'Instalaciones') returning id into o_inst;
+  insert into public.opcion (pregunta_id, codigo, texto_es) values (q_val, 'ambiente', 'Ambiente') returning id into o_amb;
+
+  -- Cuestionarios y bloques
+  insert into public.cuestionario (curso_id, colectivo, etapa, codigo, titulo)
+    values (v_curso, 'alumnos', 'pai', 'PAI_T', 'PAI de prueba') returning id into v_pai;
+  insert into public.cuestionario (curso_id, colectivo, codigo, titulo, respuestas_incompletas)
+    values (v_curso, 'familias', 'FAM_T', 'Familias de prueba', 2) returning id into v_fam;
+  insert into public.cuestionario (curso_id, colectivo, codigo, titulo)
+    values (v_curso, 'personal', 'PER_T', 'Personal de prueba') returning id into v_per;
+
+  insert into public.bloque (cuestionario_id, codigo, nombre, orden) values (v_pai, 'profesorado', 'Profesorado', 1) returning id into b_prof;
+  insert into public.bloque (cuestionario_id, codigo, nombre, orden) values (v_pai, 'centro', 'Centro', 2) returning id into b_centro;
+  insert into public.bloque (cuestionario_id, codigo, nombre, orden) values (v_pai, 'general', 'Satisfacción general', 3) returning id into b_gen;
+  insert into public.bloque (cuestionario_id, codigo, nombre, orden, entra_en_media) values (v_pai, 'recomendacion', 'Recomendación', 4, false) returning id into b_rec;
+  insert into public.bloque (cuestionario_id, codigo, nombre, orden, entra_en_media) values (v_pai, 'valorado', 'Lo más valorado', 5, false) returning id into b_val;
+  insert into public.bloque (cuestionario_id, codigo, nombre, orden, entra_en_media) values (v_pai, 'autoevaluacion', 'Autoevaluación IB', 6, false) returning id into b_ib;
+  insert into public.bloque (cuestionario_id, codigo, nombre, orden) values (v_fam, 'centro', 'Centro', 1) returning id into b_fcentro;
+  insert into public.bloque (cuestionario_id, codigo, nombre, orden, entra_en_media) values (v_fam, 'recomendacion', 'Recomendación', 2, false) returning id into b_frec;
+  insert into public.bloque (cuestionario_id, codigo, nombre, orden, entra_en_media) values (v_fam, 'valorado', 'Lo más valorado', 3, false) returning id into b_fval;
+  insert into public.bloque (cuestionario_id, codigo, nombre, orden) values (v_per, 'superiores', 'Superiores', 1) returning id into b_sup;
+  insert into public.bloque (cuestionario_id, codigo, nombre, orden) values (v_per, 'centro', 'Centro', 2) returning id into b_pcentro;
+  insert into public.bloque (cuestionario_id, codigo, nombre, orden, entra_en_media) values (v_per, 'recomendacion', 'Recomendación', 3, false) returning id into b_prec;
+
+  insert into public.pregunta_cuestionario (cuestionario_id, pregunta_id, bloque_id, orden, por_asignatura) values
+    (v_pai, q_clar, b_prof, 1, true), (v_pai, q_trato, b_prof, 2, true),
+    (v_pai, q_amb, b_centro, 1, false), (v_pai, q_sat, b_gen, 1, false),
+    (v_pai, q_rec, b_rec, 1, false), (v_pai, q_val, b_val, 1, false), (v_pai, q_ib, b_ib, 1, false),
+    (v_fam, q_amb, b_fcentro, 1, false), (v_fam, q_frec, b_frec, 1, false), (v_fam, q_val, b_fval, 1, false),
+    (v_per, q_sup, b_sup, 1, false), (v_per, q_amb, b_pcentro, 1, false), (v_per, q_prec, b_prec, 1, false);
+
+  insert into public.pregunta_comun (codigo_comun, texto_es, colectivo, pregunta_id) values
+    ('ambiente', 'Ambiente de respeto y convivencia', 'alumnos', q_amb),
+    ('ambiente', 'Ambiente de respeto y convivencia', 'familias', q_amb),
+    ('ambiente', 'Ambiente de respeto y convivencia', 'personal', q_amb);
+
+  insert into public.asignatura (curso_id, nombre) values (v_curso, 'Matemáticas') returning id into a_mat;
+  insert into public.asignatura (curso_id, nombre) values (v_curso, 'Lengua') returning id into a_len;
+
+  insert into public.grupo (curso_id, etapa, nivel, nombre) values
+    (v_curso, 'pai', 'Y7', 'Y7 A'), (v_curso, 'pai', 'Y7', 'Y7 B'),
+    (v_curso, 'pai', 'Y7', 'Y7 C'), (v_curso, 'pai', 'Y7', 'Y7 D');
+
+  -- Alumnos
+  for g in select id, nombre, case nombre when 'Y7 A' then 12 when 'Y7 B' then 8 when 'Y7 C' then 3 else 6 end as tam
+           from public.grupo where curso_id = v_curso order by nombre loop
+    for s in 1 .. g.tam loop
+      insert into privado.respuesta (cuestionario_id, grupo_id) values (v_pai, g.id) returning id into r;
+      -- Matemáticas: claridad NS/NC cuando s es múltiplo de 5 (así la media agrupada
+      -- y la media de las medias por persona difieren).
+      insert into privado.respuesta_item (respuesta_id, pregunta_id, asignatura_id, valor, ns_nc) values
+        (r, q_clar, a_mat, case when s % 5 = 0 then null else 1 + (s % 6) end, s % 5 = 0),
+        (r, q_trato, a_mat, 1 + ((s * 2) % 6), false);
+      -- Lengua: en Y7 A solo contestan los 4 primeros.
+      if g.nombre = 'Y7 A' and s > 4 then
+        insert into privado.respuesta_item (respuesta_id, pregunta_id, asignatura_id, valor, ns_nc) values
+          (r, q_clar, a_len, null, true), (r, q_trato, a_len, null, true);
+      else
+        insert into privado.respuesta_item (respuesta_id, pregunta_id, asignatura_id, valor, ns_nc) values
+          (r, q_clar, a_len, 1 + ((s + 3) % 6), false), (r, q_trato, a_len, 6 - (s % 6), false);
+      end if;
+      -- Ambiente: en Y7 B solo 4 valoraciones válidas.
+      insert into privado.respuesta_item (respuesta_id, pregunta_id, valor, ns_nc) values
+        (r, q_amb, case when g.nombre = 'Y7 B' and s > 4 then null else 1 + ((s * 5) % 6) end, g.nombre = 'Y7 B' and s > 4),
+        (r, q_sat, 1 + ((s + 1) % 6), false),
+        (r, q_rec, s % 11, false),
+        (r, q_ib, 1 + (s % 4), false);
+      -- Lo más valorado: quien tiene s múltiplo de 5 no contesta la pregunta.
+      if s % 5 <> 0 then
+        if s % 2 = 0 then insert into privado.respuesta_opcion values (r, q_val, o_prof); end if;
+        if s % 3 = 0 then insert into privado.respuesta_opcion values (r, q_val, o_amb); end if;
+        if s % 2 <> 0 and s % 3 <> 0 then insert into privado.respuesta_opcion values (r, q_val, o_inst); end if;
+      end if;
+    end loop;
+  end loop;
+
+  -- Familias
+  for g in select * from (values ('infantil', 6), ('primaria', 10), ('pai', 9), ('bachillerato', 3)) t(etapa, tam) loop
+    for s in 1 .. g.tam loop
+      insert into privado.respuesta (cuestionario_id, etapa) values (v_fam, g.etapa) returning id into r;
+      insert into privado.respuesta_item (respuesta_id, pregunta_id, valor, ns_nc) values
+        (r, q_amb, 1 + (s % 6), false), (r, q_frec, 1 + (s % 10), false);
+      insert into privado.respuesta_opcion values (r, q_val, case when s % 2 = 0 then o_prof else o_amb end);
+    end loop;
+  end loop;
+
+  -- Personal
+  for s in 1 .. 24 loop
+    insert into privado.respuesta (cuestionario_id, idioma_origen, docente, antiguedad, departamento_equipo)
+    values (v_per,
+            case when s > 22 then 'en' else 'es' end,
+            s <= 20,
+            case when s <= 3 then 'primer_ano' else 'mas_de_un_ano' end,
+            case when s <= 10 then 'Ciencias' when s <= 19 then 'Letras' end)
+    returning id into r;
+    insert into privado.respuesta_item (respuesta_id, pregunta_id, valor, ns_nc) values
+      (r, q_sup, 1 + (s % 6), false),
+      (r, q_amb, 1 + ((s + 2) % 6), false),
+      (r, q_prec, case when s <= 10 then 10 when s <= 14 then 9 when s <= 19 then 7 else 3 end, false);
+  end loop;
+
+  -- Profesores
+  insert into public.departamento (curso_id, nombre) values (v_curso, 'Ciencias') returning id into v_dep;
+  insert into public.persona_responsable (nombre, apellidos, correo, departamento_id)
+    values ('Docente', 'Uno', 'docente.uno@ejemplo.test', v_dep) returning id into v_uno;
+  insert into public.persona_responsable (nombre, apellidos, correo)
+    values ('Docente', 'Dos', 'docente.dos@ejemplo.test') returning id into v_dos;
+  insert into public.asignacion_docente (curso_id, grupo_id, asignatura_id, docente_id)
+    select v_curso, g2.id, a_mat, v_uno from public.grupo g2 where g2.curso_id = v_curso;
+  insert into public.asignacion_docente (curso_id, grupo_id, asignatura_id, docente_id)
+    select v_curso, g2.id, a_len, v_dos from public.grupo g2 where g2.nombre = 'Y7 B';
+  insert into public.cargo (persona_id, curso_id, tipo, ambito) values (v_uno, v_curso, 'jefe_departamento', 'Ciencias');
+
+  -- Usuarios de prueba
+  insert into auth.users (id, email, aud, role) values
+    ('00000000-0000-0000-0000-00000000000a', 'admin@ejemplo.test', 'authenticated', 'authenticated'),
+    ('00000000-0000-0000-0000-00000000000b', 'direccion@ejemplo.test', 'authenticated', 'authenticated'),
+    ('00000000-0000-0000-0000-00000000000c', 'coord.pai@ejemplo.test', 'authenticated', 'authenticated'),
+    ('00000000-0000-0000-0000-00000000000d', 'coord.primaria@ejemplo.test', 'authenticated', 'authenticated'),
+    ('00000000-0000-0000-0000-00000000000e', 'coord.infantil@ejemplo.test', 'authenticated', 'authenticated'),
+    ('00000000-0000-0000-0000-00000000000f', 'inactivo@ejemplo.test', 'authenticated', 'authenticated'),
+    ('00000000-0000-0000-0000-000000000010', 'sinperfil@ejemplo.test', 'authenticated', 'authenticated');
+  insert into public.usuario_perfil (id, nombre, rol, etapa, activo) values
+    ('00000000-0000-0000-0000-00000000000a', 'Admin', 'administrador', null, true),
+    ('00000000-0000-0000-0000-00000000000b', 'Dirección', 'direccion', null, true),
+    ('00000000-0000-0000-0000-00000000000c', 'Coord PAI', 'coordinacion', 'pai', true),
+    ('00000000-0000-0000-0000-00000000000d', 'Coord Primaria', 'coordinacion', 'primaria', true),
+    ('00000000-0000-0000-0000-00000000000e', 'Coord Infantil', 'coordinacion', 'infantil', true),
+    ('00000000-0000-0000-0000-00000000000f', 'Inactivo', 'direccion', null, false);
+end
+$fixture$;
+
+-- Cambia el usuario simulado. Uso, siempre como postgres:
+--   reset role; select pg_temp.como('direccion'); set local role authenticated;
+create function pg_temp.como(p_quien text, p_aal text default 'aal1') returns void
+language plpgsql as $$
+declare
+  v_id uuid := case p_quien
+    when 'admin' then '00000000-0000-0000-0000-00000000000a'
+    when 'direccion' then '00000000-0000-0000-0000-00000000000b'
+    when 'coord_pai' then '00000000-0000-0000-0000-00000000000c'
+    when 'coord_primaria' then '00000000-0000-0000-0000-00000000000d'
+    when 'coord_infantil' then '00000000-0000-0000-0000-00000000000e'
+    when 'inactivo' then '00000000-0000-0000-0000-00000000000f'
+    when 'sin_perfil' then '00000000-0000-0000-0000-000000000010'
+  end;
+begin
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', v_id, 'role', 'authenticated', 'aal', p_aal)::text, true);
+end $$;
