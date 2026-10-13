@@ -1,0 +1,29 @@
+# Datos del colegio: nunca en git
+datos_locales/
+
+# Secretos
+.env*
+!.env.example
+
+# Node y build
+node_modules/
+dist/
+*.log
+
+# Supabase local
+supabase/.temp/
+supabase/.branches/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Ficheros de encuestas y salidas que aparezcan fuera de datos_locales
+*.csv
+*.xlsx
+!etl/plantillas/*.xlsx
+*.zip
+
+# Sistema
+.DS_Store
