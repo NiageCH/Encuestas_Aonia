@@ -38,7 +38,15 @@ datos_locales/  NO va a git: fuentes, validación y prototipo con datos reales
 
 ## Comandos
 
-*(Rellenar al crear el proyecto: instalar, desarrollo, tests, migraciones, ETL, despliegue.)*
+```sh
+npm install          # dependencias (incluye la CLI de Supabase)
+npm run db:start     # Supabase local (Docker), puertos 554xx
+npm run db:reset     # recrea la base de datos con las migraciones
+npm run db:test      # tests pgTAP (supabase/tests)
+python3 supabase/scripts/probar_mfa_local.py   # prueba el doble factor del administrador
+```
+
+Pendiente de añadir: frontend, ETL y despliegue.
 
 ## Estado
 
