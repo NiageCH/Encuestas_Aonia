@@ -13,12 +13,13 @@ create temp table ref as select
   (select id from public.pregunta where codigo_diccionario = 'rec_alumnos') as rec,
   (select min(r.id) from privado.respuesta r join public.cuestionario c on c.id = r.cuestionario_id where c.codigo = 'PAI_T') as resp;
 
-select throws_ok($$ insert into privado.respuesta (cuestionario_id) select pai from ref $$,
-  'P0001', 'Una respuesta de alumnos necesita grupo', 'alumnos sin grupo');
-select throws_ok($$ insert into privado.respuesta (cuestionario_id, grupo_id, etapa) select pai, grupo, 'pai' from ref $$,
-  '23514', null, 'grupo y etapa nunca van juntos');
-select throws_ok($$ insert into privado.respuesta (cuestionario_id, etapa, docente) select fam, 'pai', true from ref $$,
-  'P0001', 'Una respuesta de familias solo lleva etapa', 'familias sin segmentos de personal');
+select throws_ok($$ insert into privado.respuesta (cuestionario_id, grupo_id)
+                    select fam, grupo from ref $$,
+  'P0001', 'Una respuesta de familias no lleva grupo ni segmentos de personal', 'familias sin grupo');
+select throws_ok($$ insert into privado.respuesta_etapa (respuesta_id, etapa) select resp, 'pai' from ref $$,
+  'P0001', 'Solo las respuestas de familias llevan etapas propias', 'las etapas propias son solo de familias');
+select throws_ok($$ insert into privado.respuesta (cuestionario_id, docente) select fam, true from ref $$,
+  'P0001', 'Una respuesta de familias no lleva grupo ni segmentos de personal', 'familias sin segmentos de personal');
 select throws_ok($$ insert into privado.respuesta (cuestionario_id, antiguedad) select per, 'diez_anos' from ref $$,
   '23514', null, 'antigüedad solo admite primer_ano o mas_de_un_ano');
 select hasnt_column('privado', 'respuesta', 'sexo', 'la respuesta no tiene columna de sexo');

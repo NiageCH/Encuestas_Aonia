@@ -64,8 +64,8 @@ select throws_ok($$ select public.resultados_profesor('2025/26', (select uno fro
 select is(public.listar_profesores('2025/26'), '[]'::jsonb, 'coordinación de Primaria no ve profesores de otras etapas');
 select throws_ok($$ select public.resultados('{"curso":"2025/26","colectivo":"alumnos"}', '{"tipo":"personas"}') $$,
   'P0002', 'No hay datos para este filtro', 'coordinación de Primaria no ve alumnos de PAI');
-select is((public.resultados('{"curso":"2025/26","colectivo":"familias"}', '{"tipo":"personas"}') -> 'total' ->> 'n')::int, 10,
-  'coordinación de Primaria ve las familias de Primaria');
+select is((public.resultados('{"curso":"2025/26","colectivo":"familias"}', '{"tipo":"personas"}') -> 'total' ->> 'n')::int, 11,
+  'coordinación de Primaria ve las familias de Primaria (incluida la que también tiene hijos en PAI)');
 reset role; select pg_temp.como('coord_infantil'); set local role authenticated;
 select is((public.resultados('{"curso":"2025/26","colectivo":"familias"}', '{"tipo":"personas"}') -> 'total' ->> 'motivo'), 'complementaria',
   'coordinación de Infantil recibe su etapa suprimida igual que la ve dirección');

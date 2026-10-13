@@ -12,10 +12,12 @@
 --     Lengua      4      8      3      6      (en Y7 A, 8 alumnos contestan NS/NC a Lengua)
 --   centro_ambiente en Y7 B: 4 valoraciones válidas (el resto NS/NC): el grupo es visible
 --   pero la pregunta no.
--- Familias, cuestionario FAM_T: Infantil 6 · Primaria 10 · PAI 9 · Bachillerato 3.
+-- Familias, cuestionario FAM_T: Infantil 6 · Primaria 10 · PAI 9 · Bachillerato 3, más una
+--   familia con hijos en Primaria y PAI (29 familias; por etapa, Primaria 11 y PAI 10).
 -- Personal, cuestionario PER_T, 24 personas: docentes 20 y no docentes 4; primer año 3 y
 --   más de un año 21; departamento Ciencias 10, Letras 9 y sin dato 5; 2 en inglés.
 --   Recomendación: 10 dieces, 4 nueves, 5 sietes y 5 treses (NPS 37,5; media 7,75).
+--   Reuniones de departamento (por departamento): Ciencias 8 personas, Letras 6 y Artes 2.
 
 create extension if not exists pgtap with schema extensions;
 
@@ -24,13 +26,13 @@ declare
   v_curso smallint;
   v_pai integer; v_fam integer; v_per integer;
   b_prof integer; b_centro integer; b_gen integer; b_rec integer; b_val integer; b_ib integer;
-  b_fcentro integer; b_frec integer; b_fval integer; b_sup integer; b_pcentro integer; b_prec integer;
+  b_fcentro integer; b_frec integer; b_fval integer; b_sup integer; b_pcentro integer; b_prec integer; b_dep integer;
   q_clar integer; q_trato integer; q_amb integer; q_sat integer; q_rec integer; q_val integer;
-  q_ib integer; q_frec integer; q_sup integer; q_prec integer;
+  q_ib integer; q_frec integer; q_sup integer; q_prec integer; q_dep integer;
   o_prof integer; o_inst integer; o_amb integer;
   a_mat integer; a_len integer;
   g record; r bigint; s integer; v_n integer;
-  v_dep integer; v_uno integer; v_dos integer;
+  v_dep integer; v_uno integer; v_dos integer; v_letras integer; v_artes integer;
 begin
   insert into public.curso (nombre) values ('2025/26') returning id into v_curso;
 
@@ -55,6 +57,8 @@ begin
     values ('sup_trato', 'Mi superior me trata con respeto', 'escala', 1, 6) returning id into q_sup;
   insert into public.pregunta (codigo_diccionario, texto_es, tipo, escala_min, escala_max)
     values ('rec_personal', 'Recomendaría el colegio', 'recomendacion', 1, 10) returning id into q_prec;
+  insert into public.pregunta (codigo_diccionario, texto_es, tipo, escala_min, escala_max)
+    values ('dep_utiles', 'Las reuniones de departamento son útiles', 'escala', 1, 6) returning id into q_dep;
 
   insert into public.opcion (pregunta_id, codigo, texto_es) values (q_val, 'profesorado', 'Profesorado') returning id into o_prof;
   insert into public.opcion (pregunta_id, codigo, texto_es) values (q_val, 'instalaciones', 'Instalaciones') returning id into o_inst;
@@ -80,6 +84,7 @@ begin
   insert into public.bloque (cuestionario_id, codigo, nombre, orden) values (v_per, 'superiores', 'Superiores', 1) returning id into b_sup;
   insert into public.bloque (cuestionario_id, codigo, nombre, orden) values (v_per, 'centro', 'Centro', 2) returning id into b_pcentro;
   insert into public.bloque (cuestionario_id, codigo, nombre, orden, entra_en_media) values (v_per, 'recomendacion', 'Recomendación', 3, false) returning id into b_prec;
+  insert into public.bloque (cuestionario_id, codigo, nombre, orden, entra_en_media) values (v_per, 'reuniones_departamento', 'Reuniones de departamento', 4, false) returning id into b_dep;
 
   insert into public.pregunta_cuestionario (cuestionario_id, pregunta_id, bloque_id, orden, por_asignatura) values
     (v_pai, q_clar, b_prof, 1, true), (v_pai, q_trato, b_prof, 2, true),
@@ -87,6 +92,8 @@ begin
     (v_pai, q_rec, b_rec, 1, false), (v_pai, q_val, b_val, 1, false), (v_pai, q_ib, b_ib, 1, false),
     (v_fam, q_amb, b_fcentro, 1, false), (v_fam, q_frec, b_frec, 1, false), (v_fam, q_val, b_fval, 1, false),
     (v_per, q_sup, b_sup, 1, false), (v_per, q_amb, b_pcentro, 1, false), (v_per, q_prec, b_prec, 1, false);
+  insert into public.pregunta_cuestionario (cuestionario_id, pregunta_id, bloque_id, orden, por_departamento)
+    values (v_per, q_dep, b_dep, 1, true);
 
   insert into public.pregunta_comun (codigo_comun, texto_es, colectivo, pregunta_id) values
     ('ambiente', 'Ambiente de respeto y convivencia', 'alumnos', q_amb),
@@ -136,12 +143,22 @@ begin
   -- Familias
   for g in select * from (values ('infantil', 6), ('primaria', 10), ('pai', 9), ('bachillerato', 3)) t(etapa, tam) loop
     for s in 1 .. g.tam loop
-      insert into privado.respuesta (cuestionario_id, etapa) values (v_fam, g.etapa) returning id into r;
+      insert into privado.respuesta (cuestionario_id) values (v_fam) returning id into r;
+      insert into privado.respuesta_etapa values (r, g.etapa);
       insert into privado.respuesta_item (respuesta_id, pregunta_id, valor, ns_nc) values
         (r, q_amb, 1 + (s % 6), false), (r, q_frec, 1 + (s % 10), false);
       insert into privado.respuesta_opcion values (r, q_val, case when s % 2 = 0 then o_prof else o_amb end);
     end loop;
   end loop;
+
+  -- Una familia con hijos en Primaria y PAI
+  insert into privado.respuesta (cuestionario_id) values (v_fam) returning id into r;
+  insert into privado.respuesta_etapa values (r, 'primaria'), (r, 'pai');
+  insert into privado.respuesta_item (respuesta_id, pregunta_id, valor, ns_nc) values (r, q_amb, 6, false), (r, q_frec, 10, false);
+
+  insert into public.departamento (curso_id, nombre) values (v_curso, 'Ciencias') returning id into v_dep;
+  insert into public.departamento (curso_id, nombre) values (v_curso, 'Letras') returning id into v_letras;
+  insert into public.departamento (curso_id, nombre) values (v_curso, 'Artes') returning id into v_artes;
 
   -- Personal
   for s in 1 .. 24 loop
@@ -156,10 +173,14 @@ begin
       (r, q_sup, 1 + (s % 6), false),
       (r, q_amb, 1 + ((s + 2) % 6), false),
       (r, q_prec, case when s <= 10 then 10 when s <= 14 then 9 when s <= 19 then 7 else 3 end, false);
+    -- Reuniones de departamento: Ciencias 1 a 8, Letras 9 a 14, Artes 15 y 16.
+    if s <= 16 then
+      insert into privado.respuesta_item (respuesta_id, pregunta_id, departamento_id, valor, ns_nc)
+      values (r, q_dep, case when s <= 8 then v_dep when s <= 14 then v_letras else v_artes end, 1 + (s % 6), false);
+    end if;
   end loop;
 
   -- Profesores
-  insert into public.departamento (curso_id, nombre) values (v_curso, 'Ciencias') returning id into v_dep;
   insert into public.persona_responsable (nombre, apellidos, correo, departamento_id)
     values ('Docente', 'Uno', 'docente.uno@ejemplo.test', v_dep) returning id into v_uno;
   insert into public.persona_responsable (nombre, apellidos, correo)
