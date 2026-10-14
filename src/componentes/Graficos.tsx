@@ -102,3 +102,88 @@ export function Recomendacion({ fila, desde }: { fila: Fila; desde: number }) {
     </div>
   );
 }
+
+const TRAMOS_DESACUERDO = ["en-n3", "en-n2", "en-n1"];   // 1, 2, 3
+const TRAMOS_ACUERDO = ["en-p1", "en-p2", "en-p3"];       // 4, 5, 6
+
+/** Una pregunta de 1 a 6 con su distribución divergente: desacuerdo a la izquierda (1 a 3) y
+ *  acuerdo a la derecha (4 a 6). */
+export function FilaPregunta({ texto, fila, etiquetas }: { texto: string; fila: Fila; etiquetas: string[] }) {
+  const ayuda = useAyuda();
+  if (fila.suprimido) {
+    return (
+      <div className="en-item en-con-ayuda" {...ayuda([texto, lineasOculto(fila)])}>
+        <span>{texto}</span><span /><span className="n"><Oculto fila={fila} /></span><span /><span />
+      </div>
+    );
+  }
+  const n = fila.n!;
+  const dist = [1, 2, 3, 4, 5, 6].map((v) => fila.distribucion?.[String(v)] ?? 0);
+  const tramo = (v: number, clase: string) => {
+    const c = dist[v - 1];
+    if (!c) return null;
+    return (
+      <span key={v} className={`s ${clase}`} style={{ width: `${(100 * c) / n}%` }} />
+    );
+  };
+  const lineas = [
+    texto,
+    t.tip_media(f.media(fila.media!)),
+    ...dist.map((c, i) => `${i + 1} · ${etiquetas[i] ?? ""}: ${f.recuento(c)} (${f.porcentaje((100 * c) / n)})`),
+    ...(fila.ns_nc ? [t.tip_nsnc(f.recuento(fila.ns_nc))] : []),
+  ];
+  return (
+    <div className="en-item en-con-ayuda" {...ayuda(lineas)}>
+      <span>{texto}</span>
+      <span className="en-div" aria-hidden="true">
+        <span className="h l">{[3, 2, 1].map((v) => tramo(v, TRAMOS_DESACUERDO[v - 1]))}</span>
+        <span className="m" />
+        <span className="h r">{[4, 5, 6].map((v) => tramo(v, TRAMOS_ACUERDO[v - 4]))}</span>
+      </span>
+      <span className="n"><strong>{f.media(fila.media!)}</strong></span>
+      <span className="n">{f.recuento(n)}</span>
+      <span className="n">{fila.ns_nc ? f.recuento(fila.ns_nc) : ""}</span>
+    </div>
+  );
+}
+
+export function CabeceraPreguntas() {
+  return (
+    <div className="en-item head" aria-hidden="true">
+      <span>{t.pregunta}</span><span>{t.distribucion_corta}</span><span className="n">{t.media}</span>
+      <span className="n">n</span><span className="n">NS/NC</span>
+    </div>
+  );
+}
+
+export function LeyendaAcuerdo({ etiquetas }: { etiquetas: string[] }) {
+  const clases = [...TRAMOS_DESACUERDO, ...TRAMOS_ACUERDO];
+  return (
+    <div className="en-legend">
+      {etiquetas.map((e, i) => <span key={i}><i className={clases[i]} />{i + 1} · {e}</span>)}
+    </div>
+  );
+}
+
+/** «Lo más valorado»: porcentaje de personas que eligen cada aspecto. */
+export function Ranking({ fila, textos, maximo = 10 }: { fila: Fila; textos: Record<string, string>; maximo?: number }) {
+  const ayuda = useAyuda();
+  if (fila.suprimido) return <p className="en-hint"><Oculto fila={fila} /> · {lineasOculto(fila)}</p>;
+  const ops = [...(fila.opciones ?? [])].filter((o) => o.n > 0).sort((a, b) => b.n - a.n).slice(0, maximo);
+  const tope = Math.max(1, ...ops.map((o) => o.pct));
+  return (
+    <>
+      {ops.map((o) => {
+        const texto = textos[o.codigo] ?? o.codigo;
+        return (
+          <div key={o.codigo} className="en-bar en-con-ayuda"
+               {...ayuda([texto, f.porcentaje(o.pct), t.tip_eligen(f.recuento(o.n), f.recuento(fila.n!))])}>
+            <span>{texto}</span>
+            <span className="en-track" aria-hidden="true"><span className="en-fill" style={{ width: `${(100 * o.pct) / tope}%` }} /></span>
+            <span className="en-val">{f.porcentaje(o.pct)}</span>
+          </div>
+        );
+      })}
+    </>
+  );
+}

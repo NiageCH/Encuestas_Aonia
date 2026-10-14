@@ -96,3 +96,30 @@ export async function bloques(cuestionario: string): Promise<Bloque[]> {
   if (error) throw error;
   return (data ?? []).map(({ codigo, nombre, orden, entra_en_media }) => ({ codigo, nombre, orden, entra_en_media }));
 }
+
+export interface DetallePregunta {
+  codigo: string;
+  texto: string;
+  resultado: Resultado;
+}
+
+/** Cada pregunta de un bloque (por su código), en el orden del cuestionario. */
+export async function detallePreguntas(filtro: Filtro, bloque: string, dimensiones: string[] = []): Promise<DetallePregunta[]> {
+  const { data, error } = await supabase.rpc("detalle_preguntas", {
+    p_filtro: { curso: CURSO, ...filtro },
+    p_bloque: bloque,
+    p_dimensiones: dimensiones,
+  });
+  if (error) throw error;
+  return data as DetallePregunta[];
+}
+
+/** Texto de cada opción de una pregunta de selección múltiple (código -> texto). */
+export async function opciones(pregunta: string): Promise<Record<string, string>> {
+  const { data, error } = await supabase
+    .from("opcion")
+    .select("codigo, texto_es, pregunta!inner(codigo_diccionario)")
+    .eq("pregunta.codigo_diccionario", pregunta);
+  if (error) throw error;
+  return Object.fromEntries((data ?? []).map((o) => [o.codigo, o.texto_es]));
+}

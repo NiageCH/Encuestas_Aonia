@@ -6,11 +6,12 @@ import { alCambiarSesion, miPerfil, salir, sesionActual, type Perfil } from "./d
 import { t } from "./i18n";
 import { Acceso } from "./vistas/Acceso";
 import { Alumnos } from "./vistas/Alumnos";
+import { Familias } from "./vistas/Familias";
 
 const ENLACES: Enlace[] = [
   { ruta: "/", texto: t.nav_panel, pronto: true },
   { ruta: "/alumnos", texto: t.nav_alumnos },
-  { ruta: "/familias", texto: t.nav_familias, pronto: true },
+  { ruta: "/familias", texto: t.nav_familias },
   { ruta: "/personal", texto: t.nav_personal, pronto: true },
   { ruta: "/profesores", texto: t.nav_profesores, pronto: true },
 ];
@@ -60,7 +61,9 @@ export function App() {
   }
 
   // Mientras el panel general no exista, la portada lleva a alumnos.
-  const vista = ruta === "/" || ruta === "/alumnos" ? <Alumnos perfil={perfil!} /> : <Pronto ruta={ruta} />;
+  const vista = ruta === "/" || ruta === "/alumnos" ? <Alumnos perfil={perfil!} />
+    : ruta === "/familias" ? <Familias perfil={perfil!} />
+    : <Pronto ruta={ruta} />;
   return (
     <Marco ruta={ruta === "/" ? "/alumnos" : ruta} enlaces={ENLACES} usuario={{ nombre: perfil!.nombre, onSalir: salir }}>
       <ProveedorAyuda>{vista}</ProveedorAyuda>

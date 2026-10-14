@@ -82,6 +82,21 @@
 .en-col .c { font-size: .78rem; color: var(--muted); margin-bottom: .2rem; }
 .en-colx { display: flex; gap: .4rem; padding-top: .3rem; } .en-colx span { flex: 1; text-align: center; font-size: .78rem; color: var(--muted); }
 
+/* Detalle por pregunta con distribución divergente */
+.en-item { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(200px, 1fr) 3.2rem 3rem 3.4rem; gap: .8rem; align-items: center; padding: .5rem .4rem; margin: 0 -.4rem; border-bottom: 1px solid var(--line); border-radius: 8px; font-size: .9rem; }
+.en-item.head { font-size: .78rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.en-item.en-con-ayuda:hover { background: var(--soft); }
+.en-item .n { text-align: right; font-variant-numeric: tabular-nums; }
+.en-div { display: flex; height: 14px; }
+.en-div .h { flex: 1; display: flex; } .en-div .l { justify-content: flex-end; }
+.en-div .m { width: 2px; background: var(--line); }
+.en-div .s { height: 14px; } .en-div .s + .s { margin-left: 1px; }
+.en-div .l .s:first-child { border-radius: 999px 0 0 999px; } .en-div .r .s:last-child { border-radius: 0 999px 999px 0; }
+.en-toolbar { display: flex; justify-content: space-between; align-items: flex-end; gap: .8rem; flex-wrap: wrap; margin-bottom: .6rem; }
+.en-toolbar .en-select { min-width: 260px; }
+.chip .en-aviso { margin-left: .35rem; font-size: .72rem; font-weight: 700; color: var(--warn); }
+.chip.on .en-aviso { color: #fff; }
+
 .en-cargando { color: var(--muted); }
 
 /* Información emergente de los gráficos */
@@ -97,6 +112,9 @@
 @media (max-width: 900px) { .en-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .en-two { grid-template-columns: 1fr; } .en-filters { grid-template-columns: 1fr; } }
 @media (max-width: 620px) {
   .en-bar { grid-template-columns: minmax(90px, 130px) 1fr 4rem; }
+  .en-item.head { display: none; }
+  .en-item { grid-template-columns: 1fr 3rem 2.6rem 3rem; row-gap: .3rem; }
+  .en-item > span:first-child { grid-column: 1 / -1; }
   .en-kpi .v { font-size: 1.9rem; }
   .en-usuario span { display: none; }
 }
