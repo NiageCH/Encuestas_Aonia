@@ -1,15 +1,15 @@
 // Vista de personal (§7.4 y §7.0): un filtro a la vez (docentes o no docentes, o antigüedad),
-// indicadores con eNPS, dimensiones, Superiores agregado, reuniones de departamento por
+// indicadores con la recomendación, dimensiones, Superiores agregado, reuniones de departamento por
 // departamento, Equipo de Individualización, detalle por pregunta, recomendación y lo más
 // valorado. Sin sexo.
 
 import { useEffect, useState } from "react";
 import {
-  Barra, CabeceraPreguntas, FilaPregunta, Indicador, LeyendaAcuerdo, Ranking, Recomendacion,
+  Barra, CabeceraPreguntas, FilaPregunta, Indicador, IndicadorRecomendacion, LeyendaAcuerdo, Ranking, Recomendacion,
 } from "../componentes/Graficos";
 import { Migas } from "../componentes/Marco";
 import {
-  bloques as cargarBloques, cuestionarios as cargarCuestionarios, detallePreguntas, opciones, resultados,
+  bloques as cargarBloques, cuestionarios as cargarCuestionarios, detallePreguntas, opciones, recuentoIdiomas, resultados,
   type Bloque, type Cuestionario, type DetallePregunta, type Fila, type Filtro,
 } from "../data/resultados";
 import * as f from "../formato";
@@ -40,7 +40,7 @@ interface Datos {
   equipo: Fila;
   dimensiones: { bloque: Bloque; fila: Fila }[];
   departamentos: Fila[] | null;
-  idiomas: Fila[] | null;
+  idiomas: Record<string, number> | null;
   valorado: Fila;
 }
 
@@ -70,7 +70,8 @@ export function Personal() {
     const sinFiltro = segmento === null;
     (async () => {
       const dims = bl.filter((b) => b.entra_en_media);
-      const [personas, sat, rec, sup, supTipo, equipo, valorado, deps, idiomas, ...porBloque] = await Promise.all([
+      const idiomas = cuest.idiomas_cargados.includes("en") ? await recuentoIdiomas() : null;
+      const [personas, sat, rec, sup, supTipo, equipo, valorado, deps, ...porBloque] = await Promise.all([
         resultados(filtro, { tipo: "personas" }),
         resultados(filtro, { tipo: "satisfaccion" }),
         resultados(filtro, { tipo: "recomendacion" }),
@@ -80,7 +81,6 @@ export function Personal() {
         resultados(filtro, { tipo: "seleccion", codigo: "mas_valorado" }),
         // Las reuniones de departamento solo se consultan por departamento y sin otros filtros (§5.7).
         sinFiltro ? resultados({ colectivo: "personal" }, { tipo: "bloque", codigo: "reuniones_departamento" }, ["departamento"]) : null,
-        sinFiltro && cuest.idiomas_cargados.includes("en") ? resultados({ colectivo: "personal" }, { tipo: "personas" }, ["idioma"]) : null,
         ...dims.map((b) => resultados(filtro, { tipo: "bloque", codigo: b.codigo })),
       ]);
       if (!vigente) return;
@@ -90,7 +90,7 @@ export function Personal() {
         superioresPorTipo: ["docente", "no_docente"].map((k) => supTipo?.partes.find((p) => p.clave.docente === k)).filter((p): p is Fila => !!p),
         equipo: equipo!.total, valorado: valorado!.total,
         departamentos: deps ? deps.partes : null,
-        idiomas: idiomas ? idiomas.partes.filter((p) => p.clave.idioma !== "(sin dato)") : null,
+        idiomas,
         dimensiones: dims.map((b, i) => ({ bloque: b, fila: porBloque[i]!.total })),
       });
     })().catch(() => vigente && setError(t.error_datos));
@@ -145,9 +145,7 @@ export function Personal() {
             <Indicador etiqueta={t.k_superiores} fila={datos.superiores} explicacion={`${t.tip_k_superiores} ${t.per_superiores_quien}`}
               valor={(x) => <>{f.media(x.media!)} <small>/ 6</small></>}
               detalle={(x) => t.tip_personas(f.recuento(x.n!))} />
-            <Indicador etiqueta={t.k_enps} fila={datos.recomendacion} explicacion={t.tip_k_enps}
-              valor={(x) => <>{f.nps(x.nps!)}</>}
-              detalle={(x) => t.k_enps_d(f.recomendacion(x.media!))} />
+            <IndicadorRecomendacion etiqueta={t.k_recomendacion_trabajo} fila={datos.recomendacion} />
           </div>
 
           <div className="en-two" style={{ marginTop: "1.2rem" }}>
@@ -217,15 +215,9 @@ export function Personal() {
   );
 }
 
-/** Dato de idioma junto a las respuestas. Mismo criterio que cualquier parte: nunca el
- *  número exacto de una parte oculta. */
-function notaIdioma(c: Cuestionario, idiomas: Fila[] | null): string {
+/** Dato de idioma junto a las respuestas: cifras exactas. Es informativo y queda fuera de la
+ *  supresión porque no existe ningún resultado por idioma (§5). */
+function notaIdioma(c: Cuestionario, idiomas: Record<string, number> | null): string {
   if (!c.idiomas_cargados.includes("en") || !idiomas) return t.per_ingles_pendiente;
-  return ["es", "en"].map((k) => {
-    const p = idiomas.find((x) => x.clave.idioma === k);
-    const nombre = k === "es" ? t.en_espanol : t.en_ingles;
-    if (!p) return `0 ${nombre}`;
-    if (!p.suprimido) return `${f.recuento(p.n!)} ${nombre}`;
-    return `${p.motivo === "menos_de_5" ? t.menos_de_5 : t.cinco_o_mas} ${nombre}`;
-  }).join(" · ");
+  return `${f.recuento(idiomas.es ?? 0)} ${t.en_espanol} · ${f.recuento(idiomas.en ?? 0)} ${t.en_ingles}`;
 }

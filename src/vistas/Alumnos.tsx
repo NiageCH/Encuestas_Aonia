@@ -2,7 +2,7 @@
 // asignatura, satisfacción por bloque y recomendación. Primera pantalla del paso 5.
 
 import { useEffect, useMemo, useState } from "react";
-import { Barra, Indicador, ordenar, Recomendacion } from "../componentes/Graficos";
+import { Barra, Indicador, IndicadorRecomendacion, ordenar, Recomendacion } from "../componentes/Graficos";
 import { Migas } from "../componentes/Marco";
 import {
   bloques as cargarBloques, cuestionarios as cargarCuestionarios, resultados,
@@ -125,9 +125,7 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
             <Indicador etiqueta={t.k_profesorado} fila={datos.profesorado} explicacion={t.tip_k_profesorado}
               valor={(x) => <>{f.media(x.media!)} <small>/ 6</small></>}
               detalle={() => t.k_profesorado_d} />
-            <Indicador etiqueta={t.k_recomendacion} fila={datos.recomendacion} explicacion={t.tip_k_recomendacion}
-              valor={(x) => <>{f.recomendacion(x.media!)} <small>/ 10</small></>}
-              detalle={(x) => t.k_recomendacion_d(f.nps(x.nps!))} />
+            <IndicadorRecomendacion etiqueta={t.k_recomendacion} fila={datos.recomendacion} />
           </div>
 
           <div className="en-two" style={{ marginTop: "1.2rem" }}>

@@ -1,7 +1,7 @@
 -- Vista de profesor (§7.2 y §5.3) y permisos por rol (§6).
 begin;
 \ir fixtures/datos_ejemplo.psql
-select plan(26);
+select plan(27);
 
 create temp table ids as
   select (select id from public.persona_responsable where apellidos = 'Uno') as uno,
@@ -54,6 +54,8 @@ select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"al
   '42501', 'Sin acceso a la etapa primaria', 'coordinación no pide otra etapa en alumnos');
 select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"personal"}', '{"tipo":"personas"}') $$,
   '42501', 'Sin acceso a los resultados de personal', 'coordinación no ve personal');
+select throws_ok($$ select public.recuento_idiomas('2000/01') $$,
+  '42501', 'Sin acceso a los resultados de personal', 'coordinación no ve el recuento por idioma de personal');
 select throws_ok($$ select public.resumen('{"curso":"2000/01","colectivo":"personal"}') $$,
   '42501', 'Sin acceso a los resultados de personal', 'coordinación no ve personal tampoco en el resumen');
 

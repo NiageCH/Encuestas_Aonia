@@ -125,3 +125,11 @@ export async function opciones(pregunta: string): Promise<Record<string, string>
   if (error) throw error;
   return Object.fromEntries((data ?? []).map((o) => [o.codigo, o.texto_es]));
 }
+
+/** Recuento informativo de personas por idioma en personal (cifras exactas, §5): no existe
+ *  ningún resultado desagregado por idioma. */
+export async function recuentoIdiomas(): Promise<Record<string, number>> {
+  const { data, error } = await supabase.rpc("recuento_idiomas", { p_curso: CURSO });
+  if (error) throw error;
+  return (data ?? {}) as Record<string, number>;
+}

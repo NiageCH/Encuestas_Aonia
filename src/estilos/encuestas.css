@@ -62,6 +62,18 @@
 /* Recomendación: barra 100 % apilada */
 .en-apilada { display: flex; height: 26px; border-radius: 999px; overflow: hidden; background: var(--bg); margin: .4rem 0 .6rem; }
 .en-apilada span { display: block; height: 100%; }
+.en-apilada.fina { height: 14px; margin: .5rem 0 .4rem; }
+.en-reparto { font-size: .85rem; color: var(--ink); font-weight: 600; line-height: 1.45; }
+.en-reparto.grande { font-size: .95rem; margin: 0 0 .9rem; }
+.en-kpi-rec .d { margin-top: .45rem; }
+.en-kpi-rec .d strong { color: var(--navy); }
+.en-indice { border-top: 1px solid var(--line); padding-top: .7rem; margin-bottom: .6rem; }
+.en-indice span { font-weight: 700; color: var(--muted); font-size: .9rem; }
+.en-indice strong { font-size: 1.3rem; color: var(--navy); margin-left: .3rem; }
+.en-indice p { margin: .2rem 0 0; font-size: .85rem; color: var(--muted); }
+.en-calculo { font-size: .85rem; color: var(--muted); }
+.en-calculo summary { cursor: pointer; font-weight: 700; color: var(--brand); }
+.en-calculo p { margin: .4rem 0 0; }
 .en-legend { display: flex; flex-wrap: wrap; gap: .3rem .9rem; font-size: .82rem; color: var(--muted); margin: 0 0 .7rem; }
 .en-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: .35rem; vertical-align: -1px; }
 .en-n3 { background: var(--warn); } .en-n2 { background: color-mix(in srgb, var(--warn) 60%, #fff); } .en-n1 { background: color-mix(in srgb, var(--warn) 30%, #fff); }

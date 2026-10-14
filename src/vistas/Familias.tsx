@@ -1,10 +1,10 @@
 // Vista de familias (§7.4): filtro por etapa, valoración general del centro destacada y por
-// etapa, bloques, detalle por pregunta, recomendación y NPS, y lo más valorado.
+// etapa, bloques, detalle por pregunta, recomendación y lo más valorado.
 // Una familia con hijos en varias etapas cuenta en cada una (§5.6).
 
 import { useEffect, useState } from "react";
 import {
-  Barra, CabeceraPreguntas, FilaPregunta, Indicador, LeyendaAcuerdo, Ranking, Recomendacion,
+  Barra, CabeceraPreguntas, FilaPregunta, Indicador, IndicadorRecomendacion, LeyendaAcuerdo, Ranking, Recomendacion,
 } from "../componentes/Graficos";
 import { Migas } from "../componentes/Marco";
 import {
@@ -125,9 +125,7 @@ export function Familias({ perfil }: { perfil: Perfil }) {
             <Indicador etiqueta={t.k_satisfaccion_media} fila={datos.satisfaccion} explicacion={t.tip_k_satisfaccion_media}
               valor={(x) => <>{f.media(x.media!)} <small>/ 6</small></>}
               detalle={() => t.k_satisfaccion_media_d} />
-            <Indicador etiqueta={t.k_recomendacion} fila={datos.recomendacion} explicacion={t.tip_k_recomendacion}
-              valor={(x) => <>{f.recomendacion(x.media!)} <small>/ 10</small></>}
-              detalle={(x) => t.k_recomendacion_d(f.nps(x.nps!))} />
+            <IndicadorRecomendacion etiqueta={t.k_recomendacion} fila={datos.recomendacion} />
           </div>
 
           <div className="en-two" style={{ marginTop: "1.2rem" }}>

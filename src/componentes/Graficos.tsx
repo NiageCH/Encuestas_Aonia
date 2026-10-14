@@ -55,34 +55,84 @@ export function Barra({ etiqueta, fila }: { etiqueta: string; fila: Fila }) {
   );
 }
 
+/** Reparto de la recomendación en tres tramos, en el orden del texto: sí, neutral y no. */
+export function tramosRecomendacion(fila: Fila) {
+  return [
+    { clase: "en-p2", corto: t.rec_si, rango: t.rango_promotores, pct: fila.promotores_pct ?? 0 },
+    { clase: "en-neu", corto: t.rec_neutral, rango: t.rango_neutros, pct: fila.neutros_pct ?? 0 },
+    { clase: "en-n3", corto: t.rec_no, rango: t.rango_detractores, pct: fila.detractores_pct ?? 0 },
+  ];
+}
+
+/** «X % sí, con entusiasmo (9 y 10) · X % neutral (7 y 8) · X % no (6 o menos)» */
+export function textoReparto(fila: Fila): string {
+  return tramosRecomendacion(fila).map((x) => `${f.porcentaje(x.pct)} ${x.corto}`).join(" · ");
+}
+
+/** Barra de tres colores con información emergente en cada tramo. */
+export function BarraReparto({ fila, fina }: { fila: Fila; fina?: boolean }) {
+  const ayuda = useAyuda();
+  return (
+    <div className={`en-apilada${fina ? " fina" : ""}`}>
+      {tramosRecomendacion(fila).map((x) => (
+        <span key={x.clase} className={`${x.clase} en-con-ayuda`} style={{ width: `${x.pct}%` }}
+              {...ayuda([`${f.porcentaje(x.pct)} ${x.corto}`, t.tip_de_respuestas(f.recuento(Math.round((x.pct * fila.n!) / 100)), f.recuento(fila.n!)), x.rango])} />
+      ))}
+    </div>
+  );
+}
+
+/** Indicador de recomendación: el reparto es el dato principal; el índice, secundario. */
+export function IndicadorRecomendacion({ etiqueta, fila }: { etiqueta: string; fila: Fila }) {
+  const ayuda = useAyuda();
+  if (fila.suprimido) {
+    return (
+      <div className="card en-kpi en-con-ayuda" {...ayuda([etiqueta, lineasOculto(fila)])}>
+        <div className="l">{etiqueta}</div><div className="v"><Oculto fila={fila} /></div>
+      </div>
+    );
+  }
+  return (
+    <div className="card en-kpi en-kpi-rec">
+      <div className="l">{etiqueta}</div>
+      <BarraReparto fila={fila} fina />
+      <div className="en-reparto">{textoReparto(fila)}</div>
+      <div className="d en-con-ayuda" {...ayuda([t.indice, t.indice_explicacion])}>
+        {t.indice} <strong>{f.nps(fila.nps!)}</strong>
+      </div>
+    </div>
+  );
+}
+
+/** Sección de recomendación: reparto (principal), índice con su explicación (secundario),
+ *  distribución de puntuaciones y «Cómo se calcula». */
 export function Recomendacion({ fila, desde }: { fila: Fila; desde: number }) {
   const ayuda = useAyuda();
   if (fila.suprimido) return <div className="card"><Oculto fila={fila} /><p className="en-hint">{lineasOculto(fila)}</p></div>;
-  const tramos = [
-    { clase: "en-n3", texto: t.detractores, pct: fila.detractores_pct ?? 0, rango: t.rango_detractores },
-    { clase: "en-neu", texto: t.neutros, pct: fila.neutros_pct ?? 0, rango: t.rango_neutros },
-    { clase: "en-p2", texto: t.promotores, pct: fila.promotores_pct ?? 0, rango: t.rango_promotores },
-  ];
   const dist = Object.entries(fila.distribucion ?? {})
     .map(([v, n]) => ({ v: Number(v), n }))
     .filter((d) => d.v >= desde)
     .sort((a, b) => a.v - b.v);
   const max = Math.max(1, ...dist.map((d) => d.n));
   const clase = (v: number) => (v <= 6 ? "en-n3" : v <= 8 ? "en-neu" : "en-p2");
+  const tramo = (v: number) => (v <= 6 ? t.rec_no : v <= 8 ? t.rec_neutral : t.rec_si);
   return (
     <div className="en-two">
       <section className="card">
-        <h3>NPS {f.nps(fila.nps!)}</h3>
-        <p className="en-hint">{t.media} {f.recomendacion(fila.media!)} · {f.recuento(fila.n!)} {t.respuestas}</p>
-        <div className="en-apilada">
-          {tramos.map((x) => (
-            <span key={x.clase} className={`${x.clase} en-con-ayuda`} style={{ width: `${x.pct}%` }}
-                  {...ayuda([x.texto, f.porcentaje(x.pct), t.tip_de_respuestas(f.recuento(Math.round((x.pct * fila.n!) / 100)), f.recuento(fila.n!)), x.rango])} />
-          ))}
+        <h3>{t.reparto_titulo}</h3>
+        <p className="en-hint">{f.recuento(fila.n!)} {t.respuestas}</p>
+        <BarraReparto fila={fila} />
+        <p className="en-reparto grande">{textoReparto(fila)}</p>
+        <div className="en-indice">
+          <span>{t.indice}</span> <strong>{f.nps(fila.nps!)}</strong>
+          <p>{t.indice_explicacion}</p>
         </div>
-        <div className="en-legend">
-          {tramos.map((x) => <span key={x.clase}><i className={x.clase} />{x.texto} {f.porcentaje(x.pct)}</span>)}
-        </div>
+        <p className="en-hint">{t.media} {f.recomendacion(fila.media!)} / 10</p>
+        <details className="en-calculo">
+          <summary>{t.como_se_calcula}</summary>
+          <p>{t.calculo_reparto}</p>
+          <p>{t.calculo_indice}</p>
+        </details>
       </section>
       <section className="card">
         <h3>{t.distribucion}</h3>
@@ -91,7 +141,7 @@ export function Recomendacion({ fila, desde }: { fila: Fila; desde: number }) {
           {dist.map((d) => (
             <div key={d.v} className="en-col en-con-ayuda"
                  {...ayuda([t.tip_puntuacion(d.v), t.tip_de_respuestas(f.recuento(d.n), f.recuento(fila.n!)),
-                            f.porcentaje((100 * d.n) / fila.n!), d.v <= 6 ? t.detractores : d.v <= 8 ? t.neutros : t.promotores])}>
+                            f.porcentaje((100 * d.n) / fila.n!), tramo(d.v)])}>
               <span className="c">{d.n}</span>
               <span className={`b ${clase(d.v)}`} style={{ height: `${(d.n / max) * 100}%` }} />
             </div>

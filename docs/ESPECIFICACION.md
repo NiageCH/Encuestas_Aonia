@@ -116,6 +116,7 @@ Ninguna política RLS permite `select` desde el cliente sobre `respuesta`, `resp
 8. **Presentación de lo oculto:** "menos de 5" cuando la parte tiene menos de 5 respuestas; "oculto" cuando es por supresión complementaria, con aviso y leyenda "oculto para proteger el anonimato". En los PDF, nota al pie.
 9. **Ámbitos de responsables** (departamento, equipo): mismas reglas. Con equipos de menos de 5 personas, el resultado se oculta y el informe lo dice.
 10. Todo lo anterior se aplica dentro de las RPC, y por tanto también en CSV y PDF.
+11. **Idioma de origen (personal):** no es un filtro ni una dimensión. Los resultados de personal van siempre unidos y ninguna RPC devuelve resultados por idioma. El recuento de personas por idioma ("N en español · N en inglés") es solo informativo, se muestra con cifras exactas y queda fuera de la supresión, precisamente porque no existe ningún resultado desagregado por idioma que se pueda deducir por resta.
 
 Tests obligatorios: una batería de casos en `supabase/tests` que intente saltar la regla por resta y por combinación de filtros.
 
@@ -150,9 +151,9 @@ Menú: **Panel general · Alumnos · Familias · Personal**. Los profesores son 
 
 ### 7.1 Panel general (inicio tras el login)
 1. **Recomendación del colegio por colectivo:**
-   - barra 100 % apilada (detractores, neutros y promotores) con NPS;
+   - la comparación entre colectivos se hace con las barras de reparto (§7.8), no con el índice;
    - **alumnos se muestra en dos barras**, Primaria por un lado y PAI y Bachillerato por otro, porque tienen escalas distintas y resultados muy diferentes;
-   - la media de recomendación aparece como dato secundario, con una nota sobre las escalas.
+   - el índice de recomendación y la media aparecen como datos secundarios, con una nota sobre las escalas.
 2. **Preguntas comunes:** barras agrupadas con la media de 1 a 6 de cada colectivo en las preguntas compartidas. Candidatas, a confirmar con el colegio y cargar en `pregunta_comun`:
    - En los tres colectivos: "El ambiente del Colegio es de respeto y convivencia".
    - Familias y personal: competencia profesional del profesorado; apoyo personal y académico del profesorado; atención a las necesidades individualizadas; valores éticos; el modelo educativo prepara para el futuro; mentalidad internacional; innovación; lectura; artes; música; competencias digitales; cultura; enseñanza de idiomas; Biblioteca; acceso a la primera opción de carrera; conciencia medioambiental.
@@ -204,7 +205,7 @@ Se porta el prototipo `datos_locales/Tablero_Encuestas_2526_CIS-SFP.html`, que f
   - filtro de **docente o no docente** y filtro de antigüedad, nunca combinados;
   - indicadores y eNPS;
   - dimensiones, detalle, recomendación y lo más valorado;
-  - en pequeño junto a las respuestas, el número de personas por idioma, como dato informativo. Se calcula de los datos cargados (personas con alguna respuesta válida y con su segmento indicado): hoy **"62 en español"**; con el cuestionario en inglés, **"62 en español · N en inglés"**. Los resultados van siempre unidos: las preguntas en inglés se mapean al mismo diccionario.
+  - en pequeño junto a las respuestas, el número de personas por idioma, como dato informativo y con cifras exactas (§5.11). Mientras no esté cargado el cuestionario en inglés: "Cuestionario en inglés pendiente de cargar"; después, "N en español · N en inglés". Los resultados van siempre unidos: las preguntas en inglés se mapean al mismo diccionario.
 
 ### 7.5 Usuarios y administración
 Funciones del mockup `referencia/mockups/Mockup_Encuestas_5_admin_usuarios.png`; el estilo es el de la intranet.
@@ -213,6 +214,12 @@ Funciones del mockup `referencia/mockups/Mockup_Encuestas_5_admin_usuarios.png`;
 - Desactivar, reactivar y reenviar invitación. Último acceso y aviso a los 90 días sin entrar.
 - Registro de actividad, escrito por el servidor: invitaciones, cambios de rol, desactivaciones, exportaciones e informes generados.
 - Doble factor (TOTP) obligatorio para administradores.
+
+### 7.8 Presentación de la recomendación (las tres encuestas, en pantalla y en PDF)
+- **Dato principal:** el reparto en porcentajes, como barra de tres colores con el texto «X % sí, con entusiasmo (9 y 10) · X % neutral (7 y 8) · X % no (6 o menos)».
+- **Dato secundario:** «Índice de recomendación», con la explicación «Diferencia entre quienes lo recomendarían con entusiasmo y quienes no. Va de −100 a +100; por encima de 0 hay más defensores que críticos.»
+- **Sin siglas en la interfaz:** NPS y eNPS no aparecen; solo en «Cómo se calcula»: «Índice de recomendación (conocido como NPS)».
+- Es solo presentación: las RPC y los cálculos (§3) no cambian.
 
 ### 7.6 Exportación
 - CSV por vista, generado por las RPC y sujeto a todas las reglas del §5.
