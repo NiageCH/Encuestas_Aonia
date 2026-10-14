@@ -1,6 +1,6 @@
 # Especificación · Plataforma de encuestas de satisfacción CIS-SFP
 
-Versión 2 · 13 de octubre de 2026. Fase 1.
+Versión 3 · 13 de octubre de 2026. Fase 1. Cambios respecto a la versión 2: respuestas abandonadas (§2), etapas de familias, bloques de personal y escalas con texto (§2 y §4), etapas solapadas y reuniones de departamento (§5), coordinación y media del colegio (§6).
 
 ---
 
@@ -26,24 +26,27 @@ Origen: SharePoint del colegio, sitio `sfpaula`, biblioteca `VdAE/Encuestas`. Ro
 | Encuesta | Ficheros y cuestionarios | Notas |
 |---|---|---|
 | Alumnos | 6 cuestionarios: Primaria (Y2 a Y5), PAI asignaturas (Y6 a Y9), PAI competencias (Y6 a Y10), PAI asignaturas (Y10), Bachillerato (Y11), Bachillerato (Y12) | **Cada respuesta trae el grupo** (curso y letra, por ejemplo "Y9 A"). El bloque de profesorado se repite por asignatura. |
-| Familias | 1 cuestionario | Cada respuesta trae la etapa (Infantil, Primaria, PAI, Bachillerato) |
-| Personal | Español (`Empleado_2526.csv`) e inglés (fichero Employees) | Se unen en un solo conjunto. Segmentos: docente o no docente, antigüedad (primer año o más). **No se carga el sexo.** |
+| Familias | 1 cuestionario (`Cliente_2526.xlsx`) | La familia marca el curso de cada hijo (selección múltiple), así que **una respuesta puede tener varias etapas**. Solo se guarda la etapa, no el curso. |
+| Personal | Español (`Empleado_2526.csv`) e inglés (fichero Employees, pendiente) | Se unen en un solo conjunto. Segmentos: docente o no docente, antigüedad (primer año o más). **No se carga el sexo ni el bloque del Plan de Igualdad.** El fichero **no trae departamento ni equipo** de cada persona (§7.3). |
 
 ### Formato de Encuesta Fácil
 - CSV o XLSX. Antes de los datos hay filas de metadatos, una fila con el **texto de la pregunta** y otra con la **opción o subtítulo** ("Respuesta", nombre de la asignatura…). Localízalas por contenido, no por posición.
 - Cada pregunta de valoración tiene una columna con el **valor numérico** y otra con la etiqueta. Se usa el valor.
-- **Escala general de 1 a 6.** El valor **7 es NS/NC**: no cuenta en la media y se guarda como NS/NC.
+- **Escala general de 1 a 6.** NS/NC se reconoce **por su etiqueta "NS/NC"**, no por un número fijo: suele ser el 7, pero en la autoevaluación IB de Y12 es el 4 (su escala real es de 1 a 3). No cuenta en la media y se guarda como NS/NC.
+- **Etiquetas:** su significado cambia entre ficheros ("Insatisfecho" es 2 en alumnos y 3 en familias). Las columnas que solo traen etiqueta, sin valor numérico (en personal: PEP, PAI, Perfil IB y reuniones de departamento), se convierten con la correspondencia etiqueta y valor **del mismo fichero**; una etiqueta desconocida detiene la carga.
 - **Satisfacción general (alumnos):** una sola columna con valores de 1 a 6. El fichero no indica la escala; se trata como 1 a 6 y se marca "pendiente de confirmar".
 - **Recomendación:** de 0 a 10 en alumnos, salvo Primaria (de 1 a 10); de 1 a 10 en familias y personal.
-- **Autoevaluación IB (Bachillerato Y12):** escala de 1 a 4. No entra en medias generales.
+- **Autoevaluación IB (Bachillerato Y12):** escala de 1 a 3 ("En desarrollo", "Desarrollada", "Muy desarrollada") más NS/NC, que el fichero codifica como 4. No entra en medias generales. El prototipo contó ese 4 como valoración: sus medias de este bloque no son comparables.
+- **Alumnos sin grupo:** algunas respuestas no indican grupo. Cuentan en el total del cuestionario y nunca forman un grupo propio.
 - **"Lo más valorado":** selección múltiple, hasta tres aspectos por persona, con una lista de opciones común a los tres colectivos.
 - **Preguntas duplicadas:** en profesorado aparecen preguntas con redacción casi igual (por ejemplo con "..." delante, o con "trabajdo" y "trabajado"). Se unifican en el diccionario.
 - **Nombres de profesores:** los ficheros casi nunca los traen. La relación profesor, asignatura y grupo viene del Excel del colegio (§7.2).
-- **Se descartan siempre:** IP, identificador de respuesta, fechas y horas, respuestas abiertas y sexo.
-- **Respuestas completas e incompletas:**
-  - **n = respuestas completas.** Las incompletas (abandonadas) no se cargan; solo se guarda cuántas son por cuestionario, como dato informativo.
-  - En familias, 72 completas más 4 incompletas.
-  - En personal en español, 77 completas más 4 incompletas.
+- **Se descartan siempre:** identificador de respuesta, fechas y horas, IP, correo, nombre y apellidos, campos libres y parámetros de usuario, respuestas abiertas (incluidas "Otro, especifique" y los nombres de profesores), sexo, Plan de Igualdad, y datos que acotan a la persona sin estar en el alcance (nivel de tutoría y niveles en que imparte, segundo idioma, optativa, uso de transporte, comedor y canasto, curso de cada hijo).
+- **Respuestas abandonadas:**
+  - **Se cargan**, con las preguntas que la persona sí contestó. La columna "Abandonado" solo sirve para contarlas.
+  - **n = personas con al menos una valoración válida** (u opción marcada) en ese conjunto.
+  - El número de abandonadas se guarda por cuestionario como dato informativo ("incluye X respuestas incompletas").
+  - Ejemplos: Primaria tiene 280 respuestas, de las que 52 están abandonadas; familias, 72 con 4 abandonadas; personal en español, 77 con 4 abandonadas.
 
 ### Validación de la carga
 Los valores de control están en `datos_locales/validacion_2526.md` (fuera de git), junto con los agregados completos en `datos_locales/referencia_agregados_2526.json`. **No se avanza del paso de ETL hasta que las RPC devuelvan esos valores** con una tolerancia de ±0,01 en medias y exactos en recuentos.
@@ -74,7 +77,7 @@ Estas reglas son las que usó el prototipo que produjo los valores de control.
 - `bloque` (id, cuestionario, nombre, entra_en_media)
 - `pregunta` (id, codigo_diccionario, texto_es, tipo: escala, recomendacion o seleccion_multiple, **escala_min, escala_max**). **La escala vive en la pregunta.** Todas las preguntas de un bloque comparten escala; valídalo en la carga.
 - `opcion` (id, pregunta, codigo, texto_es, texto_en): opciones de selección múltiple ("Lo más valorado"), con su equivalencia en inglés
-- `pregunta_cuestionario` (cuestionario, bloque, pregunta, orden, por_asignatura)
+- `pregunta_cuestionario` (cuestionario, bloque, pregunta, orden, por_asignatura, por_departamento). Una pregunta no puede ser a la vez por asignatura y por departamento.
 - `pregunta_comun` (codigo_comun, pregunta, colectivo): para el panel general (§7.1)
 - `etapa` (Infantil, Primaria, PAI, Bachillerato)
 - `grupo` (id, curso, etapa, nivel, nombre). **La etapa se obtiene siempre del grupo.**
@@ -83,8 +86,9 @@ Estas reglas son las que usó el prototipo que produjo los valores de control.
 - `persona_responsable` (id, nombre, correo, departamento nullable)
 - `cargo` (persona_responsable, curso, tipo: jefe_departamento, jefe_equipo o direccion, ambito)
 - `asignacion_docente` (curso, grupo, asignatura, docente). **Clave primaria de las cuatro columnas:** admite varios docentes por asignatura y grupo (codocencia, desdobles).
-- `respuesta` (id interno, cuestionario, grupo nullable para personal y familias, etapa nullable **solo para familias**, idioma_origen, segmentos jsonb: docente, antigüedad). Restricción `check`: si hay grupo, la etapa se toma del grupo y no se guarda aparte.
-- `respuesta_item` (respuesta, pregunta, asignatura nullable, valor nullable, ns_nc)
+- `respuesta` (id interno, cuestionario, grupo nullable, idioma_origen, docente, antiguedad, departamento_equipo). El grupo solo existe en alumnos (y puede faltar). Los segmentos de personal son columnas tipadas; no hay jsonb ni sexo.
+- `respuesta_etapa` (respuesta, etapa): **solo familias**, una fila por etapa marcada. En alumnos la etapa se obtiene del grupo o del cuestionario.
+- `respuesta_item` (respuesta, pregunta, asignatura nullable, departamento nullable, valor nullable, ns_nc). El departamento solo aparece en el bloque "Reuniones de departamento" de personal.
 - `respuesta_opcion` (respuesta, pregunta, opcion)
 - `usuario_perfil` (auth user id, nombre, rol, etapa nullable, activo, ultimo_acceso)
 - `registro_actividad` (usuario, accion, detalle, fecha). **Solo se escribe desde el servidor** (dentro de las RPC o por trigger), nunca con un insert del cliente.
@@ -100,8 +104,11 @@ Ninguna política RLS permite `select` desde el cliente sobre `respuesta`, `resp
 3. **Media global del profesor:** se calcula **solo con las combinaciones visibles**. El informe indica cuántas combinaciones se han excluido por tener menos de 5 respuestas.
 4. **Filtros de personal:** un solo filtro a la vez (docente o no docente, antigüedad). No se combinan.
 5. **Segmentos que siempre quedan ocultos** (familias de Bachillerato, con 3 respuestas): se muestran con un aviso explicando el motivo, no se omiten en silencio.
-6. **Ámbitos de responsables** (departamento, equipo): mismas reglas. Con equipos de menos de 5 personas, el resultado se oculta y el informe lo dice.
-7. Todo lo anterior se aplica dentro de las RPC, y por tanto también en CSV y PDF.
+6. **Etapas solapadas (familias):** una familia cuenta en cada etapa que marcó y una sola vez en el total, así que las etapas no suman el total. La supresión complementaria se aplica igual entre etapas: si una sola etapa queda oculta, se oculta también la siguiente más pequeña. Con partes solapadas la resta no da el valor exacto de una etapa, pero la regla se mantiene por prudencia.
+7. **Reuniones de departamento (personal):** el departamento es una dimensión del ítem. El bloque solo se consulta repartido por departamento, con el mínimo de 5 y la complementaria. Ninguna RPC lo cruza con otras respuestas de la misma persona: no admite filtros de segmento y el departamento no sirve para filtrar otros bloques ni para contar personas.
+8. **Presentación de lo oculto:** "menos de 5" cuando la parte tiene menos de 5 respuestas; "oculto" cuando es por supresión complementaria, con aviso y leyenda "oculto para proteger el anonimato". En los PDF, nota al pie.
+9. **Ámbitos de responsables** (departamento, equipo): mismas reglas. Con equipos de menos de 5 personas, el resultado se oculta y el informe lo dice.
+10. Todo lo anterior se aplica dentro de las RPC, y por tanto también en CSV y PDF.
 
 Tests obligatorios: una batería de casos en `supabase/tests` que intente saltar la regla por resta y por combinación de filtros.
 
@@ -115,7 +122,7 @@ Tests obligatorios: una batería de casos en `supabase/tests` que intente saltar
 | Alumnos | Todo | Todo | Solo los cuestionarios de su etapa |
 | Familias | Todo | Todo | Solo su etapa |
 | Personal | Todo | Todo | Sin acceso |
-| Vista e informes de profesor | Sí | Sí | **Solo profesores con docencia en su etapa**, y solo con los resultados de esa etapa |
+| Vista e informes de profesor | Sí | Sí | **Solo profesores con docencia en su etapa**, y solo con los resultados de esa etapa. Ve también la media del colegio como referencia |
 | Vista e informes de responsables | Sí | Sí | No |
 | Usuarios y registro de actividad | Sí | No | No |
 
@@ -164,6 +171,10 @@ Profesores y jefes no tienen cuenta en la Fase 1: reciben su informe en PDF.
     - para 2025/26 se muestra el bloque Superiores agregado (todo el personal, y por docente y no docente);
     - el modelo queda preparado para 2026/27, cuando la Fase 2 preguntará el departamento o equipo;
     - el informe explica la limitación.
+- **Resultado de la comprobación (13/10/2026): el fichero de 2025/26 no lo trae.** Se aplica el plan alternativo: Superiores agregado y `departamento_equipo` vacío. No se deduce la pertenencia a un departamento a partir de qué columnas rellenó cada persona.
+- **Bloques que sí existen en 2025/26:**
+  - **Reuniones de departamento:** 7 afirmaciones sobre las reuniones de cada departamento, contestadas solo por sus miembros. Se carga con el departamento como dimensión del ítem y solo se expone agregada por departamento (§5.7), en el informe del jefe de departamento y en la vista de personal.
+  - **Equipo de Individualización:** 22 afirmaciones que contestan los tutores sobre sus reuniones y sobre su jefe de equipo (trato, dirección, trabajo en equipo, reconocimiento, comunicación). Va en el informe de ese jefe de equipo.
 - **Dirección:** su informe incluye el bloque Superiores del conjunto y la valoración del centro por parte del personal.
 
 ### 7.4 Vistas por colectivo
