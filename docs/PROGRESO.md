@@ -6,8 +6,10 @@ Plan de trabajo en `docs/ESPECIFICACION.md` §9.
 |---|---|
 | 1. Repositorio, estructura, README, PROGRESO | Hecho |
 | 2. Supabase local: migraciones, RLS, RPC, tests de anonimato | Hecho (local; falta crear el proyecto en Frankfurt) |
-| 3. ETL y validación | Bloqueado: faltan las exportaciones en `datos_locales/fuentes/` |
-| 4 a 10 | Pendiente |
+| 3. ETL y validación | Hecho (validación completa en verde; falta el cuestionario de personal en inglés) |
+| 4. Auth, perfiles, invitaciones, doble factor | Pendiente |
+| 5. Diseño de la intranet y vistas por colectivo | En curso: primera pantalla (alumnos) en local |
+| 6 a 10 | Pendiente |
 
 ## Paso 1 · Repositorio (13/10/2026)
 
@@ -49,8 +51,28 @@ Pendiente del paso 2:
 Notas técnicas:
 - En `config.toml`, `[auth.email] enable_signup` debe quedar en `true`: en `false` desactiva también el login con correo. El alta libre se bloquea con `[auth] enable_signup = false`.
 
+## Paso 3 · ETL y validación (13 y 14/10/2026)
+
+Hecho:
+- `etl/encuesta_facil.py` (lectura de CSV y XLSX, normalización), `etl/cuestionarios_2526.py` (reglas por fichero: cada columna se carga o se descarta con motivo; una columna sin regla detiene la carga), `etl/cargar_2526.py` (carga repetible en una transacción, informe en `datos_locales/informes/`) y `etl/validar_2526.py` (compara las RPC con los agregados del prototipo).
+- Carga local: 8 cuestionarios, 890 respuestas, unas 132.000 valoraciones, 340 preguntas en el diccionario.
+- Migración 7: `respuesta_etapa` (familias con varias etapas), departamento como dimensión del ítem, bloque de reuniones de departamento aislado, alumnos sin grupo, n = personas con alguna respuesta válida.
+- Validación: tabla de control, 494 preguntas, asignaturas, grupos, etapas y segmentos; todo cuadra con los criterios acordados.
+- Tests: 133 en verde. Los datos de los tests usan un curso ficticio (2000/01) para convivir con la carga real.
+
+Decisiones (14/10/2026):
+- Abandonadas: se cargan con lo que contestaron; n = personas con alguna respuesta válida.
+- Profesorado: media agrupada (§3). El prototipo publicó otra fórmula; brecha máxima 0,011, que cambia la cifra redondeada de un cuestionario (valores en `datos_locales/validacion_2526.md`).
+- Media de grupo: todas sus valoraciones. Test de que la resta no destapa una celda oculta.
+- Personal: se excluye la respuesta sin segmento (1). Los valores de control de personal se recalcularon (en `datos_locales/validacion_2526.md`).
+- Departamento en personal: no viene; plan alternativo del §7.3. Sí se cargan las reuniones de departamento (21 afirmaciones × 8 departamentos) y el bloque del Equipo de Individualización (18 tutores).
+
+Pendiente del paso 3:
+- Cuestionario de personal en inglés: falta el fichero y la correspondencia de sus textos (`TEXTOS_PERSONAL_EN`).
+- Lista definitiva de preguntas comunes para `pregunta_comun` (paso 6).
+
 ## Bloqueos
 
-- `datos_locales/fuentes/` vacío (paso 3).
+- Cuestionario de personal en inglés (4 respuestas).
 - Excel de profesores por asignatura y grupo, con departamento (paso 7 con datos reales).
 - Departamento o equipo en el fichero de personal: se verifica en el paso 3.

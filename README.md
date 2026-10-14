@@ -20,7 +20,7 @@ Desarrolla Niage Technology para Aonia. Repositorio privado.
 |---|---|
 | 1. Repositorio y estructura | Hecho |
 | 2. Supabase: modelo, RLS, RPC con anonimato, tests | Hecho en local; falta el proyecto en la nube (Frankfurt) |
-| 3. ETL de Encuesta Fácil y validación | Esperando las exportaciones |
+| 3. ETL de Encuesta Fácil y validación | Hecho (falta el cuestionario de personal en inglés) |
 | 4 a 10. Auth, vistas, panel, informes PDF, administración, despliegue | Pendiente |
 
 El detalle está en [`docs/PROGRESO.md`](docs/PROGRESO.md).
@@ -191,6 +191,22 @@ Respuesta (forma):
 - La media global de un profesor solo usa sus combinaciones visibles, y el informe indica cuántas se excluyen.
 
 ---
+
+## Carga de datos (ETL)
+
+Los ficheros de Encuesta Fácil van en `datos_locales/fuentes/` (fuera de git).
+
+```sh
+python3 -m venv .venv && .venv/bin/pip install -r etl/requirements.txt
+.venv/bin/python etl/cargar_2526.py --ensayo   # convierte y resume, sin tocar la base de datos
+.venv/bin/python etl/cargar_2526.py            # carga en la base de datos local (repetible)
+.venv/bin/python etl/validar_2526.py           # compara con los agregados del prototipo
+```
+
+- Cada columna de cada fichero se carga o se descarta con un motivo; una columna sin regla detiene la carga.
+- Nunca se cargan identificadores, fechas, IP, correo, nombres, respuestas abiertas, sexo ni el Plan de Igualdad.
+- Informes de carga y de validación: `datos_locales/informes/`.
+- Para cargar en otra base de datos: `DATABASE_URL` en `.env` y `--remoto`.
 
 ## Tests
 

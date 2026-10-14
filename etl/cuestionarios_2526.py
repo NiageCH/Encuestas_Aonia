@@ -108,6 +108,7 @@ class Cuestionario:
     filas: int = 0
     abandonadas: int = 0
     sin_datos: int = 0
+    excluidas_sin_segmento: int = 0   # personal: no indican docente o antigüedad (§5)
     descartes: Counter = field(default_factory=Counter)
     avisos: Counter = field(default_factory=Counter)
 
@@ -380,10 +381,14 @@ class Conversor:
             r = Respuesta(abandonada=self.t.abandonada(fila))
             self._fila(r, fila, plan)
             self.c.abandonadas += r.abandonada
-            if r.tiene_datos():
-                self.c.respuestas.append(r)
-            else:
+            if not r.tiene_datos():
                 self.c.sin_datos += 1
+            elif self.d.colectivo == "personal" and (r.docente is None or r.antiguedad is None):
+                # Quien no indica su segmento formaría una parte de una sola persona: el total
+                # menos los segmentos la dejaría al descubierto. Se excluye de personal.
+                self.c.excluidas_sin_segmento += 1
+            else:
+                self.c.respuestas.append(r)
         return self.c
 
     def _fila(self, r: Respuesta, fila: List[str], plan: List[Tuple[Columna, Regla]]) -> None:

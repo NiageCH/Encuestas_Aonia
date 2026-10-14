@@ -44,15 +44,17 @@ npm run db:start     # Supabase local (Docker), puertos 554xx
 npm run db:reset     # recrea la base de datos con las migraciones
 npm run db:test      # tests pgTAP (supabase/tests)
 python3 supabase/scripts/probar_mfa_local.py   # prueba el doble factor del administrador
+.venv/bin/python etl/cargar_2526.py            # carga 2025/26 (--ensayo: sin tocar la base de datos)
+.venv/bin/python etl/validar_2526.py           # validación contra el prototipo
 ```
 
-Pendiente de añadir: frontend, ETL y despliegue.
+Pendiente de añadir: frontend y despliegue.
 
 ## Estado
 
 Lleva el avance en `docs/PROGRESO.md`: qué está hecho, qué falta y qué está bloqueado. Actualízalo al terminar cada paso.
 
 Bloqueos actuales (detalle en la especificación §10):
-- `datos_locales/fuentes/` vacío: Rodrigo debe descargar las exportaciones de SharePoint antes del paso de ETL.
+- Cuestionario de personal en inglés (4 respuestas): falta el fichero.
 - Excel de profesores por asignatura y grupo, con departamento: pendiente del colegio.
-- Departamento o equipo en la encuesta de personal: pendiente de verificar en el fichero.
+- Departamento o equipo en la encuesta de personal: no viene en 2025/26; se aplica el plan alternativo (§7.3).

@@ -61,8 +61,11 @@ Estas reglas son las que usó el prototipo que produjo los valores de control.
 - **Media de un bloque o dimensión, de una asignatura, del profesorado y "satisfacción media":**
   - es la **media agrupada** de todas las valoraciones válidas que la componen: cada valoración cuenta una vez;
   - es equivalente a la media de las medias de las preguntas ponderada por su n;
+  - el prototipo publicó el bloque de profesorado con otra fórmula (media de las asignaturas ponderada por personas). La brecha es como mucho de 0,011 y solo cambia la cifra redondeada de un cuestionario (detalle en `datos_locales/validacion_2526.md`); se mantiene la media agrupada;
   - **no** es la media de las medias por persona.
 - **"Satisfacción media" global:** excluye los bloques con escala distinta de 1 a 6 (Perfil IB en personal y Autoevaluación IB).
+- **Media de un grupo** (por ejemplo, profesorado de Y9 A): todas las valoraciones del grupo, también las de asignaturas que quedan ocultas en ese grupo. Es un agregado de 5 o más personas; la supresión complementaria impide deducir la celda oculta restando (§5.2). El prototipo solo usaba las asignaturas visibles; las cifras difieren de 0,01 a 0,02 en algunos grupos.
+- **Personal sin segmento:** la respuesta que no indica si es docente o su antigüedad se excluye de todos los resultados de personal, porque el total menos los segmentos la dejaría al descubierto. El informe de carga lo registra.
 - **"n" en una asignatura o un grupo:** número de personas con al menos una valoración válida en ese conjunto. **"n" en una pregunta:** número de valoraciones válidas.
 - **Recomendación:** media de la puntuación. **NPS** = % de puntuaciones de 9 y 10 menos % de puntuaciones de 6 o menos. Es el mismo umbral en las escalas de 0 a 10 y de 1 a 10.
 - **Redondeo:** se calcula siempre con precisión completa y se redondea **solo al mostrar**: 2 decimales en medias de 1 a 6, 1 decimal en recomendación y entero en porcentajes y NPS, siempre alejándose del cero en el medio punto. Las RPC devuelven valores sin redondear.
@@ -193,7 +196,7 @@ Se porta el prototipo `datos_locales/Tablero_Encuestas_2526_CIS-SFP.html`, que f
   - filtro de **docente o no docente** y filtro de antigüedad, nunca combinados;
   - indicadores y eNPS;
   - dimensiones, detalle, recomendación y lo más valorado;
-  - en pequeño junto a las respuestas, **"77 en español · 4 en inglés"**, como dato informativo. Los resultados van siempre unidos: las preguntas en inglés se mapean al mismo diccionario.
+  - en pequeño junto a las respuestas, el número de personas por idioma, como dato informativo. Se calcula de los datos cargados (personas con alguna respuesta válida y con su segmento indicado): hoy **"62 en español"**; con el cuestionario en inglés, **"62 en español · N en inglés"**. Los resultados van siempre unidos: las preguntas en inglés se mapean al mismo diccionario.
 
 ### 7.5 Usuarios y administración
 Funciones del mockup `referencia/mockups/Mockup_Encuestas_5_admin_usuarios.png`; el estilo es el de la intranet.

@@ -2,7 +2,7 @@
 -- y por combinación de filtros.
 begin;
 \ir fixtures/datos_ejemplo.psql
-select plan(34);
+select plan(37);
 
 -- Comprueba el invariante de la supresión complementaria en un resultado: en cada línea
 -- con el total visible, el número de partes suprimidas es 0 o al menos 2. Con dos
@@ -37,6 +37,21 @@ create function pg_temp.parte(p jsonb, p_clave jsonb) returns jsonb
 language sql as $$ select e from jsonb_array_elements(p -> 'partes') e where e -> 'clave' = p_clave $$;
 
 grant execute on function pg_temp.sin_parte_aislada(jsonb), pg_temp.parte(jsonb, jsonb) to authenticated;
+
+-- Valores reales para comprobar la media de grupo y el intento de resta (como postgres).
+create temp table verdad as
+with prof as (
+  select g.nombre as grupo, a.nombre as asig, i.valor
+  from privado.respuesta_item i
+  join privado.respuesta r on r.id = i.respuesta_id
+  join public.grupo g on g.id = r.grupo_id
+  join public.asignatura a on a.id = i.asignatura_id
+  where g.curso_id = (select id from public.curso where nombre = '2000/01') and i.valor is not null
+)
+select (select avg(valor) from prof where grupo = 'Y7 A') as y7a_media,
+       (select sum(valor) from prof where grupo = 'Y7 A' and asig = 'Lengua') as y7a_lengua_suma,
+       (select count(*) from prof where grupo = 'Y7 A' and asig = 'Lengua') as y7a_lengua_n;
+grant select on verdad to authenticated;
 
 select ok(not pg_temp.sin_parte_aislada('{"dimensiones":["grupo"],"total":{"suprimido":false},
   "partes":[{"clave":{"grupo":"X"},"suprimido":true},{"clave":{"grupo":"Y"},"suprimido":false}]}'),
@@ -96,6 +111,22 @@ select is((select pg_temp.parte(r, '{"grupo":"Y7 D","asignatura":"Lengua"}') ->>
   'Lengua en Y7 D sigue visible: con el total de su columna oculto no permite deducir Matemáticas en Y7 D');
 select is((select pg_temp.parte(r, '{"grupo":"Y7 B","asignatura":"Matemáticas"}') ->> 'suprimido' from r_tabla), 'false', 'Matemáticas en Y7 B es visible');
 select ok((select pg_temp.sin_parte_aislada(r) from r_tabla), 'la tabla no deja partes aisladas en filas, columnas ni márgenes');
+-- Media de un grupo con todas sus valoraciones (también las de celdas ocultas), sin que la
+-- resta destape una celda asignatura y grupo oculta (§5.2)
+select is((select (pg_temp.parte(r, '{"grupo":"Y7 A"}') ->> 'media')::numeric from r_tabla), (select y7a_media from verdad),
+  'la media del grupo usa todas sus valoraciones, incluidas las de celdas ocultas');
+select ok((select count(*) from r_tabla, jsonb_array_elements(r -> 'partes') e
+           where e -> 'clave' ->> 'grupo' = 'Y7 A' and e -> 'clave' ? 'asignatura' and (e ->> 'suprimido')::boolean) >= 2,
+  'si una celda del grupo queda oculta, se oculta al menos otra');
+select ok((select (m ->> 'n_valoraciones')::numeric * (m ->> 'media')::numeric
+                  - coalesce((select sum((e ->> 'n_valoraciones')::numeric * (e ->> 'media')::numeric)
+                              from jsonb_array_elements(r -> 'partes') e
+                              where e -> 'clave' ->> 'grupo' = 'Y7 A' and e -> 'clave' ? 'asignatura'
+                                and not (e ->> 'suprimido')::boolean), 0)
+           from r_tabla, pg_temp.parte(r, '{"grupo":"Y7 A"}') m)
+          <> (select y7a_lengua_suma from verdad)
+      and (select (m ->> 'n_valoraciones')::int from r_tabla, pg_temp.parte(r, '{"grupo":"Y7 A"}') m) <> (select y7a_lengua_n from verdad),
+  'restar al grupo sus celdas visibles no da la suma ni el n de la celda oculta de Lengua');
 select is((public.resultados('{"curso":"2000/01","colectivo":"alumnos","grupo":"Y7 A","asignatura":"Matemáticas"}',
   '{"tipo":"bloque","codigo":"profesorado"}') -> 'total' ->> 'motivo'), 'complementaria',
   'pedir directamente Matemáticas en Y7 A no lo destapa');

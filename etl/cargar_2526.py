@@ -157,11 +157,20 @@ def cargar(conn, dic: Diccionario, cuestionarios: List[Cuestionario]) -> None:
 
 def informe(dic: Diccionario, cuestionarios: List[Cuestionario]) -> str:
     l = [f"# Informe de carga {CURSO}", "", f"Generado el {datetime.now():%d/%m/%Y %H:%M}. No subir a git.", "",
-         "| Cuestionario | Filas | Abandonadas (incluidas) | Sin ninguna respuesta válida (no se cargan) | Cargadas | Bloques | Preguntas |",
-         "|---|---|---|---|---|---|---|"]
+         "| Cuestionario | Filas | Abandonadas (incluidas) | Sin ninguna respuesta válida (no se cargan) | "
+         "Excluidas por no indicar segmento | Cargadas | Bloques | Preguntas |",
+         "|---|---|---|---|---|---|---|---|"]
     for c in cuestionarios:
-        l.append(f"| {c.codigo} · {c.titulo} ({c.idioma}) | {c.filas} | {c.abandonadas} | {c.sin_datos} | {len(c.respuestas)} | "
+        l.append(f"| {c.codigo} · {c.titulo} ({c.idioma}) | {c.filas} | {c.abandonadas} | {c.sin_datos} | "
+                 f"{c.excluidas_sin_segmento} | {len(c.respuestas)} | "
                  f"{len(c.bloques)} | {len(c.preguntas_cuest)} |")
+    l += ["", "## Exclusiones", "",
+          "- Personal: se excluyen las respuestas que no indican si la persona es docente o su antigüedad. "
+          "Formarían un segmento «sin dato» de una o dos personas, que se podría deducir restando los segmentos al total "
+          "(decisión del 14/10/2026). No cuentan en ningún resultado de personal."]
+    for c in cuestionarios:
+        if c.excluidas_sin_segmento:
+            l.append(f"- **{c.codigo}:** {c.excluidas_sin_segmento} respuesta(s) excluida(s) por no indicar segmento.")
     l += ["", "## Columnas descartadas", ""]
     for c in cuestionarios:
         l.append(f"- **{c.codigo}:** " + "; ".join(f"{k} ({v})" for k, v in sorted(c.descartes.items())))

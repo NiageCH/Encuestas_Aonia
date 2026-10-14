@@ -76,6 +76,40 @@ def rec_de_distribucion(dist: List[int]) -> Tuple[int, float, float]:
     return n, media, 100.0 * (prom - det) / n
 
 
+def excluidas_personal() -> Tuple[int, Dict[str, List[int]], List[int]]:
+    """Lee Empleado_2526.csv sin pasar por la ETL y devuelve las respuestas de quienes no
+    indican si son docentes o su antigüedad: (número de filas, valores por texto de ítem,
+    valores de recomendación). Sirven para ajustar los valores de control del prototipo,
+    que sí las incluía."""
+    import csv
+    from cuestionarios_2526 import ESCALA_FRECUENCIA
+    from encuesta_facil import normalizar_texto
+    filas = list(csv.reader((RAIZ / "datos_locales" / "fuentes" / "Empleado_2526.csv").open(encoding="utf-8-sig", newline="")))
+    q, o, datos = filas[3], filas[4], filas[5:]
+    c_doc = next(j for j, t in enumerate(q) if t.startswith("¿Es personal docente"))
+    c_ant = next(j for j, t in enumerate(q) if "primer año trabajando" in t)
+    c_rec = next(j for j, t in enumerate(q) if "recomendaría el Colegio como centro de trabajo" in t)
+    c_ib = next(j for j, t in enumerate(q) if "perfil de la comunidad de aprendizaje" in t)
+    excl = [r for r in datos if not r[c_doc].strip() or not r[c_ant].strip()]
+    valores: Dict[str, List[int]] = {}
+    for j, sub in enumerate(o):
+        if sub == "Valor":
+            clave = normalizar_texto(o[j + 1]).lower()
+            valores.setdefault(clave, []).extend(int(r[j]) for r in excl if r[j].strip() and r[j + 1].strip() != "NS/NC")
+    for j in range(c_ib, c_ib + 10):
+        clave = normalizar_texto(o[j]).lower()
+        valores.setdefault(clave, []).extend(ESCALA_FRECUENCIA[r[j].strip()] for r in excl if r[j].strip() in ESCALA_FRECUENCIA)
+    rec = [int(r[c_rec]) for r in excl if r[c_rec].strip()]
+    return len(excl), valores, rec
+
+
+def quitar(dist: List[int], valores: List[int], base: int = 1) -> List[int]:
+    d = list(dist)
+    for v in valores:
+        d[v - base] -= 1
+    return d
+
+
 class Rpc:
     def __init__(self, cur) -> None:
         self.cur = cur
@@ -105,8 +139,22 @@ def main() -> None:
                          "Comparación entre los agregados verificados del prototipo (control) y lo que devuelven las RPC "
                          "tras la carga (cargado). Medias con tolerancia de ±0,01; recuentos y NPS exactos.", ""]
     fallos_control = 0
+    brechas: List[tuple] = []
+    notas_grupo: List[str] = []
+    n_excl, excl_items, excl_rec = excluidas_personal()
 
     with psycopg.connect(url_bd(False)) as conn, conn.cursor() as cur:
+        # Media de profesorado por grupo con la fórmula del prototipo (asignaturas con 5 o más
+        # personas, ponderadas por personas), calculada como postgres sobre los datos cargados.
+        cur.execute("""
+            with x as (select c.codigo, g.nombre grupo, a.nombre asig, count(distinct r.id) n, avg(i.valor) m
+                       from privado.respuesta_item i join privado.respuesta r on r.id = i.respuesta_id
+                       join public.cuestionario c on c.id = r.cuestionario_id join public.grupo g on g.id = r.grupo_id
+                       join public.asignatura a on a.id = i.asignatura_id
+                       join public.curso cu on cu.id = c.curso_id
+                       where cu.nombre = %s and i.valor is not null group by 1, 2, 3)
+            select codigo, grupo, sum(n * m) / sum(n) from x where n >= 5 group by 1, 2""", (CURSO,))
+        prof_grupo_prototipo = {(c, g): float(v) for c, g, v in cur.fetchall()}
         cur.execute("insert into auth.users (id, email, aud, role) values (%s, 'validacion@local', 'authenticated', 'authenticated')", (USUARIO,))
         cur.execute("insert into public.usuario_perfil (id, nombre, rol) values (%s, 'Validación', 'direccion')", (USUARIO,))
         cur.execute("select set_config('request.jwt.claims', %s, true)",
@@ -128,15 +176,20 @@ def main() -> None:
             prof = rpc(f, {"tipo": "bloque", "codigo": "profesorado"})["total"]
             rec = rpc(f, {"tipo": "recomendacion"})["total"]
             rn, rm, rnps = rec_de_distribucion(t["rec"])
+            # Profesorado: control = media agrupada de las distribuciones de los ítems del prototipo
+            # (§3). El prototipo publicó otra fórmula (media de asignaturas ponderada por personas).
+            dists = [t["it"][k][3] for k, it in enumerate(a["items"]) if it[0] == 0 and t["it"][k][3]]
+            prof_ref = sum((v + 1) * c for d_ in dists for v, c in enumerate(d_)) / sum(sum(d_) for d_ in dists)
+            brechas.append((a["title"], t["dm"][0][1], prof_ref, prof["media"]))
             ok = (sat["n_personas"] == t["sat"][0] and iguales_media(sat["media"], t["sat"][1])
-                  and iguales_media(prof["media"], t["dm"][0][1])
+                  and iguales_media(prof["media"], prof_ref)
                   and rec["n"] == rn == t["recn"] and iguales_media(rec["media"], rm)
                   and int(redondear(rec["nps"], 0)) == int(redondear(rnps, 0)))
             fallos_control += not ok
             o = origen[codigo]
             salida.append(
                 f"| {a['title']} | {o.filas} ({o.abandonadas}) | {t['n']} | {n['n']} | {t['sat'][0]} · {fmt(t['sat'][1])} | "
-                f"{sat['n_personas']} · {fmt(sat['media'])} | {fmt(t['dm'][0][1])} | {fmt(prof['media'])} | "
+                f"{sat['n_personas']} · {fmt(sat['media'])} | {fmt(prof_ref)} | {fmt(prof['media'])} | "
                 f"{rn} · {fmt(rm)} · {fmt_nps(rnps)} | {rec['n']} · {fmt(rec['media'])} · {fmt_nps(rec['nps'])} | {marca(ok)} |")
 
         fam = ref["alumnos_familias"]["familias"]
@@ -164,18 +217,28 @@ def main() -> None:
         f = {"colectivo": "personal"}
         n = rpc(f, {"tipo": "personas"})["total"]
         rec = rpc(f, {"tipo": "recomendacion"})["total"]
-        rn, rm, rnps = rec_de_distribucion(tp["rec"])
+        rn, rm, rnps = rec_de_distribucion(quitar(tp["rec"], excl_rec))
         ok = rec["n"] == rn and iguales_media(rec["media"], rm) and int(redondear(rec["nps"], 0)) == int(redondear(rnps, 0))
         fallos_control += not ok
         o = origen["PER"]
         salida.append(
-            f"| Personal (solo español) | {o.filas} ({o.abandonadas}) | {tp['n']} | {n['n']} | | | | | "
+            f"| Personal (solo español) | {o.filas} ({o.abandonadas}) | {tp['n'] - n_excl} | {n['n']} | | | | | "
             f"{rn} · {fmt(rm)} · {fmt_nps(rnps)} | {rec['n']} · {fmt(rec['media'])} · {fmt_nps(rec['nps'])} | {marca(ok)} |")
 
         salida += ["", "Notas:",
                    "- **n control** = filas del fichero (el prototipo contaba todas). **n cargado** = personas con al menos una "
                    "valoración válida u opción marcada (regla acordada). La diferencia son filas sin ninguna respuesta válida.",
-                   "- La satisfacción general de familias es la media agrupada del bloque «Valoración general del centro».", ""]
+                   "- La satisfacción general de familias es la media agrupada del bloque «Valoración general del centro».",
+                   "- **Profesorado (control):** media agrupada de las distribuciones de los ítems del prototipo (§3). "
+                   "El prototipo publicó la media de asignaturas ponderada por personas; ver la tabla de brechas.",
+                   f"- **Personal (control):** valores del prototipo sin la(s) {n_excl} respuesta(s) que no indican segmento, "
+                   "leídas directamente del fichero original (excluidas de personal por decisión del 14/10/2026).", "",
+                   "### Brecha entre fórmulas de profesorado", "",
+                   "| Conjunto | Publicada por el prototipo (asignaturas ponderadas) | Agrupada desde sus ítems (§3) | Cargada | Brecha |",
+                   "|---|---|---|---|---|"]
+        for titulo, publicada, agrupada, cargada in brechas:
+            salida.append(f"| {titulo} | {fmt(publicada)} | {fmt(agrupada, 4)} | {fmt(cargada, 4)} | {fmt(abs(agrupada - publicada), 4)} |")
+        salida.append("")
 
         # 2. Pregunta por pregunta -------------------------------------------------------
         salida += ["## 2. Pregunta por pregunta", "",
@@ -190,6 +253,11 @@ def main() -> None:
                     continue
                 n_, media_, nsnc_, dist_ = r
                 n_, dist_ = n_ or 0, dist_ or [0] * 6   # ítems sin respuestas en el prototipo
+                if codigo.startswith("alu.autoevaluacion_ib."):
+                    # El prototipo contó como valoración el 4, que en el fichero es NS/NC (escala
+                    # real de 1 a 3): se compara con la lectura correcta.
+                    dist_ = dist_[:3] + [0] * (len(dist_) - 3)
+                    n_ = sum(dist_)
                 prev = agrupado.get(codigo)
                 if prev is None:
                     agrupado[codigo] = [texto, n_, list(dist_)]
@@ -234,7 +302,13 @@ def main() -> None:
 
         comparar_items("Familias", {"colectivo": "familias"}, fam["items"], tf["it"],
                        lambda dim, texto: f"fam.{fam['dims'][dim][0]}.{slug(texto, 120)}")
-        comparar_items("Personal", {"colectivo": "personal"}, per["items"], tp["it"],
+        from encuesta_facil import normalizar_texto
+        it_personal = []
+        for (dim, texto), r in zip(per["items"], tp["it"]):
+            quitar_ = excl_items.get(normalizar_texto(texto).lower(), [])
+            n_, media_, nsnc_, dist_ = r
+            it_personal.append([(n_ or 0) - len(quitar_), media_, nsnc_, quitar(dist_ or [0] * 6, quitar_)])
+        comparar_items("Personal (sin respuestas excluidas)", {"colectivo": "personal"}, per["items"], it_personal,
                        lambda dim, texto: f"per.{BLOQUES_PERSONAL.get(dim, dim)}.{slug(texto, 120)}")
 
         # 3. Asignaturas, grupos, etapas y segmentos ---------------------------------------
@@ -262,8 +336,18 @@ def main() -> None:
             grupos_prof = {p["clave"]["grupo"]: p for p in rpc(f, {"tipo": "bloque", "codigo": "profesorado"}, ["grupo"])["partes"]}
             for g in a["groups"]:
                 s = a["seg"][g]
-                for etiqueta, ref_val, p in (("satisfacción", s["sat"], grupos_sat.get(g)),
-                                             ("profesorado", [None, s["dm"][0][1]], grupos_prof.get(g))):
+                # Profesorado del grupo: se comprueba que los datos reproducen la cifra del
+                # prototipo con su fórmula; la carga muestra la media de todas las valoraciones
+                # del grupo (decisión del 14/10/2026).
+                formula = prof_grupo_prototipo.get((codigo, g))
+                ok = formula is not None and iguales_media(formula, s["dm"][0][1])
+                buenos += ok
+                if not ok:
+                    malos.append(f"grupo {g}, profesorado con la fórmula del prototipo: {s['dm'][0][1]} / {formula}")
+                p = grupos_prof.get(g)
+                if p and not p["suprimido"] and not iguales_media(p["media"], s["dm"][0][1]):
+                    notas_grupo.append(f"{a['title']}, {g}: prototipo {fmt(s['dm'][0][1])} · carga (todas las valoraciones) {fmt(p['media'])}")
+                for etiqueta, ref_val, p in (("satisfacción", s["sat"], grupos_sat.get(g)),):
                     if p is None or ref_val is None:
                         ok, desc = False, "sin dato"
                     elif p["suprimido"]:
@@ -291,8 +375,11 @@ def main() -> None:
                               ("nuevo_si", {"antiguedad": "primer_ano"}), ("nuevo_no", {"antiguedad": "mas_de_un_ano"})):
             t = rpc({"colectivo": "personal", **filtro}, {"tipo": "personas"})["total"]
             segs.append(f"{clave} {per['seg'][clave]['n']} / {t.get('n', t.get('motivo'))}")
-        salida.append(f"| Personal por segmento (prototipo / carga) | {'; '.join(segs)} | | |")
+        salida.append(f"| Personal por segmento (prototipo, que cuenta todas las filas / carga) | {'; '.join(segs)} | | |")
 
+        salida += ["", "Media de profesorado de un grupo: la carga usa todas las valoraciones del grupo; el prototipo, solo "
+                   "las asignaturas con 5 o más personas. Las comprobaciones de arriba validan los datos con la fórmula del "
+                   "prototipo. Grupos donde la cifra mostrada cambia:", ""] + [f"- {x}" for x in notas_grupo]
         salida += ["", "## Diferencias", ""] + (detalles or ["Ninguna."])
         conn.rollback()
 
