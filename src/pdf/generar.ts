@@ -4,8 +4,9 @@
 import { pdf } from "@react-pdf/renderer";
 import JSZip from "jszip";
 import { createElement } from "react";
-import { informeProfesor, type Profesor } from "../data/resultados";
+import { informeProfesor, informeResponsable, type Profesor, type TipoResponsable } from "../data/resultados";
 import { InformeProfesorPdf } from "./InformeProfesorPdf";
+import { InformeResponsablePdf } from "./InformeResponsablePdf";
 
 /** Informe_2526_Apellidos_Nombre.pdf, sin acentos ni caracteres raros. */
 export function nombreFichero(p: Profesor): string {
@@ -52,4 +53,15 @@ export async function descargarLote(profesores: Profesor[], alProgresar: (hechos
     descargar(await zip.generateAsync({ type: "blob" }), "Informes_profesorado_2526.zip");
   }
   return hechos;
+}
+
+/** Informe de responsables (§7.3): Informe_2526_<ámbito>.pdf */
+export async function descargarInformeResponsable(opciones: {
+  tipo: TipoResponsable; ambito: string | null; titulo: string; subtitulo: string; nota?: string; etiquetas: string[];
+}): Promise<void> {
+  const informe = await informeResponsable(opciones.tipo, opciones.ambito, true);
+  const doc = createElement(InformeResponsablePdf, { ...opciones, informe, generado: new Date() });
+  const blob = await pdf(doc as Parameters<typeof pdf>[0]).toBlob();
+  const limpio = (x: string) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  descargar(blob, `Informe_2526_${limpio(opciones.titulo)}.pdf`);
 }

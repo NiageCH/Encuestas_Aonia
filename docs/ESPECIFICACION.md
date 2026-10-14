@@ -150,8 +150,9 @@ Profesores y jefes no tienen cuenta en la Fase 1: reciben su informe en PDF.
 Menú: **Inicio (panel general) · Alumnos · Familias · Personal · Profesorado**.
 - **Personal** es la encuesta de personal: dentro se elige Todo el personal, Docentes, No docentes o la antigüedad (un filtro a la vez).
 - **Profesorado** es la vista e informe por profesor (§7.2). Tiene entrada propia porque sus datos vienen de las encuestas de alumnos, no de la de personal; dentro de Personal se confundiría con la opinión de los docentes como empleados.
-- La coordinación no ve Personal; en Profesorado solo ve a los profesores con docencia en su etapa (§6).
-- Los informes de responsables (§7.3) y la administración de usuarios (§7.5, solo administradores) tendrán su sitio cuando se construyan.
+- **Responsables** (§7.3): informes por ámbito (Equipo de Individualización, departamentos con 5 o más personas y Superiores). Solo administración y dirección.
+- La coordinación no ve Personal ni Responsables; en Profesorado solo ve a los profesores con docencia en su etapa (§6).
+- La administración de usuarios (§7.5) solo aparece para administradores.
 
 ### 7.1 Panel general (inicio tras el login)
 1. **Recomendación del colegio por colectivo:**

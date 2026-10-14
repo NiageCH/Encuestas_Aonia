@@ -11,7 +11,8 @@ Plan de trabajo en `docs/ESPECIFICACION.md` §9.
 | 5. Diseño de la intranet y vistas por colectivo | En curso: alumnos, familias y personal hechas en local |
 | 6. Panel general | Hecho en local (preguntas comunes candidatas, pendientes de confirmar) |
 | 7. Vista e informes de profesor | Hecho con datos de ejemplo (vista y PDF individual y en ZIP); falta el Excel del colegio |
-| 8 a 10 | Pendiente |
+| 8. Informes de responsables | Hecho: Equipo de Individualización, departamentos con 5 o más y Superiores (no docentes); vista y PDF |
+| 9 y 10 | Pendiente (en curso: paso 4 y 9 juntos) |
 
 ## Paso 1 · Repositorio (13/10/2026)
 
@@ -94,6 +95,8 @@ Hecho:
 - Vista de profesor (paso 7) en «Profesorado», con entrada propia en el menú: buscador, combinaciones asignatura y grupo, media global con las visibles, comparación con etapa y colegio, detalle por pregunta. La coordinación solo ve a los profesores de su etapa. Probada con 193 docentes inventados (`etl/ejemplo_asignaciones.py`, en `datos_locales/`).
 
 - PDF por profesor (paso 7): individual y en lote (ZIP, `Informe_2526_Apellidos_Nombre.pdf`), con cabecera del colegio, Raleway y colores de la intranet, y nota al pie de lo oculto. Datos de la RPC `informe_profesor` (migración 11), que deja cada generación en el registro de actividad, marcando el lote.
+
+- Responsables (paso 8): entrada «Responsables» solo para administración y dirección. Informes por ámbito, no por persona: Equipo de Individualización (tutores), cada departamento con su resultado visible y Superiores (personal no docente, con la nota de que no se puede atribuir a un jefe concreto). Vista y PDF individual; RPC `informe_responsable` (migración 12) con registro de actividad al generar el PDF.
 
 Pendiente: Excel de asignación del colegio, revisión en móvil e iPad.
 

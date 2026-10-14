@@ -220,3 +220,21 @@ export async function informeProfesor(docente: number, lote = false): Promise<In
   if (error) throw error;
   return data as InformeProfesor;
 }
+
+export type TipoResponsable = "equipo_individualizacion" | "departamento" | "superiores";
+
+export interface InformeResponsable {
+  tipo: TipoResponsable;
+  ambito: string | null;
+  bloque: string;
+  total: Fila;
+  preguntas: DetallePregunta[];
+}
+
+/** Informe de responsables por ámbito (§7.3). Solo administración y dirección. Con
+ *  registrar = true (PDF), la generación queda en el registro de actividad. */
+export async function informeResponsable(tipo: TipoResponsable, ambito: string | null = null, registrar = false): Promise<InformeResponsable> {
+  const { data, error } = await supabase.rpc("informe_responsable", { p_curso: CURSO, p_tipo: tipo, p_ambito: ambito, p_registrar: registrar });
+  if (error) throw error;
+  return data as InformeResponsable;
+}

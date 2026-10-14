@@ -2,7 +2,7 @@
 -- grupo y n de personas (solo quien tiene alguna respuesta válida).
 begin;
 \ir fixtures/datos_ejemplo.psql
-select plan(27);
+select plan(35);
 
 create function pg_temp.parte(p jsonb, p_clave jsonb) returns jsonb
 language sql as $$ select e from jsonb_array_elements(p -> 'partes') e where e -> 'clave' = p_clave $$;
@@ -92,6 +92,26 @@ select is((select (r -> 'total' ->> 'n')::int from r_sin_grupo), 30,
 select is((select pg_temp.parte(r, '{"grupo":"(sin dato)"}') ->> 'motivo' from r_sin_grupo), 'menos_de_5',
   'los alumnos sin grupo nunca se muestran como grupo propio');
 
+
+-- Informes de responsables (§7.3)
+select is((public.informe_responsable('2000/01', 'departamento', 'Ciencias') -> 'total' ->> 'suprimido'), 'false',
+  'informe de un departamento con 5 o más personas');
+select is(jsonb_array_length(public.informe_responsable('2000/01', 'departamento', 'Ciencias') -> 'preguntas'), 1,
+  'con el detalle de sus preguntas');
+select is((public.informe_responsable('2000/01', 'departamento', 'Letras') -> 'total' ->> 'motivo'), 'complementaria',
+  'un departamento oculto por complementaria también se oculta en el informe');
+select is(jsonb_array_length(public.informe_responsable('2000/01', 'departamento', 'Letras') -> 'preguntas'), 0,
+  'y no detalla sus preguntas');
+select is((public.informe_responsable('2000/01', 'superiores') -> 'total' ->> 'motivo'), 'menos_de_5',
+  'Superiores de no docentes con menos de 5 personas se oculta');
+select lives_ok($$ select public.informe_responsable('2000/01', 'departamento', 'Ciencias', true) $$, 'generar el PDF de un informe');
+reset role;
+select is((select count(*) from public.registro_actividad where accion = 'informe_responsable' and detalle ->> 'ambito' = 'Ciencias'), 1::bigint,
+  'la generación del informe queda en el registro de actividad');
+select pg_temp.como('coord_pai'); set local role authenticated;
+select throws_ok($$ select public.informe_responsable('2000/01', 'departamento', 'Ciencias') $$,
+  '42501', 'Sin acceso a los informes de responsables', 'la coordinación no ve informes de responsables');
+reset role; select pg_temp.como('direccion'); set local role authenticated;
 
 -- «Sin etapa» (§5.6): familias sin ninguna etapa marcada
 create function pg_temp.familias_sin_etapa(p_cuantas int) returns void language plpgsql as $$

@@ -10,6 +10,7 @@ import { Familias } from "./vistas/Familias";
 import { Panel } from "./vistas/Panel";
 import { Personal } from "./vistas/Personal";
 import { Profesores } from "./vistas/Profesores";
+import { Responsables } from "./vistas/Responsables";
 
 const ENLACES: Enlace[] = [
   { ruta: "/", texto: t.nav_inicio },
@@ -17,6 +18,7 @@ const ENLACES: Enlace[] = [
   { ruta: "/familias", texto: t.nav_familias },
   { ruta: "/personal", texto: t.nav_personal },
   { ruta: "/profesorado", texto: t.nav_profesorado },
+  { ruta: "/responsables", texto: t.nav_responsables },
 ];
 
 function rutaActual(): string {
@@ -63,15 +65,18 @@ export function App() {
     );
   }
 
-  // La coordinación no tiene acceso a la encuesta de personal (§6); sí a Profesorado (su etapa).
-  const enlaces = perfil!.rol === "coordinacion" ? ENLACES.filter((e) => e.ruta !== "/personal") : ENLACES;
-  if (perfil!.rol === "coordinacion" && ruta === "/personal") window.location.hash = "#/profesorado";
+  // La coordinación no tiene acceso a la encuesta de personal ni a los informes de responsables
+  // (§6); sí a Profesorado (su etapa).
+  const soloDireccion = ["/personal", "/responsables"];
+  const enlaces = perfil!.rol === "coordinacion" ? ENLACES.filter((e) => !soloDireccion.includes(e.ruta)) : ENLACES;
+  if (perfil!.rol === "coordinacion" && soloDireccion.includes(ruta)) window.location.hash = "#/profesorado";
 
   const vista = ruta === "/" ? <Panel perfil={perfil!} />
     : ruta === "/alumnos" ? <Alumnos perfil={perfil!} />
     : ruta === "/familias" ? <Familias perfil={perfil!} />
     : ruta === "/personal" ? <Personal />
     : ruta === "/profesorado" ? <Profesores perfil={perfil!} />
+    : ruta === "/responsables" ? <Responsables />
     : <Pronto ruta={ruta} />;
   return (
     <Marco ruta={ruta} enlaces={enlaces} usuario={{ nombre: perfil!.nombre, onSalir: salir }}>
