@@ -181,6 +181,7 @@ Menú: **Panel general · Alumnos · Familias · Personal**. Los profesores son 
     - para 2025/26 se muestra el bloque Superiores agregado (todo el personal, y por docente y no docente);
     - el modelo queda preparado para 2026/27, cuando la Fase 2 preguntará el departamento o equipo;
     - el informe explica la limitación.
+- **En 2025/26 el bloque Superiores solo lo contestó el personal no docente.** Los docentes valoran a su jefe en las reuniones de departamento (jefe de departamento) y en el bloque del Equipo de Individualización (jefe de equipo). La vista lo explica y no muestra un reparto por docentes que estaría vacío.
 - **Resultado de la comprobación (13/10/2026): el fichero de 2025/26 no lo trae.** Se aplica el plan alternativo: Superiores agregado y `departamento_equipo` vacío. No se deduce la pertenencia a un departamento a partir de qué columnas rellenó cada persona.
 - **Bloques que sí existen en 2025/26:**
   - **Reuniones de departamento:** 21 afirmaciones sobre las reuniones de cada departamento y sobre su jefe (trato, dirección, trabajo en equipo, reconocimiento, comunicación), contestadas solo por sus miembros. Hay 8 departamentos. Se carga con el departamento como dimensión del ítem y solo se expone agregada por departamento (§5.7), en el informe del jefe de departamento y en la vista de personal.

@@ -8,7 +8,7 @@ Plan de trabajo en `docs/ESPECIFICACION.md` §9.
 | 2. Supabase local: migraciones, RLS, RPC, tests de anonimato | Hecho (local; falta crear el proyecto en Frankfurt) |
 | 3. ETL y validación | Hecho (validación completa en verde; falta el cuestionario de personal en inglés) |
 | 4. Auth, perfiles, invitaciones, doble factor | Pendiente |
-| 5. Diseño de la intranet y vistas por colectivo | En curso: primera pantalla (alumnos) en local |
+| 5. Diseño de la intranet y vistas por colectivo | En curso: alumnos, familias y personal hechas en local |
 | 6 a 10 | Pendiente |
 
 ## Paso 1 · Repositorio (13/10/2026)
@@ -70,6 +70,21 @@ Decisiones (14/10/2026):
 Pendiente del paso 3:
 - Cuestionario de personal en inglés: falta el fichero y la correspondencia de sus textos (`TEXTOS_PERSONAL_EN`).
 - Lista definitiva de preguntas comunes para `pregunta_comun` (paso 6).
+
+## Paso 5 · Vistas (14/10/2026, en curso)
+
+Hecho:
+- Frontend Vite + React + TypeScript con los bloques A y B de la plantilla (`scripts/extraer_plantilla.py`), estilos propios `en-`, textos en `src/i18n.ts` y acceso a datos solo en `src/data/`.
+- Acceso provisional con correo y contraseña (usuarios locales con `supabase/scripts/crear_usuario_local.py`).
+- Menú: Panel general · Alumnos · Familias · Personal (los informes por profesor irán dentro de Personal, §7.0). La coordinación no ve Personal.
+- Alumnos: filtros de cuestionario y grupo, indicadores, profesorado por asignatura, bloques y recomendación.
+- Familias: etapas (con la parte implícita «Sin etapa», §5.6), valoración general destacada y por etapa, bloques, detalle por pregunta, recomendación y lo más valorado.
+- Personal: un filtro a la vez (docentes, no docentes, antigüedad), eNPS, dimensiones, Superiores (solo lo contestó el personal no docente), reuniones de departamento por departamento, Equipo de Individualización, detalle, recomendación, lo más valorado y dato de idioma.
+- Información emergente en todos los gráficos, también con teclado.
+- Migración 8: idioma como clave de partición de personal y `cuestionario.idiomas_cargados`.
+- Tests: 142 en verde.
+
+Pendiente del paso 5: panel general (paso 6), vista de profesor (paso 7), revisión en móvil e iPad.
 
 ## Bloqueos
 

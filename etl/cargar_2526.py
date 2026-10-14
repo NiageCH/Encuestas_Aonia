@@ -100,12 +100,14 @@ def cargar(conn, dic: Diccionario, cuestionarios: List[Cuestionario]) -> None:
 
         for c in cuestionarios:
             cur.execute(
-                """insert into public.cuestionario (curso_id, colectivo, etapa, codigo, titulo, respuestas_incompletas)
-                   values (%s, %s, %s, %s, %s, %s)
-                   on conflict (curso_id, codigo) do update set respuestas_incompletas =
-                     public.cuestionario.respuestas_incompletas + excluded.respuestas_incompletas
+                """insert into public.cuestionario (curso_id, colectivo, etapa, codigo, titulo, respuestas_incompletas, idiomas_cargados)
+                   values (%s, %s, %s, %s, %s, %s, array[%s])
+                   on conflict (curso_id, codigo) do update set
+                     respuestas_incompletas = public.cuestionario.respuestas_incompletas + excluded.respuestas_incompletas,
+                     idiomas_cargados = (select array_agg(distinct x order by x)
+                                         from unnest(public.cuestionario.idiomas_cargados || excluded.idiomas_cargados) x)
                    returning id""",
-                (curso, c.colectivo, c.etapa, c.codigo, c.titulo, c.abandonadas))
+                (curso, c.colectivo, c.etapa, c.codigo, c.titulo, c.abandonadas, c.idioma))
             id_cuest = cur.fetchone()[0]
 
             id_bloque = {}

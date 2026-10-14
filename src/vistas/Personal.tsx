@@ -1,0 +1,231 @@
+// Vista de personal (§7.4 y §7.0): un filtro a la vez (docentes o no docentes, o antigüedad),
+// indicadores con eNPS, dimensiones, Superiores agregado, reuniones de departamento por
+// departamento, Equipo de Individualización, detalle por pregunta, recomendación y lo más
+// valorado. Sin sexo.
+
+import { useEffect, useState } from "react";
+import {
+  Barra, CabeceraPreguntas, FilaPregunta, Indicador, LeyendaAcuerdo, Ranking, Recomendacion,
+} from "../componentes/Graficos";
+import { Migas } from "../componentes/Marco";
+import {
+  bloques as cargarBloques, cuestionarios as cargarCuestionarios, detallePreguntas, opciones, resultados,
+  type Bloque, type Cuestionario, type DetallePregunta, type Fila, type Filtro,
+} from "../data/resultados";
+import * as f from "../formato";
+import { t } from "../i18n";
+
+type Segmento =
+  | null
+  | { docente: true } | { docente: false }
+  | { antiguedad: "primer_ano" } | { antiguedad: "mas_de_un_ano" };
+
+const SEGMENTOS: { clave: string; seg: Segmento; texto: string }[] = [
+  { clave: "todos", seg: null, texto: t.per_todos },
+  { clave: "docentes", seg: { docente: true }, texto: t.per_docentes },
+  { clave: "no_docentes", seg: { docente: false }, texto: t.per_no_docentes },
+  { clave: "primer_ano", seg: { antiguedad: "primer_ano" }, texto: t.per_primer_ano },
+  { clave: "mas_de_un_ano", seg: { antiguedad: "mas_de_un_ano" }, texto: t.per_mas_de_un_ano },
+];
+
+const DETALLE = ["centro", "condiciones", "relaciones", "superiores", "puesto", "satisfaccion",
+                 "equipo_individualizacion", "perfil_ib", "pep", "pai"];
+
+interface Datos {
+  personas: Fila;
+  satisfaccion: Fila;
+  recomendacion: Fila;
+  superiores: Fila;
+  superioresPorTipo: Fila[];
+  equipo: Fila;
+  dimensiones: { bloque: Bloque; fila: Fila }[];
+  departamentos: Fila[] | null;
+  idiomas: Fila[] | null;
+  valorado: Fila;
+}
+
+export function Personal() {
+  const [clave, setClave] = useState("todos");
+  const segmento = SEGMENTOS.find((s) => s.clave === clave)!.seg;
+  const filtro: Filtro = { colectivo: "personal", ...(segmento ?? {}) };
+  const [cuest, setCuest] = useState<Cuestionario | null>(null);
+  const [bl, setBl] = useState<Bloque[]>([]);
+  const [textos, setTextos] = useState<Record<string, string>>({});
+  const [datos, setDatos] = useState<Datos | null>(null);
+  const [bloqueDetalle, setBloqueDetalle] = useState("superiores");
+  const [detalle, setDetalle] = useState<DetallePregunta[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    cargarCuestionarios("personal").then((l) => setCuest(l[0] ?? null)).catch(() => {});
+    cargarBloques("PER").then(setBl).catch(() => {});
+    opciones("mas_valorado").then(setTextos).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!cuest || bl.length === 0) return;
+    let vigente = true;
+    setDatos(null);
+    setError(null);
+    const sinFiltro = segmento === null;
+    (async () => {
+      const dims = bl.filter((b) => b.entra_en_media);
+      const [personas, sat, rec, sup, supTipo, equipo, valorado, deps, idiomas, ...porBloque] = await Promise.all([
+        resultados(filtro, { tipo: "personas" }),
+        resultados(filtro, { tipo: "satisfaccion" }),
+        resultados(filtro, { tipo: "recomendacion" }),
+        resultados(filtro, { tipo: "bloque", codigo: "superiores" }),
+        sinFiltro ? resultados(filtro, { tipo: "bloque", codigo: "superiores" }, ["docente"]) : null,
+        resultados(filtro, { tipo: "bloque", codigo: "equipo_individualizacion" }),
+        resultados(filtro, { tipo: "seleccion", codigo: "mas_valorado" }),
+        // Las reuniones de departamento solo se consultan por departamento y sin otros filtros (§5.7).
+        sinFiltro ? resultados({ colectivo: "personal" }, { tipo: "bloque", codigo: "reuniones_departamento" }, ["departamento"]) : null,
+        sinFiltro && cuest.idiomas_cargados.includes("en") ? resultados({ colectivo: "personal" }, { tipo: "personas" }, ["idioma"]) : null,
+        ...dims.map((b) => resultados(filtro, { tipo: "bloque", codigo: b.codigo })),
+      ]);
+      if (!vigente) return;
+      setDatos({
+        personas: personas!.total, satisfaccion: sat!.total, recomendacion: rec!.total,
+        superiores: sup!.total,
+        superioresPorTipo: ["docente", "no_docente"].map((k) => supTipo?.partes.find((p) => p.clave.docente === k)).filter((p): p is Fila => !!p),
+        equipo: equipo!.total, valorado: valorado!.total,
+        departamentos: deps ? deps.partes : null,
+        idiomas: idiomas ? idiomas.partes.filter((p) => p.clave.idioma !== "(sin dato)") : null,
+        dimensiones: dims.map((b, i) => ({ bloque: b, fila: porBloque[i]!.total })),
+      });
+    })().catch(() => vigente && setError(t.error_datos));
+    return () => { vigente = false; };
+  }, [clave, cuest, bl]);
+
+  useEffect(() => {
+    let vigente = true;
+    setDetalle(null);
+    detallePreguntas(filtro, bloqueDetalle).then((d) => vigente && setDetalle(d)).catch(() => vigente && setDetalle([]));
+    return () => { vigente = false; };
+  }, [clave, bloqueDetalle]);
+
+  const etiquetas = bloqueDetalle === "perfil_ib" ? t.escala_frecuencia : t.escala_acuerdo_per;
+  const nombreBloque = (c: string) => bl.find((b) => b.codigo === c)?.nombre ?? c;
+
+  return (
+    <div className="page">
+      <Migas actual={t.per_titulo} />
+      <p className="eyebrow">{t.alu_eyebrow}</p>
+      <h1>🧑‍🏫 {t.per_titulo}</h1>
+      <p className="lead">{t.per_lead}</p>
+
+      <div className="chips en-noprint" role="group" aria-label={t.per_filtro}>
+        {SEGMENTOS.map((s) => (
+          <button key={s.clave} className={`chip${clave === s.clave ? " on" : ""}`} aria-pressed={clave === s.clave}
+                  onClick={() => setClave(s.clave)}>
+            {s.texto}
+          </button>
+        ))}
+      </div>
+      <p className="en-hint">{t.per_filtro_nota}</p>
+
+      {error && <p className="notice">{error}</p>}
+      {!datos && !error && <p className="en-cargando">{t.cargando}</p>}
+      {datos && cuest && (
+        <>
+          {datos.personas.suprimido && <p className="notice">{t.per_segmento_oculto}</p>}
+
+          <h2 className="section-title">{t.indicadores}</h2>
+          <p className="sec-lead">{t.per_indicadores_lead}</p>
+          <div className="en-kpis">
+            <Indicador destacado etiqueta={t.k_respuestas} fila={datos.personas} explicacion={t.tip_k_personal}
+              valor={(x) => f.recuento(x.n!)}
+              detalle={() => [
+                segmento === null && cuest.respuestas_incompletas ? t.k_incompletas(cuest.respuestas_incompletas) : null,
+                segmento === null ? notaIdioma(cuest, datos.idiomas) : null,
+              ].filter(Boolean).join(" · ") || t.k_personal_d} />
+            <Indicador etiqueta={t.k_satisfaccion_media} fila={datos.satisfaccion} explicacion={t.tip_k_satisfaccion_per}
+              valor={(x) => <>{f.media(x.media!)} <small>/ 6</small></>}
+              detalle={() => t.k_dimensiones_d} />
+            <Indicador etiqueta={t.k_superiores} fila={datos.superiores} explicacion={`${t.tip_k_superiores} ${t.per_superiores_quien}`}
+              valor={(x) => <>{f.media(x.media!)} <small>/ 6</small></>}
+              detalle={(x) => t.tip_personas(f.recuento(x.n!))} />
+            <Indicador etiqueta={t.k_enps} fila={datos.recomendacion} explicacion={t.tip_k_enps}
+              valor={(x) => <>{f.nps(x.nps!)}</>}
+              detalle={(x) => t.k_enps_d(f.recomendacion(x.media!))} />
+          </div>
+
+          <div className="en-two" style={{ marginTop: "1.2rem" }}>
+            <section className="card">
+              <h3>{t.per_dimensiones}</h3>
+              <p className="en-hint">{t.per_dimensiones_lead}</p>
+              {datos.dimensiones.map(({ bloque, fila }) => <Barra key={bloque.codigo} etiqueta={bloque.nombre} fila={fila} />)}
+            </section>
+            <section className="card">
+              <h3>{t.per_superiores}</h3>
+              <p className="en-hint">{t.per_superiores_lead}</p>
+              {datos.superioresPorTipo.length > 1
+                ? datos.superioresPorTipo.map((p) => (
+                    <Barra key={p.clave.docente} etiqueta={p.clave.docente === "docente" ? t.per_docentes : t.per_no_docentes} fila={p} />))
+                : <Barra etiqueta={datos.superiores.suprimido ? SEGMENTOS.find((s) => s.clave === clave)!.texto : t.per_no_docentes} fila={datos.superiores} />}
+              <p className="en-hint" style={{ marginTop: ".6rem" }}>{t.per_superiores_quien}</p>
+              <p className="notice" style={{ marginTop: ".8rem" }}>{t.per_superiores_nota}</p>
+            </section>
+          </div>
+
+          <div className="en-two" style={{ marginTop: ".9rem" }}>
+            <section className="card">
+              <h3>{t.per_departamentos}</h3>
+              <p className="en-hint">{t.per_departamentos_lead}</p>
+              {datos.departamentos === null ? <p className="en-hint">{t.per_departamentos_sin_filtro}</p>
+                : [...datos.departamentos].sort((a, b) => a.clave.departamento.localeCompare(b.clave.departamento, "es"))
+                    .map((p) => <Barra key={p.clave.departamento} etiqueta={p.clave.departamento} fila={p} />)}
+            </section>
+            <section className="card">
+              <h3>{nombreBloque("equipo_individualizacion")}</h3>
+              <p className="en-hint">{t.per_equipo_lead}</p>
+              <Barra etiqueta={t.per_equipo_barra} fila={datos.equipo} />
+            </section>
+          </div>
+
+          <h2 className="section-title">{t.detalle}</h2>
+          <p className="sec-lead">{t.detalle_lead}</p>
+          <div className="card">
+            <div className="en-toolbar en-noprint">
+              <label className="en-filters" style={{ display: "grid" }}>
+                <span>{t.bloque}</span>
+                <span className="en-select">
+                  <select value={bloqueDetalle} onChange={(e) => setBloqueDetalle(e.target.value)}>
+                    {DETALLE.filter((c) => bl.some((b) => b.codigo === c)).map((c) => <option key={c} value={c}>{nombreBloque(c)}</option>)}
+                  </select>
+                </span>
+              </label>
+            </div>
+            <LeyendaAcuerdo etiquetas={etiquetas} />
+            <CabeceraPreguntas />
+            {!detalle ? <p className="en-cargando">{t.cargando}</p>
+              : detalle.map((d) => <FilaPregunta key={d.codigo} texto={d.texto} fila={d.resultado.total} etiquetas={etiquetas} />)}
+          </div>
+
+          <h2 className="section-title">{t.per_recomendacion}</h2>
+          <p className="sec-lead">{t.recomendacion_lead("1 a 10")}</p>
+          <Recomendacion fila={datos.recomendacion} desde={1} />
+
+          <h2 className="section-title">{t.valorado}</h2>
+          <p className="sec-lead">{t.per_valorado_lead}</p>
+          <div className="card"><Ranking fila={datos.valorado} textos={textos} /></div>
+
+          <p className="notice" style={{ marginTop: "1.4rem" }}>{t.per_aviso} {t.leyenda_oculto}</p>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Dato de idioma junto a las respuestas. Mismo criterio que cualquier parte: nunca el
+ *  número exacto de una parte oculta. */
+function notaIdioma(c: Cuestionario, idiomas: Fila[] | null): string {
+  if (!c.idiomas_cargados.includes("en") || !idiomas) return t.per_ingles_pendiente;
+  return ["es", "en"].map((k) => {
+    const p = idiomas.find((x) => x.clave.idioma === k);
+    const nombre = k === "es" ? t.en_espanol : t.en_ingles;
+    if (!p) return `0 ${nombre}`;
+    if (!p.suprimido) return `${f.recuento(p.n!)} ${nombre}`;
+    return `${p.motivo === "menos_de_5" ? t.menos_de_5 : t.cinco_o_mas} ${nombre}`;
+  }).join(" · ");
+}

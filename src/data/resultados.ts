@@ -39,6 +39,7 @@ export interface Filtro {
   asignatura?: string;
   docente?: boolean;
   antiguedad?: "primer_ano" | "mas_de_un_ano";
+  idioma?: "es" | "en";
 }
 
 export type Metrica =
@@ -64,18 +65,19 @@ export interface Cuestionario {
   titulo: string;
   etapa: string | null;
   respuestas_incompletas: number;
+  idiomas_cargados: string[];
 }
 
 export async function cuestionarios(colectivo: Colectivo): Promise<Cuestionario[]> {
   const { data, error } = await supabase
     .from("cuestionario")
-    .select("codigo, titulo, etapa, respuestas_incompletas, curso!inner(nombre)")
+    .select("codigo, titulo, etapa, respuestas_incompletas, idiomas_cargados, curso!inner(nombre)")
     .eq("colectivo", colectivo)
     .eq("curso.nombre", CURSO)
     .order("id");
   if (error) throw error;
-  return (data ?? []).map(({ codigo, titulo, etapa, respuestas_incompletas }) => ({
-    codigo, titulo, etapa, respuestas_incompletas,
+  return (data ?? []).map(({ codigo, titulo, etapa, respuestas_incompletas, idiomas_cargados }) => ({
+    codigo, titulo, etapa, respuestas_incompletas, idiomas_cargados,
   }));
 }
 

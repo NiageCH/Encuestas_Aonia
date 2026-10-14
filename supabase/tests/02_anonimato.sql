@@ -2,7 +2,7 @@
 -- y por combinación de filtros.
 begin;
 \ir fixtures/datos_ejemplo.psql
-select plan(37);
+select plan(40);
 
 -- Comprueba el invariante de la supresión complementaria en un resultado: en cada línea
 -- con el total visible, el número de partes suprimidas es 0 o al menos 2. Con dos
@@ -150,6 +150,13 @@ select is((public.resultados('{"curso":"2000/01","colectivo":"personal","docente
   'menos_de_5', 'el bloque Superiores de no docentes (4) se suprime');
 select is((public.resultados('{"curso":"2000/01","colectivo":"personal","departamento_equipo":"Letras"}', '{"tipo":"bloque","codigo":"superiores"}') -> 'total' ->> 'n')::int,
   9, 'Superiores de un departamento con 9 personas es visible');
+-- Idioma: una clave más de personal, con el mínimo de 5 y sin combinarse (fixture: 22 en español y 2 en inglés)
+select is((public.resultados('{"curso":"2000/01","colectivo":"personal"}', '{"tipo":"personas"}', '{idioma}') -> 'partes' -> 0 ->> 'motivo'),
+  'menos_de_5', 'el idioma con menos de 5 respuestas (inglés, 2) se oculta');
+select is((public.resultados('{"curso":"2000/01","colectivo":"personal","idioma":"es"}', '{"tipo":"personas"}') -> 'total' ->> 'motivo'),
+  'complementaria', 'y el otro idioma también, para que no se deduzca por resta');
+select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"personal","idioma":"es","docente":true}', '{"tipo":"personas"}') $$,
+  'P0001', 'Los filtros de personal no se combinan: usa uno a la vez', 'el idioma no se combina con docente');
 select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"personal","sexo":"m"}', '{"tipo":"personas"}') $$,
   'P0001', 'Filtro no válido para personal: sexo', 'no existe filtro por sexo');
 select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"alumnos"}', '{"tipo":"personas"}', '{cuestionario,grupo,asignatura}') $$,
