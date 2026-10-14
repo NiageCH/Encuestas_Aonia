@@ -210,3 +210,13 @@ export async function preguntasProfesorado(cuestionarios: string[]): Promise<Pre
   }
   return [...vistos.values()];
 }
+
+export type InformeProfesor = ResultadoProfesor & { preguntas: { codigo: string; texto: string; resultado: ResultadoProfesor }[] };
+
+/** Informe completo de un profesor (bloque y cada pregunta) para el PDF. Queda en el registro
+ *  de actividad, indicando si forma parte de un lote. */
+export async function informeProfesor(docente: number, lote = false): Promise<InformeProfesor> {
+  const { data, error } = await supabase.rpc("informe_profesor", { p_curso: CURSO, p_docente: docente, p_lote: lote });
+  if (error) throw error;
+  return data as InformeProfesor;
+}

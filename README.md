@@ -204,6 +204,7 @@ npm run dev          # http://127.0.0.1:5173
 - Estilos: `src/estilos/intranet.css` son los bloques A y B de la plantilla, generados con `python3 scripts/extraer_plantilla.py` (no se editan a mano); los propios van en `src/estilos/encuestas.css` con el prefijo `en-`.
 - Textos visibles: `src/i18n.ts` (`I18N.es`). Acceso a datos: solo `src/data/`.
 - Supabase Studio en local: `http://127.0.0.1:55423`.
+- PDF (informes de profesor): se generan en el navegador con `@react-pdf/renderer` (individual o en ZIP con `jszip`), cargados bajo demanda. Logos PNG y Raleway estática (con cifras de caja alta, como la web) salen de la plantilla con `.venv/bin/python scripts/generar_recursos_pdf.py`.
 
 ## Carga de datos (ETL)
 

@@ -1,7 +1,7 @@
 -- Vista de profesor (§7.2 y §5.3) y permisos por rol (§6).
 begin;
 \ir fixtures/datos_ejemplo.psql
-select plan(29);
+select plan(33);
 
 create temp table ids as
   select (select id from public.persona_responsable where apellidos = 'Uno') as uno,
@@ -35,6 +35,14 @@ select is((public.resultados_profesor('2000/01', (select dos from ids)) -> 'glob
 select is((public.resultados_profesor('2000/01', (select uno from ids), '{"tipo":"pregunta","codigo":"prof_trato"}') -> 'global' ->> 'n_valoraciones')::int, 8,
   'la vista de profesor admite el detalle por pregunta');
 select is(jsonb_array_length(public.listar_profesores('2000/01')), 2, 'dirección ve todos los profesores');
+select is(jsonb_array_length(public.informe_profesor('2000/01', (select uno from ids)) -> 'preguntas'), 2,
+  'el informe completo trae el detalle de cada pregunta de profesorado');
+select is((public.informe_profesor('2000/01', (select uno from ids), true) -> 'global' ->> 'media')::numeric, (select mates_y7b from ids),
+  'el informe completo aplica las mismas reglas que la vista');
+reset role;
+select is((select count(*) from public.registro_actividad where accion = 'informe_profesor' and detalle ->> 'lote' = 'true'), 1::bigint,
+  'cada informe generado queda en el registro de actividad, marcando el lote');
+select pg_temp.como('direccion'); set local role authenticated;
 
 select is((public.resultados('{"curso":"2000/01","colectivo":"alumnos","etapas":["pai","bachillerato"]}', '{"tipo":"personas"}') -> 'total' ->> 'n')::int,
   29, 'el ámbito de varias etapas en alumnos suma sus cuestionarios');
@@ -68,6 +76,8 @@ select throws_ok($$ select public.resumen('{"curso":"2000/01","colectivo":"perso
 reset role; select pg_temp.como('coord_primaria'); set local role authenticated;
 select throws_ok($$ select public.resultados_profesor('2000/01', (select uno from ids)) $$,
   '42501', 'Sin acceso a este profesor', 'coordinación de Primaria no ve a un profesor que solo da clase en PAI');
+select throws_ok($$ select public.informe_profesor('2000/01', (select uno from ids)) $$,
+  '42501', 'Sin acceso a este profesor', 'ni su informe completo');
 select is(public.listar_profesores('2000/01'), '[]'::jsonb, 'coordinación de Primaria no ve profesores de otras etapas');
 select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"alumnos"}', '{"tipo":"personas"}') $$,
   'P0002', 'No hay datos para este filtro', 'coordinación de Primaria no ve alumnos de PAI');

@@ -10,7 +10,7 @@ Plan de trabajo en `docs/ESPECIFICACION.md` §9.
 | 4. Auth, perfiles, invitaciones, doble factor | Pendiente |
 | 5. Diseño de la intranet y vistas por colectivo | En curso: alumnos, familias y personal hechas en local |
 | 6. Panel general | Hecho en local (preguntas comunes candidatas, pendientes de confirmar) |
-| 7. Vista e informes de profesor | Vista hecha con datos de ejemplo; faltan los PDF y el Excel del colegio |
+| 7. Vista e informes de profesor | Hecho con datos de ejemplo (vista y PDF individual y en ZIP); falta el Excel del colegio |
 | 8 a 10 | Pendiente |
 
 ## Paso 1 · Repositorio (13/10/2026)
@@ -93,7 +93,9 @@ Hecho:
 - Plantilla de asignación para el colegio: `etl/plantillas/asignacion_docente_2526.xlsx` (curso, grupo, asignatura, apellidos, nombre, correo, departamento; hojas de instrucciones y listas). Carga con `etl/cargar_asignaciones.py` (lo que no casa va a un informe para revisarlo a mano).
 - Vista de profesor (paso 7) en «Profesorado», con entrada propia en el menú: buscador, combinaciones asignatura y grupo, media global con las visibles, comparación con etapa y colegio, detalle por pregunta. La coordinación solo ve a los profesores de su etapa. Probada con 193 docentes inventados (`etl/ejemplo_asignaciones.py`, en `datos_locales/`).
 
-Pendiente: PDF por profesor (individual y en lote), revisión en móvil e iPad.
+- PDF por profesor (paso 7): individual y en lote (ZIP, `Informe_2526_Apellidos_Nombre.pdf`), con cabecera del colegio, Raleway y colores de la intranet, y nota al pie de lo oculto. Datos de la RPC `informe_profesor` (migración 11), que deja cada generación en el registro de actividad, marcando el lote.
+
+Pendiente: Excel de asignación del colegio, revisión en móvil e iPad.
 
 ## Bloqueos
 

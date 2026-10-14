@@ -50,6 +50,7 @@ python3 supabase/scripts/probar_mfa_local.py   # prueba el doble factor del admi
 npm run dev                                    # frontend en http://127.0.0.1:5173
 python3 supabase/scripts/crear_usuario_local.py CORREO CLAVE direccion   # usuario de prueba local
 python3 scripts/extraer_plantilla.py           # regenera los bloques A y B de la plantilla
+.venv/bin/python scripts/generar_recursos_pdf.py   # logos PNG y Raleway TTF para los PDF
 ```
 
 Pendiente de añadir: despliegue.

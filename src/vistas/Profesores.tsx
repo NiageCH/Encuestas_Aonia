@@ -3,7 +3,7 @@
 // global con las combinaciones visibles, comparación con su etapa y el colegio, y detalle
 // por pregunta.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAyuda } from "../componentes/Ayuda";
 import { Barra } from "../componentes/Graficos";
 import { Migas } from "../componentes/Marco";
@@ -57,6 +57,7 @@ export function Profesores({ perfil }: { perfil: Perfil }) {
               ))}
             </ul>
             {filtrados.length > 60 && <p className="en-hint">{t.prof_mas(filtrados.length - 60)}</p>}
+            <Lote profesores={lista} />
           </div>
           <div>{elegido ? <Informe profesor={elegido} /> : <p className="en-hint">{t.prof_elige}</p>}</div>
         </div>
@@ -104,6 +105,7 @@ function Informe({ profesor }: { profesor: Profesor }) {
         <p className="eyebrow">{t.prof_informe}</p>
         <h3 className="en-prof-nombre">{profesor.nombre} {profesor.apellidos}</h3>
         {profesor.departamento && <p className="en-hint">{t.prof_departamento}: {profesor.departamento}</p>}
+        <BotonPdf profesor={profesor} />
         <div className="en-kpis en-kpis3">
           <div className="card en-kpi hl en-con-ayuda" {...ayuda([t.prof_media_global, t.prof_media_global_tip])}>
             <div className="l">{t.prof_media_global}</div>
@@ -174,4 +176,62 @@ function Informe({ profesor }: { profesor: Profesor }) {
     if (!fila) return "";
     return fila.suprimido ? <Oculto fila={fila} /> : f.media(fila.media!);
   }
+}
+
+function BotonPdf({ profesor }: { profesor: Profesor }) {
+  const [estado, setEstado] = useState<"" | "generando" | "error">("");
+  async function generar() {
+    setEstado("generando");
+    try {
+      const { descargarInforme } = await import("../pdf/generar");
+      await descargarInforme(profesor);
+      setEstado("");
+    } catch {
+      setEstado("error");
+    }
+  }
+  return (
+    <p className="en-noprint">
+      <button type="button" className="btn primary" onClick={generar} disabled={estado === "generando"}>
+        📄 {estado === "generando" ? t.pdf_generando : t.pdf_descargar}
+      </button>
+      {estado === "error" && <span className="en-error" role="alert"> {t.pdf_error}</span>}
+    </p>
+  );
+}
+
+function Lote({ profesores }: { profesores: Profesor[] }) {
+  const [progreso, setProgreso] = useState<[number, number] | null>(null);
+  const [mensaje, setMensaje] = useState<string | null>(null);
+  const cancelar = useRef(false);
+  async function generar() {
+    cancelar.current = false;
+    setMensaje(null);
+    setProgreso([0, profesores.length]);
+    try {
+      const { descargarLote } = await import("../pdf/generar");
+      const hechos = await descargarLote(profesores, (n, total) => setProgreso([n, total]), () => cancelar.current);
+      setMensaje(hechos > 0 ? t.pdf_lote_hecho(hechos) : null);
+    } catch {
+      setMensaje(t.pdf_error);
+    } finally {
+      setProgreso(null);
+    }
+  }
+  return (
+    <div className="en-lote">
+      {progreso ? (
+        <>
+          <p className="en-hint" role="status">{t.pdf_lote_progreso(progreso[0], progreso[1])}</p>
+          <progress max={progreso[1]} value={progreso[0]} />
+          <button type="button" className="btn" onClick={() => { cancelar.current = true; }}>{t.pdf_lote_cancelar}</button>
+        </>
+      ) : (
+        <>
+          <button type="button" className="btn" onClick={generar}>🗂️ {t.pdf_lote}</button>
+          <p className="en-hint">{mensaje ?? t.pdf_lote_ayuda(profesores.length)}</p>
+        </>
+      )}
+    </div>
+  );
 }

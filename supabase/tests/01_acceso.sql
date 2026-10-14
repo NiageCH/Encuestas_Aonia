@@ -25,7 +25,8 @@ select throws_ok($$ insert into public.cuestionario (curso_id, colectivo, codigo
 select throws_ok($$ update public.usuario_perfil set rol = 'administrador' $$, '42501', null,
   'nadie se cambia el rol desde el cliente');
 select ok((select count(*) from public.cuestionario) > 0, 'un usuario activo lee el catálogo');
-select is((select count(*) from public.persona_responsable), 2::bigint, 'dirección ve los profesores');
+select is((select count(*) from public.persona_responsable where correo in ('docente.uno@ejemplo.test', 'docente.dos@ejemplo.test')), 2::bigint,
+  'dirección ve los profesores');
 select is((select count(*) from public.registro_actividad), 0::bigint, 'dirección no ve el registro de actividad');
 select is((select count(*) from public.usuario_perfil), 1::bigint, 'dirección solo ve su propio perfil');
 

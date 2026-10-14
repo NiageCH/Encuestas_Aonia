@@ -125,6 +125,10 @@
 .en-kpis3 { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: .8rem; }
 .en-tabla-prof td.n, .en-tabla-prof th:not(:first-child) { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
+.en-lote { border-top: 1px solid var(--line); margin-top: .8rem; padding-top: .8rem; display: grid; gap: .4rem; }
+.en-lote .btn { justify-self: start; }
+.en-lote progress { width: 100%; accent-color: var(--brand); }
+
 /* Panel general */
 .en-tile small b { color: var(--navy); }
 .en-rep { padding: .6rem 0 .9rem; border-bottom: 1px solid var(--line); }
