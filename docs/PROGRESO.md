@@ -7,12 +7,13 @@ Plan de trabajo en `docs/ESPECIFICACION.md` §9.
 | 1. Repositorio, estructura, README, PROGRESO | Hecho |
 | 2. Supabase local: migraciones, RLS, RPC, tests de anonimato | Hecho (local; falta crear el proyecto en Frankfurt) |
 | 3. ETL y validación | Hecho (validación completa en verde; falta el cuestionario de personal en inglés) |
-| 4. Auth, perfiles, invitaciones, doble factor | Pendiente |
+| 4. Auth, perfiles, invitaciones, doble factor | Hecho en local (falta Brevo, en el despliegue) |
 | 5. Diseño de la intranet y vistas por colectivo | En curso: alumnos, familias y personal hechas en local |
 | 6. Panel general | Hecho en local (preguntas comunes candidatas, pendientes de confirmar) |
 | 7. Vista e informes de profesor | Hecho con datos de ejemplo (vista y PDF individual y en ZIP); falta el Excel del colegio |
 | 8. Informes de responsables | Hecho: Equipo de Individualización, departamentos con 5 o más y Superiores (no docentes); vista y PDF |
-| 9 y 10 | Pendiente (en curso: paso 4 y 9 juntos) |
+| 9. Administración de usuarios y registro | Hecho en local |
+| 10. Despliegue | Pendiente |
 
 ## Paso 1 · Repositorio (13/10/2026)
 
@@ -98,7 +99,16 @@ Hecho:
 
 - Responsables (paso 8): entrada «Responsables» solo para administración y dirección. Informes por ámbito, no por persona: Equipo de Individualización (tutores), cada departamento con su resultado visible y Superiores (personal no docente, con la nota de que no se puede atribuir a un jefe concreto). Vista y PDF individual; RPC `informe_responsable` (migración 12) con registro de actividad al generar el PDF.
 
-Pendiente: Excel de asignación del colegio, revisión en móvil e iPad.
+## Pasos 4 y 9 · Acceso y administración de usuarios (15/10/2026)
+
+- Invitación por correo (Edge Function `admin-usuarios`, solo administradores con aal2): crea el perfil con rol y etapa y lo registra; reenvío para quien no ha entrado; nunca duplica ni borra a un usuario ya existente (un primer diseño sí lo hacía y lo detectó la prueba).
+- Pantallas: crear contraseña al aceptar la invitación, recuperar contraseña, doble factor de administradores (QR la primera vez, código después).
+- «Usuarios» (solo administradores): indicadores del mockup, tabla con rol, estado, último acceso, aviso a los 90 días y doble factor; cambiar rol y etapa, desactivar y reactivar (con confirmación), reenviar invitación; registro de actividad legible.
+- Migración 13: último acceso por disparador, RPC de administración con reglas (no desactivarse ni quitarse el rol a uno mismo, siempre un administrador activo) y registro de cada cambio.
+- Plantillas de correo en español; enlaces de 24 horas.
+- Pruebas: 174 tests SQL y `supabase/scripts/probar_invitacion_local.py` (17 comprobaciones de principio a fin).
+
+Pendiente: Excel de asignación del colegio, revisión en móvil e iPad; en el despliegue, Brevo y el remitente.
 
 ## Bloqueos
 

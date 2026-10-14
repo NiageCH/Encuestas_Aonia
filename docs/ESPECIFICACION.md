@@ -219,6 +219,8 @@ Funciones del mockup `referencia/mockups/Mockup_Encuestas_5_admin_usuarios.png`;
 - Desactivar, reactivar y reenviar invitación. Último acceso y aviso a los 90 días sin entrar.
 - Registro de actividad, escrito por el servidor: invitaciones, cambios de rol, desactivaciones, exportaciones e informes generados.
 - Doble factor (TOTP) obligatorio para administradores.
+- Un usuario desactivado puede autenticarse, pero no obtiene ningún resultado (todas las RPC lo rechazan) y la aplicación le muestra que no tiene acceso.
+- Reglas: un administrador no puede desactivarse ni quitarse el rol a sí mismo, y siempre queda al menos un administrador activo.
 
 ### 7.8 Presentación de la recomendación (las tres encuestas, en pantalla y en PDF)
 - **Dato principal:** el reparto en porcentajes, como barra de tres colores con el texto «X % sí, con entusiasmo (9 y 10) · X % neutral (7 y 8) · X % no (6 o menos)».

@@ -265,6 +265,18 @@ Para probarlo a mano con una app de autenticación:
 4. `POST /auth/v1/factors` con `{"factor_type": "totp"}` y escanea `totp.qr_code` con la app.
 5. `POST /auth/v1/factors/<id>/challenge` y `POST /auth/v1/factors/<id>/verify` con el código: el token nuevo es `aal2`.
 
+En la aplicación, un administrador que entra con contraseña ve la pantalla de doble factor: la primera vez, un QR para su aplicación de autenticación; después, el código de 6 cifras.
+
+### Invitaciones y usuarios en local
+
+- Las invitaciones las envía la Edge Function `supabase/functions/admin-usuarios` (necesita la clave de servicio, que nunca llega al navegador). Supabase local la sirve sola al arrancar.
+- Los correos (invitación y recuperación de contraseña, en español: `supabase/templates/`) llegan al buzón de pruebas: `http://127.0.0.1:55424`. Brevo se configura en el despliegue.
+- Prueba completa del circuito (invitación, correo, aceptar, contraseña, recuperar, permisos):
+
+```sh
+python3 supabase/scripts/probar_invitacion_local.py
+```
+
 ---
 
 ## Datos y secretos

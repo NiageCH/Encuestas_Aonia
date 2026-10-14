@@ -44,6 +44,7 @@ npm run db:start     # Supabase local (Docker), puertos 554xx
 npm run db:reset     # recrea la base de datos con las migraciones
 npm run db:test      # tests pgTAP (supabase/tests)
 python3 supabase/scripts/probar_mfa_local.py   # prueba el doble factor del administrador
+python3 supabase/scripts/probar_invitacion_local.py   # prueba invitaciones, contraseñas y permisos
 .venv/bin/python etl/cargar_2526.py            # carga 2025/26 (--ensayo: sin tocar la base de datos)
 .venv/bin/python etl/validar_2526.py           # validación contra el prototipo
 .venv/bin/python etl/cargar_asignaciones.py RUTA.xlsx  # asignación de profesores (plantilla en etl/plantillas/)
