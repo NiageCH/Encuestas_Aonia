@@ -13,7 +13,7 @@ Plan de trabajo en `docs/ESPECIFICACION.md` §9.
 | 7. Vista e informes de profesor | Hecho con datos de ejemplo (vista y PDF individual y en ZIP); falta el Excel del colegio |
 | 8. Informes de responsables | Hecho: Equipo de Individualización, departamentos con 5 o más y Superiores (no docentes); vista y PDF |
 | 9. Administración de usuarios y registro | Hecho en local |
-| 10. Despliegue | Pendiente |
+| 10. Despliegue | Plan preparado (`docs/DESPLIEGUE.md`); pendiente de las decisiones y cuentas de Rodrigo |
 
 ## Paso 1 · Repositorio (13/10/2026)
 
