@@ -10,6 +10,14 @@ if (!url || !clave) {
   throw new Error("Faltan VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY (ver .env.example)");
 }
 
+// Los enlaces de invitación y de recuperación de contraseña llegan con los tokens en el «#»
+// de la dirección (type=invite o type=recovery). Se lee aquí, antes de que el cliente los
+// consuma, para pedir la contraseña nueva al entrar.
+export const tipoEnlace: "invite" | "recovery" | null = (() => {
+  const tipo = new URLSearchParams(window.location.hash.replace(/^#/, "")).get("type");
+  return tipo === "invite" || tipo === "recovery" ? tipo : null;
+})();
+
 export const supabase = createClient(url, clave, {
   auth: { persistSession: true, autoRefreshToken: true },
 });

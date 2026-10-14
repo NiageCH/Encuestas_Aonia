@@ -42,3 +42,41 @@ export async function miPerfil(id: string): Promise<Perfil | null> {
   if (error) throw error;
   return data as Perfil | null;
 }
+
+/** Correo para elegir una contraseña nueva. No dice si el correo existe. */
+export async function pedirRecuperacion(correo: string): Promise<void> {
+  await supabase.auth.resetPasswordForEmail(correo, { redirectTo: `${window.location.origin}/` });
+}
+
+/** Contraseña nueva (al aceptar la invitación o al recuperar la contraseña). */
+export async function cambiarContrasena(contrasena: string): Promise<void> {
+  const { error } = await supabase.auth.updateUser({ password: contrasena });
+  if (error) throw error;
+}
+
+// Doble factor (TOTP) de los administradores ------------------------------------------------
+
+export interface FactorTotp { id: string; verificado: boolean }
+
+export async function factoresTotp(): Promise<FactorTotp[]> {
+  const { data, error } = await supabase.auth.mfa.listFactors();
+  if (error) throw error;
+  return data.all.filter((f) => f.factor_type === "totp").map((f) => ({ id: f.id, verificado: f.status === "verified" }));
+}
+
+/** Alta de un factor nuevo: devuelve el QR (SVG en data URL) y el secreto para escribirlo a mano. */
+export async function altaTotp(): Promise<{ id: string; qr: string; secreto: string }> {
+  // Un alta a medias (sin verificar) impide empezar otra: se quita antes.
+  for (const f of await factoresTotp()) {
+    if (!f.verificado) await supabase.auth.mfa.unenroll({ factorId: f.id });
+  }
+  const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: `Encuestas ${new Date().toISOString()}` });
+  if (error) throw error;
+  if (data.type !== "totp") throw new Error("Factor inesperado");
+  return { id: data.id, qr: data.totp.qr_code, secreto: data.totp.secret };
+}
+
+export async function verificarTotp(factorId: string, codigo: string): Promise<void> {
+  const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId, code: codigo.replace(/\s+/g, "") });
+  if (error) throw error;
+}

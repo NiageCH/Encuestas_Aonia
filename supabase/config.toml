@@ -236,6 +236,16 @@ otp_length = 6
 # Validez de los enlaces de invitación y recuperación: 24 horas (máximo permitido).
 otp_expiry = 86400
 
+# Plantillas en español (§7.5). En local, los correos llegan al buzón de pruebas
+# (http://127.0.0.1:55424); en producción se enviarán por Brevo.
+[auth.email.template.invite]
+subject = "Acceso a las encuestas de satisfacción del Colegio"
+content_path = "./supabase/templates/invitacion.html"
+
+[auth.email.template.recovery]
+subject = "Cambio de contraseña · Encuestas de satisfacción"
+content_path = "./supabase/templates/recuperacion.html"
+
 # Use a production-ready SMTP server
 # [auth.email.smtp]
 # enabled = true

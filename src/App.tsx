@@ -2,15 +2,19 @@ import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { ProveedorAyuda } from "./componentes/Ayuda";
 import { Marco, Migas, type Enlace } from "./componentes/Marco";
+import { tipoEnlace } from "./data/cliente";
 import { alCambiarSesion, miPerfil, salir, sesionActual, type Perfil } from "./data/sesion";
 import { t } from "./i18n";
 import { Acceso } from "./vistas/Acceso";
 import { Alumnos } from "./vistas/Alumnos";
+import { DobleFactor } from "./vistas/DobleFactor";
 import { Familias } from "./vistas/Familias";
+import { NuevaContrasena } from "./vistas/NuevaContrasena";
 import { Panel } from "./vistas/Panel";
 import { Personal } from "./vistas/Personal";
 import { Profesores } from "./vistas/Profesores";
 import { Responsables } from "./vistas/Responsables";
+import { Usuarios } from "./vistas/Usuarios";
 
 const ENLACES: Enlace[] = [
   { ruta: "/", texto: t.nav_inicio },
@@ -19,6 +23,7 @@ const ENLACES: Enlace[] = [
   { ruta: "/personal", texto: t.nav_personal },
   { ruta: "/profesorado", texto: t.nav_profesorado },
   { ruta: "/responsables", texto: t.nav_responsables },
+  { ruta: "/usuarios", texto: t.nav_usuarios },
 ];
 
 function rutaActual(): string {
@@ -30,6 +35,8 @@ export function App() {
   const [ruta, setRuta] = useState(rutaActual);
   const [sesion, setSesion] = useState<Session | null | undefined>(undefined);
   const [perfil, setPerfil] = useState<Perfil | null | undefined>(undefined);
+  // Llegada desde el enlace de invitación o de recuperación: primero, la contraseña nueva.
+  const [pidiendoClave, setPidiendoClave] = useState(tipoEnlace);
 
   useEffect(() => {
     const alCambiar = () => { setRuta(rutaActual()); document.getElementById("app")?.focus(); };
@@ -51,25 +58,35 @@ export function App() {
     return <Marco ruta={ruta} enlaces={[]}><div className="page"><p className="en-cargando">{t.cargando}</p></div></Marco>;
   }
 
-  // Sin sesión, sin perfil activo o administrador sin doble factor (llega en el paso 4).
-  const aal = sesion ? nivelAcceso(sesion.access_token) : null;
-  const bloqueo = !sesion ? null
-    : !perfil || !perfil.activo ? t.sin_perfil
-    : perfil.rol === "administrador" && aal !== "aal2" ? t.admin_mfa
-    : null;
-  if (!sesion || bloqueo) {
+  if (!sesion) {
+    return <Marco ruta={ruta} enlaces={[]}><Acceso /></Marco>;
+  }
+  const usuario = { nombre: perfil?.nombre ?? sesion.user.email ?? "", onSalir: salir };
+
+  if (pidiendoClave) {
     return (
-      <Marco ruta={ruta} enlaces={[]} usuario={sesion ? { nombre: perfil?.nombre ?? sesion.user.email ?? "", onSalir: salir } : undefined}>
-        <Acceso mensaje={bloqueo} />
+      <Marco ruta={ruta} enlaces={[]} usuario={usuario}>
+        <NuevaContrasena invitacion={pidiendoClave === "invite"}
+                         alTerminar={() => { setPidiendoClave(null); window.location.hash = "#/"; }} />
       </Marco>
     );
   }
+  if (!perfil || !perfil.activo) {
+    return <Marco ruta={ruta} enlaces={[]} usuario={usuario}><Acceso mensaje={t.sin_perfil} /></Marco>;
+  }
+  // Administradores: doble factor obligatorio (aal2) antes de entrar (§3).
+  if (perfil.rol === "administrador" && nivelAcceso(sesion.access_token) !== "aal2") {
+    return <Marco ruta={ruta} enlaces={[]} usuario={usuario}><DobleFactor alSalir={salir} /></Marco>;
+  }
 
   // La coordinación no tiene acceso a la encuesta de personal ni a los informes de responsables
-  // (§6); sí a Profesorado (su etapa).
-  const soloDireccion = ["/personal", "/responsables"];
-  const enlaces = perfil!.rol === "coordinacion" ? ENLACES.filter((e) => !soloDireccion.includes(e.ruta)) : ENLACES;
-  if (perfil!.rol === "coordinacion" && soloDireccion.includes(ruta)) window.location.hash = "#/profesorado";
+  // (§6); sí a Profesorado (su etapa). Usuarios, solo administradores.
+  const permitido = (r: string) =>
+    r === "/usuarios" ? perfil.rol === "administrador"
+    : ["/personal", "/responsables"].includes(r) ? perfil.rol !== "coordinacion"
+    : true;
+  const enlaces = ENLACES.filter((e) => permitido(e.ruta));
+  if (!permitido(ruta)) window.location.hash = "#/";
 
   const vista = ruta === "/" ? <Panel perfil={perfil!} />
     : ruta === "/alumnos" ? <Alumnos perfil={perfil!} />
@@ -77,6 +94,7 @@ export function App() {
     : ruta === "/personal" ? <Personal />
     : ruta === "/profesorado" ? <Profesores perfil={perfil!} />
     : ruta === "/responsables" ? <Responsables />
+    : ruta === "/usuarios" ? <Usuarios perfil={perfil!} />
     : <Pronto ruta={ruta} />;
   return (
     <Marco ruta={ruta} enlaces={enlaces} usuario={{ nombre: perfil!.nombre, onSalir: salir }}>
