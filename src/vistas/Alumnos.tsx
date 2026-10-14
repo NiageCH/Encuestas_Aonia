@@ -1,9 +1,9 @@
 // Vista de alumnos (§7.4): filtros de cuestionario y grupo, indicadores, profesorado por
 // asignatura, satisfacción por bloque y recomendación. Primera pantalla del paso 5.
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Barra, Indicador, ordenar, Recomendacion } from "../componentes/Graficos";
 import { Migas } from "../componentes/Marco";
-import { Oculto } from "../componentes/Oculto";
 import {
   bloques as cargarBloques, cuestionarios as cargarCuestionarios, resultados,
   type Bloque, type Cuestionario, type Fila, type Filtro, type Resultado,
@@ -88,12 +88,15 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
       <p className="lead">{t.alu_lead}</p>
 
       <div className="card en-filters en-noprint">
-        <label>{t.cuestionario}
-          <select value={cuestionario} onChange={(e) => { setCuestionario(e.target.value); setGrupo(""); }}>
-            {lista.map((c) => <option key={c.codigo} value={c.codigo}>{c.titulo}</option>)}
-          </select>
+        <label><span>{t.cuestionario}</span>
+          <span className="en-select">
+            <select value={cuestionario} onChange={(e) => { setCuestionario(e.target.value); setGrupo(""); }}>
+              {lista.map((c) => <option key={c.codigo} value={c.codigo}>{c.titulo}</option>)}
+            </select>
+          </span>
         </label>
-        <label>{t.grupo}
+        <label><span>{t.grupo}</span>
+          <span className="en-select">
           <select value={grupo} onChange={(e) => setGrupo(e.target.value)} disabled={!datos}>
             <option value="">{t.todos_grupos}</option>
             {datos?.grupos.map((g) => (
@@ -102,6 +105,7 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
               </option>
             ))}
           </select>
+          </span>
         </label>
       </div>
 
@@ -112,16 +116,16 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
           <h2 className="section-title">{t.indicadores}</h2>
           <p className="sec-lead">{t.indicadores_lead}</p>
           <div className="en-kpis">
-            <Indicador destacado etiqueta={t.k_respuestas} fila={datos.personas}
+            <Indicador destacado etiqueta={t.k_respuestas} fila={datos.personas} explicacion={t.tip_k_respuestas}
               valor={(x) => f.recuento(x.n!)}
               detalle={() => !grupo && actual?.respuestas_incompletas ? t.k_incompletas(actual.respuestas_incompletas) : t.k_respuestas_d} />
-            <Indicador etiqueta={t.k_satisfaccion} fila={datos.satisfaccion}
+            <Indicador etiqueta={t.k_satisfaccion} fila={datos.satisfaccion} explicacion={t.tip_k_satisfaccion}
               valor={(x) => <>{f.media(x.media!)} <small>/ 6</small></>}
               detalle={(x) => t.k_satisfaccion_d(f.recuento(x.n_personas!))} />
-            <Indicador etiqueta={t.k_profesorado} fila={datos.profesorado}
+            <Indicador etiqueta={t.k_profesorado} fila={datos.profesorado} explicacion={t.tip_k_profesorado}
               valor={(x) => <>{f.media(x.media!)} <small>/ 6</small></>}
               detalle={() => t.k_profesorado_d} />
-            <Indicador etiqueta={t.k_recomendacion} fila={datos.recomendacion}
+            <Indicador etiqueta={t.k_recomendacion} fila={datos.recomendacion} explicacion={t.tip_k_recomendacion}
               valor={(x) => <>{f.recomendacion(x.media!)} <small>/ 10</small></>}
               detalle={(x) => t.k_recomendacion_d(f.nps(x.nps!))} />
           </div>
@@ -151,75 +155,3 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
   );
 }
 
-function ordenar(filas: Fila[]): Fila[] {
-  // Visibles de mayor a menor media; las ocultas al final, sin revelar orden por valor.
-  return [...filas].sort((a, b) =>
-    a.suprimido !== b.suprimido ? (a.suprimido ? 1 : -1)
-      : a.suprimido ? 0 : (b.media ?? 0) - (a.media ?? 0));
-}
-
-function Indicador({ etiqueta, fila, valor, detalle, destacado }: {
-  etiqueta: string; fila: Fila; valor: (x: Fila) => ReactNode; detalle: (x: Fila) => string; destacado?: boolean;
-}) {
-  return (
-    <div className={`card en-kpi${destacado ? " hl" : ""}`}>
-      <div className="l">{etiqueta}</div>
-      <div className="v">{fila.suprimido ? <Oculto fila={fila} /> : valor(fila)}</div>
-      <div className="d">{fila.suprimido ? "" : detalle(fila)}</div>
-    </div>
-  );
-}
-
-function Barra({ etiqueta, fila }: { etiqueta: string; fila: Fila }) {
-  const ancho = fila.suprimido || fila.media == null ? 0 : ((fila.media - 1) / 5) * 100;
-  return (
-    <div className="en-bar">
-      <span>{etiqueta}</span>
-      <span className="en-track" aria-hidden="true"><span className="en-fill" style={{ width: `${ancho}%` }} /></span>
-      <span className="en-val">
-        {fila.suprimido ? <Oculto fila={fila} /> : <>{f.media(fila.media!)}<small>n {f.recuento(fila.n!)}</small></>}
-      </span>
-    </div>
-  );
-}
-
-function Recomendacion({ fila, desde }: { fila: Fila; desde: number }) {
-  if (fila.suprimido) return <div className="card"><Oculto fila={fila} /></div>;
-  const tramos = [
-    { clase: "en-n3", texto: t.detractores, pct: fila.detractores_pct ?? 0 },
-    { clase: "en-neu", texto: t.neutros, pct: fila.neutros_pct ?? 0 },
-    { clase: "en-p2", texto: t.promotores, pct: fila.promotores_pct ?? 0 },
-  ];
-  const dist = Object.entries(fila.distribucion ?? {})
-    .map(([v, n]) => ({ v: Number(v), n }))
-    .filter((d) => d.v >= desde)
-    .sort((a, b) => a.v - b.v);
-  const max = Math.max(1, ...dist.map((d) => d.n));
-  const clase = (v: number) => (v <= 6 ? "en-n3" : v <= 8 ? "en-neu" : "en-p2");
-  return (
-    <div className="en-two">
-      <section className="card">
-        <h3>NPS {f.nps(fila.nps!)}</h3>
-        <p className="en-hint">{t.media} {f.recomendacion(fila.media!)} · {f.recuento(fila.n!)} {t.respuestas}</p>
-        <div className="en-apilada" role="img"
-             aria-label={tramos.map((x) => `${x.texto} ${f.porcentaje(x.pct)}`).join(", ")}>
-          {tramos.map((x) => <span key={x.clase} className={x.clase} style={{ width: `${x.pct}%` }} />)}
-        </div>
-        <div className="en-legend">
-          {tramos.map((x) => <span key={x.clase}><i className={x.clase} />{x.texto} {f.porcentaje(x.pct)}</span>)}
-        </div>
-      </section>
-      <section className="card">
-        <div className="en-cols" aria-hidden="true">
-          {dist.map((d) => (
-            <div key={d.v} className="en-col">
-              <span className="c">{d.n}</span>
-              <span className={`b ${clase(d.v)}`} style={{ height: `${(d.n / max) * 100}%` }} />
-            </div>
-          ))}
-        </div>
-        <div className="en-colx">{dist.map((d) => <span key={d.v}>{d.v}</span>)}</div>
-      </section>
-    </div>
-  );
-}

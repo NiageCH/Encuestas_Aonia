@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { ProveedorAyuda } from "./componentes/Ayuda";
 import { Marco, Migas, type Enlace } from "./componentes/Marco";
 import { alCambiarSesion, miPerfil, salir, sesionActual, type Perfil } from "./data/sesion";
 import { t } from "./i18n";
@@ -62,7 +63,7 @@ export function App() {
   const vista = ruta === "/" || ruta === "/alumnos" ? <Alumnos perfil={perfil!} /> : <Pronto ruta={ruta} />;
   return (
     <Marco ruta={ruta === "/" ? "/alumnos" : ruta} enlaces={ENLACES} usuario={{ nombre: perfil!.nombre, onSalir: salir }}>
-      {vista}
+      <ProveedorAyuda>{vista}</ProveedorAyuda>
     </Marco>
   );
 }
