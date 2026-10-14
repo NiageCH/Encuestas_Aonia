@@ -2,7 +2,7 @@
 -- grupo y n de personas (solo quien tiene alguna respuesta válida).
 begin;
 \ir fixtures/datos_ejemplo.psql
-select plan(21);
+select plan(27);
 
 create function pg_temp.parte(p jsonb, p_clave jsonb) returns jsonb
 language sql as $$ select e from jsonb_array_elements(p -> 'partes') e where e -> 'clave' = p_clave $$;
@@ -91,6 +91,42 @@ select is((select (r -> 'total' ->> 'n')::int from r_sin_grupo), 30,
   'n cuenta a quien tiene alguna valoración válida (el alumno sin grupo) y no a quien solo contestó NS/NC');
 select is((select pg_temp.parte(r, '{"grupo":"(sin dato)"}') ->> 'motivo' from r_sin_grupo), 'menos_de_5',
   'los alumnos sin grupo nunca se muestran como grupo propio');
+
+
+-- «Sin etapa» (§5.6): familias sin ninguna etapa marcada
+create function pg_temp.familias_sin_etapa(p_cuantas int) returns void language plpgsql as $$
+declare r bigint;
+begin
+  for i in 1 .. p_cuantas loop
+    insert into privado.respuesta (cuestionario_id) select id from public.cuestionario where codigo = 'FAM_T' returning id into r;
+    insert into privado.respuesta_item (respuesta_id, pregunta_id, valor, ns_nc)
+      select r, id, 4, false from public.pregunta where codigo_diccionario = 'centro_ambiente';
+  end loop;
+end $$;
+
+create function pg_temp.etapas() returns jsonb language sql as $$
+  select public.resultados('{"curso":"2000/01","colectivo":"familias"}', '{"tipo":"personas"}', '{etapa}')
+$$;
+grant execute on function pg_temp.etapas() to authenticated;
+
+-- Con 0 familias sin etapa, Bachillerato queda sola y se oculta Infantil
+select is(pg_temp.parte(pg_temp.etapas(), '{"etapa":"infantil"}') ->> 'motivo', 'complementaria',
+  'sin etapa = 0: Bachillerato queda sola oculta y se oculta Infantil, la siguiente más pequeña');
+
+-- Con 2 familias sin etapa: dos partes ocultas (Sin etapa y Bachillerato), Infantil visible
+reset role; select pg_temp.familias_sin_etapa(2); select pg_temp.como('direccion'); set local role authenticated;
+select is(pg_temp.parte(pg_temp.etapas(), '{"etapa":"(sin dato)"}') ->> 'motivo', 'menos_de_5',
+  'sin etapa = 2: la parte implícita queda oculta por tener menos de 5');
+select is(pg_temp.parte(pg_temp.etapas(), '{"etapa":"infantil"}') ->> 'suprimido', 'false',
+  'sin etapa = 2: con dos partes ocultas, Infantil sigue visible');
+select is((pg_temp.etapas() -> 'total' ->> 'n')::int, 31, 'las familias sin etapa cuentan en el total');
+
+-- Con 5 familias sin etapa: cuenta como parte visible; la complementaria la oculta a ella (5 < 6)
+reset role; select pg_temp.familias_sin_etapa(3); select pg_temp.como('direccion'); set local role authenticated;
+select is(pg_temp.parte(pg_temp.etapas(), '{"etapa":"(sin dato)"}') ->> 'motivo', 'complementaria',
+  'sin etapa = 5: cuenta como visible y, al ser la más pequeña, es la que se oculta por complementaria');
+select is(pg_temp.parte(pg_temp.etapas(), '{"etapa":"infantil"}') ->> 'suprimido', 'false',
+  'sin etapa = 5: Infantil sigue visible');
 
 select * from finish();
 rollback;

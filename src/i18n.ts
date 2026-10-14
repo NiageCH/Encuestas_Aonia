@@ -111,6 +111,9 @@ export const I18N = {
     bloque: "Bloque",
     escala_acuerdo_fam: ["En desacuerdo total", "Muy en desacuerdo", "En desacuerdo", "De acuerdo", "Muy de acuerdo", "En acuerdo total"],
     escala_satisfaccion_fam: ["Muy insatisfecho", "Bastante insatisfecho", "Insatisfecho", "Satisfecho", "Bastante satisfecho", "Muy satisfecho"],
+    sin_etapa_menos5: "Menos de 5 familias no indicaron etapa",
+    sin_etapa_n: (n: string) => `${n} familias no indicaron etapa`,
+    sin_etapa_5omas: "5 o más familias no indicaron etapa",
     fam_aviso_etapas: "Las etapas se solapan: una familia con hijos en varias etapas cuenta en cada una, así que la suma de las etapas no coincide con el total.",
 
     oculto_menos5: "menos de 5",

@@ -24,6 +24,7 @@ interface Datos {
   satisfaccion: Fila;
   recomendacion: Fila;
   porEtapa: Fila[];
+  sinEtapa: Fila | null;
   bloques: { bloque: Bloque; fila: Fila }[];
   valorado: Fila;
 }
@@ -60,6 +61,8 @@ export function Familias({ perfil }: { perfil: Perfil }) {
       ]);
       // Comparación por etapa: solo para quien ve todas las etapas.
       const porEtapa = fija ? null : await resultados({ colectivo: "familias" }, { tipo: "bloque", codigo: "general" }, ["etapa"]);
+      // Familias sin ninguna etapa marcada: parte implícita «Sin etapa» (§5.6).
+      const personasEtapa = fija ? null : await resultados({ colectivo: "familias" }, { tipo: "personas" }, ["etapa"]);
       const deMedia = bl.filter((b) => b.entra_en_media);
       const porBloque = await Promise.all(deMedia.map((b) => resultados(filtro, { tipo: "bloque", codigo: b.codigo })));
       if (!vigente) return;
@@ -67,6 +70,7 @@ export function Familias({ perfil }: { perfil: Perfil }) {
         personas: personas.total, general: general.total, satisfaccion: sat.total, recomendacion: rec.total,
         valorado: valorado.total,
         porEtapa: ETAPAS.map((e) => porEtapa?.partes.find((p) => p.clave.etapa === e)).filter((p): p is Fila => !!p),
+        sinEtapa: personasEtapa?.partes.find((p) => p.clave.etapa === "(sin dato)") ?? null,
         bloques: deMedia.map((b, i) => ({ bloque: b, fila: porBloque[i].total })),
       });
     })().catch(() => vigente && setError(t.error_datos));
@@ -113,7 +117,8 @@ export function Familias({ perfil }: { perfil: Perfil }) {
           <div className="en-kpis">
             <Indicador destacado etiqueta={t.k_respuestas} fila={datos.personas} explicacion={t.tip_k_familias}
               valor={(x) => f.recuento(x.n!)}
-              detalle={() => !etapa && incompletas ? t.k_incompletas(incompletas) : t.k_familias_d} />
+              detalle={() => [!etapa && incompletas ? t.k_incompletas(incompletas) : t.k_familias_d,
+                              !etapa && datos.sinEtapa ? notaSinEtapa(datos.sinEtapa) : null].filter(Boolean).join(" · ")} />
             <Indicador etiqueta={t.k_general} fila={datos.general} explicacion={t.tip_k_general}
               valor={(x) => <>{f.media(x.media!)} <small>/ 6</small></>}
               detalle={(x) => t.tip_personas(f.recuento(x.n!))} />
@@ -182,4 +187,11 @@ export function Familias({ perfil }: { perfil: Perfil }) {
       )}
     </div>
   );
+}
+
+/** Nota de familias sin etapa con el criterio de las partes ocultas (§5.6): nunca el número
+ *  exacto si la parte está oculta. */
+function notaSinEtapa(p: Fila): string {
+  if (!p.suprimido) return t.sin_etapa_n(f.recuento(p.n!));
+  return p.motivo === "menos_de_5" ? t.sin_etapa_menos5 : t.sin_etapa_5omas;
 }

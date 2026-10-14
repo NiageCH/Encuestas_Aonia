@@ -51,7 +51,8 @@ select is((select count(*) from public.usuario_perfil), 1::bigint,
 reset role; select pg_temp.como('admin', 'aal2'); set local role authenticated;
 select lives_ok($$ select public.resumen('{"curso":"2000/01","colectivo":"familias"}') $$,
   'un administrador con aal2 obtiene resultados');
-select is((select count(*) from public.usuario_perfil), 6::bigint, 'un administrador con aal2 ve todos los perfiles');
+select is((select count(*) from public.usuario_perfil where id::text like '00000000-0000-0000-0000-0000000000%'), 6::bigint,
+  'un administrador con aal2 ve todos los perfiles (los de la fixture)');
 
 select * from finish();
 rollback;
