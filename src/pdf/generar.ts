@@ -4,9 +4,11 @@
 import { pdf } from "@react-pdf/renderer";
 import JSZip from "jszip";
 import { createElement } from "react";
-import { informeProfesor, informeResponsable, type Profesor, type TipoResponsable } from "../data/resultados";
+import { informeProfesor, informeResponsable, mediaDepartamentoAlumnos, type Profesor, type TipoResponsable } from "../data/resultados";
+import * as f from "../formato";
+import { t } from "../i18n";
 import { InformeProfesorPdf } from "./InformeProfesorPdf";
-import { InformeResponsablePdf } from "./InformeResponsablePdf";
+import { InformeNivelPdf, type AlumnosDepartamentoPdf } from "./InformeNivelPdf";
 
 /** Informe_2526_Apellidos_Nombre.pdf, sin acentos ni caracteres raros. */
 export function nombreFichero(p: Profesor): string {
@@ -55,13 +57,30 @@ export async function descargarLote(profesores: Profesor[], alProgresar: (hechos
   return hechos;
 }
 
-/** Informe de responsables (§7.3): Informe_2526_<ámbito>.pdf */
-export async function descargarInformeResponsable(opciones: {
+export interface SeccionPedida {
   tipo: TipoResponsable; ambito: string | null; titulo: string; subtitulo: string; nota?: string; etiquetas: string[];
+}
+
+/** PDF de un nivel de «Informes por persona»: Informe_2526_<nombre>.pdf. Cada sección pedida
+ *  queda en el registro de actividad. */
+export async function descargarInformeNivel(opciones: {
+  nombre: string; eyebrow: string; titulo: string; subtitulo: string; secciones: SeccionPedida[]; departamento?: string;
 }): Promise<void> {
-  const informe = await informeResponsable(opciones.tipo, opciones.ambito, true);
-  const doc = createElement(InformeResponsablePdf, { ...opciones, informe, generado: new Date() });
+  const secciones = await Promise.all(opciones.secciones.map(async (x) => ({
+    ...x, informe: await informeResponsable(x.tipo, x.ambito, true),
+  })));
+  let alumnos: AlumnosDepartamentoPdf | undefined;
+  if (opciones.departamento) {
+    const m = await mediaDepartamentoAlumnos(opciones.departamento);
+    alumnos = m.global.suprimido
+      ? { texto: m.global.motivo === "sin_asignacion" ? t.dep_alumnos_pendiente : t.prof_sin_visibles }
+      : { texto: `${f.media(m.global.media!)} / 6`, detalle: t.dep_alumnos_detalle(m.profesores, m.global.combinaciones!, f.recuento(m.global.n_valoraciones!)),
+          nota: m.combinaciones_excluidas > 0 ? t.prof_excluidas(m.combinaciones_excluidas) : undefined };
+  }
+  const doc = createElement(InformeNivelPdf, {
+    eyebrow: opciones.eyebrow, titulo: opciones.titulo, subtitulo: opciones.subtitulo, secciones, alumnos, generado: new Date(),
+  });
   const blob = await pdf(doc as Parameters<typeof pdf>[0]).toBlob();
   const limpio = (x: string) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "");
-  descargar(blob, `Informe_2526_${limpio(opciones.titulo)}.pdf`);
+  descargar(blob, `Informe_2526_${limpio(opciones.nombre)}.pdf`);
 }

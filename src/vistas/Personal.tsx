@@ -9,7 +9,8 @@ import {
 } from "../componentes/Graficos";
 import { Migas } from "../componentes/Marco";
 import type { Perfil } from "../data/sesion";
-import { InformesProfesor } from "./Profesores";
+import { aHash, type Nivel } from "../navegacion";
+import { InformesPorPersona } from "./InformesPorPersona";
 import {
   bloques as cargarBloques, cuestionarios as cargarCuestionarios, detallePreguntas, opciones, recuentoIdiomas, resultados,
   type Bloque, type Cuestionario, type DetallePregunta, type Fila, type Filtro,
@@ -46,24 +47,30 @@ interface Datos {
   valorado: Fila;
 }
 
-export function Personal({ perfil }: { perfil: Perfil }) {
-  // La coordinación no ve la encuesta de personal, pero sí el informe por profesor de los
-  // docentes de su etapa (§6).
-  if (perfil.rol === "coordinacion") {
-    return (
-      <div className="page">
-        <Migas actual={t.per_titulo} />
-        <p className="eyebrow">{t.alu_eyebrow}</p>
-        <h1>🧑‍🏫 {t.per_titulo} · {t.per_docentes}</h1>
-        <p className="lead">{t.per_coord_lead}</p>
-        <InformesProfesor perfil={perfil} />
-      </div>
-    );
-  }
-  return <EncuestaPersonal perfil={perfil} />;
+/** Personal (§7.0): encuesta de personal e informes por persona. La coordinación solo ve
+ *  Informes por persona → Profesores (§6). */
+export function Personal({ perfil, apartado, nivel }: { perfil: Perfil; apartado: "encuesta" | "informes"; nivel: Nivel }) {
+  const coordinacion = perfil.rol === "coordinacion";
+  return (
+    <div className="page">
+      <Migas actual={t.per_titulo} />
+      <p className="eyebrow">{t.alu_eyebrow}</p>
+      <h1>🧑‍🏫 {t.per_titulo}</h1>
+      <p className="lead">{coordinacion ? t.per_coord_lead : t.per_lead_general}</p>
+      {!coordinacion && (
+        <nav className="en-pestanas en-noprint" aria-label={t.per_apartados}>
+          <a href={aHash({ seccion: "/personal", apartado: "encuesta" })} className={apartado === "encuesta" ? "on" : undefined}
+             aria-current={apartado === "encuesta" ? "page" : undefined}>{t.per_sub_encuesta}</a>
+          <a href={aHash({ seccion: "/personal", apartado: "informes", nivel: "direccion" })} className={apartado === "informes" ? "on" : undefined}
+             aria-current={apartado === "informes" ? "page" : undefined}>{t.per_sub_informes}</a>
+        </nav>
+      )}
+      {apartado === "encuesta" && !coordinacion ? <EncuestaPersonal /> : <InformesPorPersona perfil={perfil} nivel={nivel} />}
+    </div>
+  );
 }
 
-function EncuestaPersonal({ perfil }: { perfil: Perfil }) {
+function EncuestaPersonal() {
   const [clave, setClave] = useState("todos");
   const segmento = SEGMENTOS.find((s) => s.clave === clave)!.seg;
   const filtro: Filtro = { colectivo: "personal", ...(segmento ?? {}) };
@@ -74,9 +81,6 @@ function EncuestaPersonal({ perfil }: { perfil: Perfil }) {
   const [bloqueDetalle, setBloqueDetalle] = useState("superiores");
   const [detalle, setDetalle] = useState<DetallePregunta[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // Dentro de «Docentes»: la encuesta de personal (solo docentes) o el informe por profesor.
-  const [subDocentes, setSubDocentes] = useState<"encuesta" | "informe">("encuesta");
-  const verInforme = clave === "docentes" && subDocentes === "informe";
 
   useEffect(() => {
     cargarCuestionarios("personal").then((l) => setCuest(l[0] ?? null)).catch(() => {});
@@ -130,11 +134,9 @@ function EncuestaPersonal({ perfil }: { perfil: Perfil }) {
   const nombreBloque = (c: string) => bl.find((b) => b.codigo === c)?.nombre ?? c;
 
   return (
-    <div className="page">
-      <Migas actual={t.per_titulo} />
-      <p className="eyebrow">{t.alu_eyebrow}</p>
-      <h1>🧑‍🏫 {t.per_titulo}</h1>
-      <p className="lead">{t.per_lead}</p>
+    <section>
+      <h2 className="section-title">{t.per_sub_encuesta}</h2>
+      <p className="sec-lead">{t.per_lead}</p>
 
       <div className="chips en-noprint" role="group" aria-label={t.per_filtro}>
         {SEGMENTOS.map((s) => (
@@ -146,19 +148,10 @@ function EncuestaPersonal({ perfil }: { perfil: Perfil }) {
       </div>
       <p className="en-hint">{t.per_filtro_nota}</p>
 
-      {clave === "docentes" && (
-        <div className="chips en-noprint en-subchips" role="group" aria-label={t.per_docentes}>
-          <button className={`chip${subDocentes === "encuesta" ? " on" : ""}`} aria-pressed={subDocentes === "encuesta"}
-                  onClick={() => setSubDocentes("encuesta")}>{t.per_sub_encuesta}</button>
-          <button className={`chip${subDocentes === "informe" ? " on" : ""}`} aria-pressed={subDocentes === "informe"}
-                  onClick={() => setSubDocentes("informe")}>{t.per_sub_informe}</button>
-        </div>
-      )}
-      {verInforme && <InformesProfesor perfil={perfil} />}
 
-      {!verInforme && error && <p className="notice">{error}</p>}
-      {!verInforme && !datos && !error && <p className="en-cargando">{t.cargando}</p>}
-      {!verInforme && datos && cuest && (
+      {error && <p className="notice">{error}</p>}
+      {!datos && !error && <p className="en-cargando">{t.cargando}</p>}
+      {datos && cuest && (
         <>
           {datos.personas.suprimido && <p className="notice">{t.per_segmento_oculto}</p>}
 
@@ -243,7 +236,7 @@ function EncuestaPersonal({ perfil }: { perfil: Perfil }) {
           <p className="notice" style={{ marginTop: "1.4rem" }}>{t.per_aviso} {t.leyenda_oculto}</p>
         </>
       )}
-    </div>
+    </section>
   );
 }
 

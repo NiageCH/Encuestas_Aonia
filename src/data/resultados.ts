@@ -221,7 +221,7 @@ export async function informeProfesor(docente: number, lote = false): Promise<In
   return data as InformeProfesor;
 }
 
-export type TipoResponsable = "equipo_individualizacion" | "departamento" | "superiores";
+export type TipoResponsable = "equipo_individualizacion" | "departamento" | "superiores" | "centro";
 
 export interface InformeResponsable {
   tipo: TipoResponsable;
@@ -237,4 +237,17 @@ export async function informeResponsable(tipo: TipoResponsable, ambito: string |
   const { data, error } = await supabase.rpc("informe_responsable", { p_curso: CURSO, p_tipo: tipo, p_ambito: ambito, p_registrar: registrar });
   if (error) throw error;
   return data as InformeResponsable;
+}
+
+export interface MediaDepartamentoAlumnos {
+  profesores: number;
+  global: { suprimido: boolean; motivo?: string; combinaciones?: number; n_valoraciones?: number; media?: number };
+  combinaciones_excluidas: number;
+}
+
+/** Media de los profesores de un departamento según los alumnos (solo combinaciones visibles). */
+export async function mediaDepartamentoAlumnos(departamento: string): Promise<MediaDepartamentoAlumnos> {
+  const { data, error } = await supabase.rpc("media_departamento_alumnos", { p_curso: CURSO, p_departamento: departamento });
+  if (error) throw error;
+  return data as MediaDepartamentoAlumnos;
 }

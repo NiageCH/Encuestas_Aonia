@@ -129,9 +129,9 @@ Tests obligatorios: una batería de casos en `supabase/tests` que intente saltar
 | Panel general | Todo | Todo | Solo alumnos y familias de su etapa; sin personal |
 | Alumnos | Todo | Todo | Solo los cuestionarios de su etapa |
 | Familias | Todo | Todo | Solo su etapa |
-| Personal | Todo | Todo | Sin acceso |
-| Vista e informes de profesor | Sí | Sí | **Solo profesores con docencia en su etapa**, y solo con los resultados de esa etapa. Ve también la media del colegio como referencia |
-| Vista e informes de responsables | Sí | Sí | No |
+| Personal → Encuesta de personal | Sí | Sí | No |
+| Personal → Informes por persona → Dirección, Equipos y Departamentos | Sí | Sí | No |
+| Personal → Informes por persona → Profesores | Sí | Sí | **Solo profesores con docencia en su etapa**, y solo con los resultados de esa etapa. Ve también la media del colegio como referencia |
 | Usuarios y registro de actividad | Sí | No | No |
 
 Correspondencia de cuestionarios con etapas:
@@ -147,12 +147,17 @@ Profesores y jefes no tienen cuenta en la Fase 1: reciben su informe en PDF.
 ## 7. Funcionalidades
 
 ### 7.0 Navegación
-Menú: **Inicio (panel general) · Alumnos · Familias · Personal · Responsables**, y **Usuarios** para administradores.
-- **Personal** se divide en **Todo el personal · Docentes · No docentes** (y antigüedad; un filtro a la vez). Los profesores son personal docente: no tienen botón propio.
-- Dentro de **Docentes** hay dos apartados: la **encuesta de personal** (lo que opinan los docentes como empleados) y el **informe por profesor** (§7.2: lo que opinan los alumnos de cada docente en las encuestas de alumnos, con buscador y PDF).
-- **Responsables** (§7.3): informes por ámbito. Solo administración y dirección.
-- La coordinación no ve la encuesta de personal ni Responsables; en Personal solo ve el informe por profesor de los docentes de su etapa (§6).
-- **Usuarios** (§7.5): solo administradores.
+Menú: **Inicio (panel general) · Alumnos · Familias · Personal**, y **Usuarios** para administradores. Los responsables también son personal, así que no tienen entrada propia: se ordenan por jerarquía dentro de Personal.
+
+**Personal** tiene dos apartados:
+1. **Encuesta de personal:** lo que opina el personal como empleado. Filtros de uno en uno: todo el personal, docentes, no docentes, primer año, más de un año (§7.4).
+2. **Informes por persona**, de arriba abajo en la jerarquía del colegio, cada nivel con su PDF:
+   - **Dirección:** Superiores (según el personal no docente) y la valoración del centro por todo el personal.
+   - **Equipos:** Equipo de Individualización.
+   - **Departamentos:** reuniones de departamento (solo los de 5 o más personas) y la media de los profesores del departamento según los alumnos (con el Excel de asignación; solo combinaciones asignatura y grupo visibles, como la media global del profesor, §5.3).
+   - **Profesores:** lo que opinan los alumnos de cada profesor (§7.2), con buscador y PDF individual y en lote.
+
+Direcciones: `#/personal/encuesta` y `#/personal/informes/<direccion|equipos|departamentos|profesores>`. Las antiguas llevan a su nuevo sitio: `#/profesorado` a Profesores y `#/responsables` a Dirección. La lógica está en `src/navegacion.ts`, con sus tests.
 
 ### 7.1 Panel general (inicio tras el login)
 1. **Recomendación del colegio por colectivo:**
@@ -177,7 +182,7 @@ Menú: **Inicio (panel general) · Alumnos · Familias · Personal · Responsabl
 - **Depende del Excel del colegio** (`etl/plantillas/asignacion_docente.xlsx`), con columnas: curso, grupo, asignatura, docente, correo del docente y **departamento**. Hasta tenerlo, se construye con datos de ejemplo.
 - La asignatura del Excel se casa con la asignatura normalizada de los cuestionarios. Las que no casen se listan en un informe de la carga para revisarlas a mano.
 
-### 7.3 Vista e informes de responsables: jefe de departamento, jefe de equipo y dirección
+### 7.3 Informes de responsables (Personal → Informes por persona: Dirección, Equipos y Departamentos)
 - El personal valora a su jefe en el bloque **"Superiores"** (7 preguntas: trato, dirección del equipo, trabajo en equipo, escucha, reconocimiento, comunicación descendente y comunicación ascendente).
 - **Primer paso, bloqueante:** comprobar si el fichero de personal 2025/26 trae el departamento o el equipo de cada persona.
   - **Si lo trae:**

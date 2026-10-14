@@ -80,7 +80,7 @@ Pendiente del paso 3:
 Hecho:
 - Frontend Vite + React + TypeScript con los bloques A y B de la plantilla (`scripts/extraer_plantilla.py`), estilos propios `en-`, textos en `src/i18n.ts` y acceso a datos solo en `src/data/`.
 - Acceso provisional con correo y contraseña (usuarios locales con `supabase/scripts/crear_usuario_local.py`).
-- Menú: Inicio · Alumnos · Familias · Personal · Responsables, y Usuarios para administradores (§7.0). Personal se divide en Todo el personal, Docentes y No docentes; dentro de Docentes, la encuesta de personal y el informe por profesor.
+- Menú: Inicio · Alumnos · Familias · Personal, y Usuarios para administradores (§7.0). Personal tiene dos apartados: Encuesta de personal (filtros de uno en uno) e Informes por persona por jerarquía (Dirección, Equipos, Departamentos, Profesores), cada nivel con su PDF. La coordinación solo ve Informes por persona → Profesores de su etapa.
 - Alumnos: filtros de cuestionario y grupo, indicadores, profesorado por asignatura, bloques y recomendación.
 - Familias: etapas (con la parte implícita «Sin etapa», §5.6), valoración general destacada y por etapa, bloques, detalle por pregunta, recomendación y lo más valorado.
 - Personal: un filtro a la vez (docentes, no docentes, antigüedad), eNPS, dimensiones, Superiores (solo lo contestó el personal no docente), reuniones de departamento por departamento, Equipo de Individualización, detalle, recomendación, lo más valorado y dato de idioma.
@@ -93,11 +93,11 @@ Hecho:
 - Panel general (paso 6): indicadores por colectivo, recomendación comparada con barras de reparto (alumnos en dos: Primaria y PAI con Bachillerato, migración 10), 26 preguntas comunes candidatas (`etl/preguntas_comunes_2526.py`) y lo más valorado comparado.
 
 - Plantilla de asignación para el colegio: `etl/plantillas/asignacion_docente_2526.xlsx` (curso, grupo, asignatura, apellidos, nombre, correo, departamento; hojas de instrucciones y listas). Carga con `etl/cargar_asignaciones.py` (lo que no casa va a un informe para revisarlo a mano).
-- Vista de profesor (paso 7) en Personal → Docentes → Informe por profesor: buscador, combinaciones asignatura y grupo, media global con las visibles, comparación con etapa y colegio, detalle por pregunta. La coordinación solo ve a los profesores de su etapa. Probada con 193 docentes inventados (`etl/ejemplo_asignaciones.py`, en `datos_locales/`).
+- Vista de profesor (paso 7) en Personal → Informes por persona → Profesores: buscador, combinaciones asignatura y grupo, media global con las visibles, comparación con etapa y colegio, detalle por pregunta. La coordinación solo ve a los profesores de su etapa. Probada con 193 docentes inventados (`etl/ejemplo_asignaciones.py`, en `datos_locales/`).
 
 - PDF por profesor (paso 7): individual y en lote (ZIP, `Informe_2526_Apellidos_Nombre.pdf`), con cabecera del colegio, Raleway y colores de la intranet, y nota al pie de lo oculto. Datos de la RPC `informe_profesor` (migración 11), que deja cada generación en el registro de actividad, marcando el lote.
 
-- Responsables (paso 8): entrada «Responsables» solo para administración y dirección. Informes por ámbito, no por persona: Equipo de Individualización (tutores), cada departamento con su resultado visible y Superiores (personal no docente, con la nota de que no se puede atribuir a un jefe concreto). Vista y PDF individual; RPC `informe_responsable` (migración 12) con registro de actividad al generar el PDF.
+- Responsables (paso 8), ahora dentro de Personal → Informes por persona (Dirección: Superiores y valoración del centro; Equipos; Departamentos: reuniones y media de sus profesores según los alumnos, migración 14). Informes por ámbito: Equipo de Individualización (tutores), cada departamento con su resultado visible y Superiores (personal no docente, con la nota de que no se puede atribuir a un jefe concreto). Vista y PDF individual; RPC `informe_responsable` (migración 12) con registro de actividad al generar el PDF.
 
 ## Pasos 4 y 9 · Acceso y administración de usuarios (15/10/2026)
 
@@ -109,6 +109,12 @@ Hecho:
 - Pruebas: 174 tests SQL y `supabase/scripts/probar_invitacion_local.py` (17 comprobaciones de principio a fin).
 
 Pendiente: Excel de asignación del colegio, revisión en móvil e iPad; en el despliegue, Brevo y el remitente.
+
+## Navegación de Personal (15/10/2026)
+
+- `src/navegacion.ts`: rutas, direcciones antiguas (`#/profesorado`, `#/responsables`) y permisos por rol; 10 tests con `npm test` (vitest).
+- `supabase/tests/08_personal_informes.sql`: lo que cada rol puede pedir al servidor en la nueva navegación (la coordinación, solo Profesores de su etapa) y la media de departamento según los alumnos (solo combinaciones visibles).
+- Total: 194 tests SQL y 10 de navegación.
 
 ## Bloqueos
 
