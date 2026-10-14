@@ -192,6 +192,19 @@ Respuesta (forma):
 
 ---
 
+## Frontend en local
+
+```sh
+npm install
+# .env.local con VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY (valores de `npx supabase status`)
+python3 supabase/scripts/crear_usuario_local.py direccion@prueba.local UNA-CONTRASEÑA direccion
+npm run dev          # http://127.0.0.1:5173
+```
+
+- Estilos: `src/estilos/intranet.css` son los bloques A y B de la plantilla, generados con `python3 scripts/extraer_plantilla.py` (no se editan a mano); los propios van en `src/estilos/encuestas.css` con el prefijo `en-`.
+- Textos visibles: `src/i18n.ts` (`I18N.es`). Acceso a datos: solo `src/data/`.
+- Supabase Studio en local: `http://127.0.0.1:55423`.
+
 ## Carga de datos (ETL)
 
 Los ficheros de Encuesta Fácil van en `datos_locales/fuentes/` (fuera de git).
