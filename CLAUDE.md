@@ -46,6 +46,7 @@ npm run db:test      # tests pgTAP (supabase/tests)
 python3 supabase/scripts/probar_mfa_local.py   # prueba el doble factor del administrador
 .venv/bin/python etl/cargar_2526.py            # carga 2025/26 (--ensayo: sin tocar la base de datos)
 .venv/bin/python etl/validar_2526.py           # validación contra el prototipo
+.venv/bin/python etl/cargar_asignaciones.py RUTA.xlsx  # asignación de profesores (plantilla en etl/plantillas/)
 npm run dev                                    # frontend en http://127.0.0.1:5173
 python3 supabase/scripts/crear_usuario_local.py CORREO CLAVE direccion   # usuario de prueba local
 python3 scripts/extraer_plantilla.py           # regenera los bloques A y B de la plantilla

@@ -61,14 +61,12 @@ export function App() {
     );
   }
 
-  // La coordinación no tiene acceso a personal (§6).
-  const enlaces = perfil!.rol === "coordinacion" ? ENLACES.filter((e) => e.ruta !== "/personal") : ENLACES;
-  if (perfil!.rol === "coordinacion" && ruta === "/personal") window.location.hash = "#/alumnos";
+  const enlaces = ENLACES;
 
   const vista = ruta === "/" ? <Panel perfil={perfil!} />
     : ruta === "/alumnos" ? <Alumnos perfil={perfil!} />
     : ruta === "/familias" ? <Familias perfil={perfil!} />
-    : ruta === "/personal" ? <Personal />
+    : ruta === "/personal" ? <Personal perfil={perfil!} />
     : <Pronto ruta={ruta} />;
   return (
     <Marco ruta={ruta} enlaces={enlaces} usuario={{ nombre: perfil!.nombre, onSalir: salir }}>

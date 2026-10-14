@@ -111,6 +111,20 @@
 
 .en-cargando { color: var(--muted); }
 
+/* Informes por profesor */
+.en-prof { display: grid; grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); gap: .9rem; align-items: start; }
+.en-input { font: inherit; font-weight: 500; font-size: .95rem; color: var(--ink); padding: .6rem .9rem; border: 1px solid var(--line); border-radius: 999px; background: var(--paper); width: 100%; }
+.en-input:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; border-color: var(--brand); }
+.en-prof-lista { list-style: none; margin: .7rem 0 0; padding: 0; max-height: 60vh; overflow-y: auto; }
+.en-prof-lista button { display: grid; width: 100%; text-align: left; border: 0; background: none; padding: .45rem .6rem; border-radius: 10px; font: inherit; font-size: .9rem; color: var(--ink); cursor: pointer; }
+.en-prof-lista button:hover { background: var(--soft); }
+.en-prof-lista button.on { background: var(--brand); color: #fff; }
+.en-prof-lista button small { color: var(--muted); font-size: .78rem; }
+.en-prof-lista button.on small { color: #dbe7f3; }
+.en-prof-nombre { font-size: 1.35rem; margin: .1rem 0 .1rem; }
+.en-kpis3 { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: .8rem; }
+.en-tabla-prof td.n, .en-tabla-prof th:not(:first-child) { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
 /* Panel general */
 .en-tile small b { color: var(--navy); }
 .en-rep { padding: .6rem 0 .9rem; border-bottom: 1px solid var(--line); }
@@ -134,7 +148,7 @@
 .en-apilada span.en-con-ayuda:hover, .en-col.en-con-ayuda:hover .b { filter: brightness(1.12); }
 .en-kpi.en-con-ayuda { cursor: help; }
 
-@media (max-width: 900px) { .en-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .en-two { grid-template-columns: 1fr; } .en-filters { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .en-prof { grid-template-columns: 1fr; } .en-prof-lista { max-height: 40vh; } .en-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .en-two { grid-template-columns: 1fr; } .en-filters { grid-template-columns: 1fr; } }
 @media (max-width: 620px) {
   .en-bar { grid-template-columns: minmax(90px, 130px) 1fr 4rem; }
   .en-item.head { display: none; }

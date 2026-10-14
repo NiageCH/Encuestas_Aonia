@@ -10,7 +10,8 @@ Plan de trabajo en `docs/ESPECIFICACION.md` §9.
 | 4. Auth, perfiles, invitaciones, doble factor | Pendiente |
 | 5. Diseño de la intranet y vistas por colectivo | En curso: alumnos, familias y personal hechas en local |
 | 6. Panel general | Hecho en local (preguntas comunes candidatas, pendientes de confirmar) |
-| 7 a 10 | Pendiente |
+| 7. Vista e informes de profesor | Vista hecha con datos de ejemplo; faltan los PDF y el Excel del colegio |
+| 8 a 10 | Pendiente |
 
 ## Paso 1 · Repositorio (13/10/2026)
 
@@ -89,7 +90,10 @@ Hecho:
 - Idioma de personal: recuento informativo exacto (`recuento_idiomas`), fuera de la supresión (§5.11); no es filtro (migración 9).
 - Panel general (paso 6): indicadores por colectivo, recomendación comparada con barras de reparto (alumnos en dos: Primaria y PAI con Bachillerato, migración 10), 26 preguntas comunes candidatas (`etl/preguntas_comunes_2526.py`) y lo más valorado comparado.
 
-Pendiente del paso 5: vista de profesor (paso 7), revisión en móvil e iPad.
+- Plantilla de asignación para el colegio: `etl/plantillas/asignacion_docente_2526.xlsx` (curso, grupo, asignatura, apellidos, nombre, correo, departamento; hojas de instrucciones y listas). Carga con `etl/cargar_asignaciones.py` (lo que no casa va a un informe para revisarlo a mano).
+- Vista de profesor (paso 7) dentro de Personal → Docentes: buscador, combinaciones asignatura y grupo, media global con las visibles, comparación con etapa y colegio, detalle por pregunta. La coordinación ve en Personal solo los informes de los profesores de su etapa. Probada con 193 docentes inventados (`etl/ejemplo_asignaciones.py`, en `datos_locales/`).
+
+Pendiente: PDF por profesor (individual y en lote), revisión en móvil e iPad.
 
 ## Bloqueos
 

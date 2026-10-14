@@ -156,3 +156,57 @@ export async function preguntasComunes(): Promise<PreguntaComun[]> {
   }
   return [...porCodigo.values()];
 }
+
+export interface Profesor {
+  id: number;
+  nombre: string;
+  apellidos: string;
+  departamento: string | null;
+}
+
+/** Profesores con docencia en el curso (la coordinación solo recibe los de su etapa). */
+export async function listarProfesores(): Promise<Profesor[]> {
+  const { data, error } = await supabase.rpc("listar_profesores", { p_curso: CURSO });
+  if (error) throw error;
+  return (data ?? []) as Profesor[];
+}
+
+export interface CeldaProfesor extends Fila {
+  etapa: string;
+}
+
+export interface ResultadoProfesor {
+  docente: { id: number; nombre: string; apellidos: string };
+  celdas: CeldaProfesor[];
+  global: { suprimido: boolean; motivo?: string; combinaciones?: number; n_personas_por_asignatura?: number; n_valoraciones?: number; media?: number };
+  combinaciones_excluidas: number;
+  comparacion: Record<string, Fila>;
+}
+
+/** Resultados de un profesor en las encuestas de alumnos (§7.2 y §5.3). */
+export async function resultadosProfesor(docente: number, metrica: Metrica = { tipo: "bloque", codigo: "profesorado" }): Promise<ResultadoProfesor> {
+  const { data, error } = await supabase.rpc("resultados_profesor", { p_curso: CURSO, p_docente: docente, p_metrica: metrica });
+  if (error) throw error;
+  return data as ResultadoProfesor;
+}
+
+export interface PreguntaBloque { codigo: string; texto: string; orden: number }
+
+/** Preguntas del bloque de profesorado de unos cuestionarios, sin repetir, en orden. */
+export async function preguntasProfesorado(cuestionarios: string[]): Promise<PreguntaBloque[]> {
+  const { data, error } = await supabase
+    .from("pregunta_cuestionario")
+    .select("orden, pregunta!inner(codigo_diccionario, texto_es), bloque!inner(codigo), cuestionario!inner(codigo, curso!inner(nombre))")
+    .eq("bloque.codigo", "profesorado")
+    .eq("cuestionario.curso.nombre", CURSO)
+    .in("cuestionario.codigo", cuestionarios)
+    .order("orden");
+  if (error) throw error;
+  const vistos = new Map<string, PreguntaBloque>();
+  for (const f of (data ?? []) as unknown as { orden: number; pregunta: { codigo_diccionario: string; texto_es: string } }[]) {
+    if (!vistos.has(f.pregunta.codigo_diccionario)) {
+      vistos.set(f.pregunta.codigo_diccionario, { codigo: f.pregunta.codigo_diccionario, texto: f.pregunta.texto_es, orden: f.orden });
+    }
+  }
+  return [...vistos.values()];
+}

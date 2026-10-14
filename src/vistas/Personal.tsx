@@ -8,6 +8,8 @@ import {
   Barra, CabeceraPreguntas, FilaPregunta, Indicador, IndicadorRecomendacion, LeyendaAcuerdo, Ranking, Recomendacion,
 } from "../componentes/Graficos";
 import { Migas } from "../componentes/Marco";
+import type { Perfil } from "../data/sesion";
+import { Profesores } from "./Profesores";
 import {
   bloques as cargarBloques, cuestionarios as cargarCuestionarios, detallePreguntas, opciones, recuentoIdiomas, resultados,
   type Bloque, type Cuestionario, type DetallePregunta, type Fila, type Filtro,
@@ -44,7 +46,23 @@ interface Datos {
   valorado: Fila;
 }
 
-export function Personal() {
+export function Personal({ perfil }: { perfil: Perfil }) {
+  // La coordinación no ve la encuesta de personal, pero sí los informes de los profesores de su etapa (§6).
+  if (perfil.rol === "coordinacion") {
+    return (
+      <div className="page">
+        <Migas actual={t.per_titulo} />
+        <p className="eyebrow">{t.alu_eyebrow}</p>
+        <h1>🧑‍🏫 {t.per_titulo}</h1>
+        <p className="lead">{t.per_coord_lead}</p>
+        <Profesores />
+      </div>
+    );
+  }
+  return <EncuestaPersonal />;
+}
+
+function EncuestaPersonal() {
   const [clave, setClave] = useState("todos");
   const segmento = SEGMENTOS.find((s) => s.clave === clave)!.seg;
   const filtro: Filtro = { colectivo: "personal", ...(segmento ?? {}) };
@@ -123,6 +141,8 @@ export function Personal() {
         ))}
       </div>
       <p className="en-hint">{t.per_filtro_nota}</p>
+
+      {clave === "docentes" && <Profesores />}
 
       {error && <p className="notice">{error}</p>}
       {!datos && !error && <p className="en-cargando">{t.cargando}</p>}

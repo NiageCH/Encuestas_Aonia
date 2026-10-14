@@ -219,6 +219,15 @@ python3 -m venv .venv && .venv/bin/pip install -r etl/requirements.txt
 - Cada columna de cada fichero se carga o se descarta con un motivo; una columna sin regla detiene la carga.
 - Nunca se cargan identificadores, fechas, IP, correo, nombres, respuestas abiertas, sexo ni el Plan de Igualdad.
 - Informes de carga y de validación: `datos_locales/informes/`.
+
+Asignación de profesores (Excel del colegio):
+
+```sh
+.venv/bin/python etl/crear_plantilla_asignacion.py                    # plantilla para el colegio (etl/plantillas/)
+.venv/bin/python etl/cargar_asignaciones.py RUTA.xlsx --ensayo         # valida y lista lo que no casa
+.venv/bin/python etl/cargar_asignaciones.py RUTA.xlsx                  # carga (sustituye las del curso)
+.venv/bin/python etl/ejemplo_asignaciones.py                          # docentes inventados para probar (datos_locales/)
+```
 - Para cargar en otra base de datos: `DATABASE_URL` en `.env` y `--remoto`.
 
 ## Tests
