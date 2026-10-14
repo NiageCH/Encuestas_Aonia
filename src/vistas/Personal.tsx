@@ -8,6 +8,8 @@ import {
   Barra, CabeceraPreguntas, FilaPregunta, Indicador, IndicadorRecomendacion, LeyendaAcuerdo, Ranking, Recomendacion,
 } from "../componentes/Graficos";
 import { Migas } from "../componentes/Marco";
+import type { Perfil } from "../data/sesion";
+import { InformesProfesor } from "./Profesores";
 import {
   bloques as cargarBloques, cuestionarios as cargarCuestionarios, detallePreguntas, opciones, recuentoIdiomas, resultados,
   type Bloque, type Cuestionario, type DetallePregunta, type Fila, type Filtro,
@@ -44,7 +46,24 @@ interface Datos {
   valorado: Fila;
 }
 
-export function Personal() {
+export function Personal({ perfil }: { perfil: Perfil }) {
+  // La coordinación no ve la encuesta de personal, pero sí el informe por profesor de los
+  // docentes de su etapa (§6).
+  if (perfil.rol === "coordinacion") {
+    return (
+      <div className="page">
+        <Migas actual={t.per_titulo} />
+        <p className="eyebrow">{t.alu_eyebrow}</p>
+        <h1>🧑‍🏫 {t.per_titulo} · {t.per_docentes}</h1>
+        <p className="lead">{t.per_coord_lead}</p>
+        <InformesProfesor perfil={perfil} />
+      </div>
+    );
+  }
+  return <EncuestaPersonal perfil={perfil} />;
+}
+
+function EncuestaPersonal({ perfil }: { perfil: Perfil }) {
   const [clave, setClave] = useState("todos");
   const segmento = SEGMENTOS.find((s) => s.clave === clave)!.seg;
   const filtro: Filtro = { colectivo: "personal", ...(segmento ?? {}) };
@@ -55,6 +74,9 @@ export function Personal() {
   const [bloqueDetalle, setBloqueDetalle] = useState("superiores");
   const [detalle, setDetalle] = useState<DetallePregunta[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Dentro de «Docentes»: la encuesta de personal (solo docentes) o el informe por profesor.
+  const [subDocentes, setSubDocentes] = useState<"encuesta" | "informe">("encuesta");
+  const verInforme = clave === "docentes" && subDocentes === "informe";
 
   useEffect(() => {
     cargarCuestionarios("personal").then((l) => setCuest(l[0] ?? null)).catch(() => {});
@@ -124,9 +146,19 @@ export function Personal() {
       </div>
       <p className="en-hint">{t.per_filtro_nota}</p>
 
-      {error && <p className="notice">{error}</p>}
-      {!datos && !error && <p className="en-cargando">{t.cargando}</p>}
-      {datos && cuest && (
+      {clave === "docentes" && (
+        <div className="chips en-noprint en-subchips" role="group" aria-label={t.per_docentes}>
+          <button className={`chip${subDocentes === "encuesta" ? " on" : ""}`} aria-pressed={subDocentes === "encuesta"}
+                  onClick={() => setSubDocentes("encuesta")}>{t.per_sub_encuesta}</button>
+          <button className={`chip${subDocentes === "informe" ? " on" : ""}`} aria-pressed={subDocentes === "informe"}
+                  onClick={() => setSubDocentes("informe")}>{t.per_sub_informe}</button>
+        </div>
+      )}
+      {verInforme && <InformesProfesor perfil={perfil} />}
+
+      {!verInforme && error && <p className="notice">{error}</p>}
+      {!verInforme && !datos && !error && <p className="en-cargando">{t.cargando}</p>}
+      {!verInforme && datos && cuest && (
         <>
           {datos.personas.suprimido && <p className="notice">{t.per_segmento_oculto}</p>}
 

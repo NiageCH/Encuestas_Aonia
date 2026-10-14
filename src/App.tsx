@@ -12,7 +12,6 @@ import { Familias } from "./vistas/Familias";
 import { NuevaContrasena } from "./vistas/NuevaContrasena";
 import { Panel } from "./vistas/Panel";
 import { Personal } from "./vistas/Personal";
-import { Profesores } from "./vistas/Profesores";
 import { Responsables } from "./vistas/Responsables";
 import { Usuarios } from "./vistas/Usuarios";
 
@@ -21,13 +20,13 @@ const ENLACES: Enlace[] = [
   { ruta: "/alumnos", texto: t.nav_alumnos },
   { ruta: "/familias", texto: t.nav_familias },
   { ruta: "/personal", texto: t.nav_personal },
-  { ruta: "/profesorado", texto: t.nav_profesorado },
   { ruta: "/responsables", texto: t.nav_responsables },
   { ruta: "/usuarios", texto: t.nav_usuarios },
 ];
 
 function rutaActual(): string {
-  const r = window.location.hash.replace(/^#/, "") || "/";
+  let r = window.location.hash.replace(/^#/, "") || "/";
+  if (r === "/profesorado") r = "/personal";   // dirección antigua: el informe por profesor está en Personal
   return ENLACES.some((e) => e.ruta === r) ? r : "/";
 }
 
@@ -79,11 +78,11 @@ export function App() {
     return <Marco ruta={ruta} enlaces={[]} usuario={usuario}><DobleFactor alSalir={salir} /></Marco>;
   }
 
-  // La coordinación no tiene acceso a la encuesta de personal ni a los informes de responsables
-  // (§6); sí a Profesorado (su etapa). Usuarios, solo administradores.
+  // La coordinación no ve los informes de responsables; en Personal solo ve el informe por
+  // profesor de su etapa (§6). Usuarios, solo administradores.
   const permitido = (r: string) =>
     r === "/usuarios" ? perfil.rol === "administrador"
-    : ["/personal", "/responsables"].includes(r) ? perfil.rol !== "coordinacion"
+    : r === "/responsables" ? perfil.rol !== "coordinacion"
     : true;
   const enlaces = ENLACES.filter((e) => permitido(e.ruta));
   if (!permitido(ruta)) window.location.hash = "#/";
@@ -91,8 +90,7 @@ export function App() {
   const vista = ruta === "/" ? <Panel perfil={perfil!} />
     : ruta === "/alumnos" ? <Alumnos perfil={perfil!} />
     : ruta === "/familias" ? <Familias perfil={perfil!} />
-    : ruta === "/personal" ? <Personal />
-    : ruta === "/profesorado" ? <Profesores perfil={perfil!} />
+    : ruta === "/personal" ? <Personal perfil={perfil!} />
     : ruta === "/responsables" ? <Responsables />
     : ruta === "/usuarios" ? <Usuarios perfil={perfil!} />
     : <Pronto ruta={ruta} />;

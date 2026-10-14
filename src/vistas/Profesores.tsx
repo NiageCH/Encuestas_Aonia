@@ -1,4 +1,5 @@
-// Profesorado (§7.2 y §7.0): informes por profesor con las encuestas de alumnos. Buscador, resultados
+// Informe por profesor (§7.2 y §7.0), dentro de Personal → Docentes: lo que opinan los alumnos de
+// cada docente en las encuestas de alumnos. Buscador, resultados
 // por asignatura y grupo (las combinaciones con menos de 5 respuestas se ocultan), media
 // global con las combinaciones visibles, comparación con su etapa y el colegio, y detalle
 // por pregunta.
@@ -6,7 +7,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAyuda } from "../componentes/Ayuda";
 import { Barra } from "../componentes/Graficos";
-import { Migas } from "../componentes/Marco";
 import type { Perfil } from "../data/sesion";
 import { Oculto } from "../componentes/Oculto";
 import {
@@ -16,7 +16,7 @@ import {
 import * as f from "../formato";
 import { t } from "../i18n";
 
-export function Profesores({ perfil }: { perfil: Perfil }) {
+export function InformesProfesor({ perfil }: { perfil: Perfil }) {
   const [lista, setLista] = useState<Profesor[] | null>(null);
   const [busqueda, setBusqueda] = useState("");
   const [elegido, setElegido] = useState<Profesor | null>(null);
@@ -30,11 +30,9 @@ export function Profesores({ perfil }: { perfil: Perfil }) {
   }, [lista, busqueda]);
 
   return (
-    <div className="page">
-      <Migas actual={t.nav_profesorado} />
-      <p className="eyebrow">{t.alu_eyebrow}</p>
-      <h1>🍎 {t.nav_profesorado}</h1>
-      <p className="lead">{perfil.rol === "coordinacion" ? t.prof_lead_coord : t.prof_lead}</p>
+    <section>
+      <h2 className="section-title">{t.prof_titulo}</h2>
+      <p className="sec-lead">{perfil.rol === "coordinacion" ? t.prof_lead_coord : t.prof_lead}</p>
       {error && <p className="notice">{error}</p>}
       {lista && lista.length === 0 && <p className="notice">{t.prof_sin_profesores}</p>}
       {lista && lista.length > 0 && (
@@ -62,7 +60,7 @@ export function Profesores({ perfil }: { perfil: Perfil }) {
           <div>{elegido ? <Informe profesor={elegido} /> : <p className="en-hint">{t.prof_elige}</p>}</div>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 

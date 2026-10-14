@@ -158,6 +158,9 @@
 .en-registro time { color: var(--muted); font-variant-numeric: tabular-nums; }
 .en-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
+.en-subchips { margin-top: .2rem; }
+.en-subchips .chip { font-size: .85rem; }
+
 /* Panel general */
 .en-tile small b { color: var(--navy); }
 .en-rep { padding: .6rem 0 .9rem; border-bottom: 1px solid var(--line); }
