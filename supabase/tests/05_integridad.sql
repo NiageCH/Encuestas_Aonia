@@ -7,7 +7,7 @@ create temp table ref as select
   (select id from public.cuestionario where codigo = 'PAI_T') as pai,
   (select id from public.cuestionario where codigo = 'FAM_T') as fam,
   (select id from public.cuestionario where codigo = 'PER_T') as per,
-  (select id from public.grupo where nombre = 'Y7 A') as grupo,
+  (select id from public.grupo where nombre = 'Y7 A' and curso_id = (select id from public.curso where nombre = '2000/01')) as grupo,
   (select id from public.pregunta where codigo_diccionario = 'centro_ambiente') as amb,
   (select id from public.pregunta where codigo_diccionario = 'prof_claridad') as clar,
   (select id from public.pregunta where codigo_diccionario = 'rec_alumnos') as rec,

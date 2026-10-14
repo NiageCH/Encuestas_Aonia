@@ -46,7 +46,7 @@ reset role; select pg_temp.como('direccion'); set local role authenticated;
 
 -- Mínimo de 5 y supresión complementaria por grupos
 create temp table r_grupos as
-  select public.resultados('{"curso":"2025/26","colectivo":"alumnos"}', '{"tipo":"personas"}', '{grupo}') as r;
+  select public.resultados('{"curso":"2000/01","colectivo":"alumnos"}', '{"tipo":"personas"}', '{grupo}') as r;
 select is((select (r -> 'total' ->> 'n')::int from r_grupos), 29, 'el total de alumnos es visible');
 select is((select pg_temp.parte(r, '{"grupo":"Y7 C"}') ->> 'motivo' from r_grupos), 'menos_de_5', 'Y7 C (3) se suprime por mínimo');
 select is((select pg_temp.parte(r, '{"grupo":"Y7 D"}') ->> 'motivo' from r_grupos), 'complementaria',
@@ -62,29 +62,29 @@ select is((select (r -> 'total' ->> 'n')::int - sum((e ->> 'n')::int)::int
           9, 'la resta solo da la suma de Y7 C y Y7 D juntos, nunca uno solo');
 
 -- Ataque pidiendo directamente la parte suprimida por complementaria
-select is((public.resultados('{"curso":"2025/26","colectivo":"alumnos","grupo":"Y7 D"}', '{"tipo":"personas"}') -> 'total' ->> 'motivo'),
+select is((public.resultados('{"curso":"2000/01","colectivo":"alumnos","grupo":"Y7 D"}', '{"tipo":"personas"}') -> 'total' ->> 'motivo'),
   'complementaria', 'pedir Y7 D directamente no lo destapa');
-select is((public.resultados('{"curso":"2025/26","colectivo":"alumnos","grupo":"Y7 D"}', '{"tipo":"recomendacion"}') -> 'total' ->> 'suprimido'),
+select is((public.resultados('{"curso":"2000/01","colectivo":"alumnos","grupo":"Y7 D"}', '{"tipo":"recomendacion"}') -> 'total' ->> 'suprimido'),
   'true', 'Y7 D tampoco se destapa con otra métrica');
-select is((public.resultados('{"curso":"2025/26","colectivo":"alumnos","grupo":"Y7 C"}', '{"tipo":"satisfaccion"}') -> 'total' ->> 'motivo'),
+select is((public.resultados('{"curso":"2000/01","colectivo":"alumnos","grupo":"Y7 C"}', '{"tipo":"satisfaccion"}') -> 'total' ->> 'motivo'),
   'menos_de_5', 'pedir Y7 C directamente sigue suprimido');
-select is((public.resultados('{"curso":"2025/26","colectivo":"alumnos","grupo":"Y7 D"}', '{"tipo":"personas"}', '{asignatura}') -> 'total' ->> 'suprimido'),
+select is((public.resultados('{"curso":"2000/01","colectivo":"alumnos","grupo":"Y7 D"}', '{"tipo":"personas"}', '{asignatura}') -> 'total' ->> 'suprimido'),
   'true', 'Y7 D repartido por asignatura mantiene su total suprimido');
 
 -- Mínimo por pregunta: el grupo es visible pero la pregunta no
-select is((public.resultados('{"curso":"2025/26","colectivo":"alumnos","grupo":"Y7 B"}', '{"tipo":"personas"}') -> 'total' ->> 'n')::int,
+select is((public.resultados('{"curso":"2000/01","colectivo":"alumnos","grupo":"Y7 B"}', '{"tipo":"personas"}') -> 'total' ->> 'n')::int,
   8, 'Y7 B es visible como grupo');
-select is((public.resultados('{"curso":"2025/26","colectivo":"alumnos","grupo":"Y7 B"}', '{"tipo":"pregunta","codigo":"centro_ambiente"}') -> 'total' ->> 'motivo'),
+select is((public.resultados('{"curso":"2000/01","colectivo":"alumnos","grupo":"Y7 B"}', '{"tipo":"pregunta","codigo":"centro_ambiente"}') -> 'total' ->> 'motivo'),
   'menos_de_5', 'la pregunta con 4 valoraciones válidas en Y7 B se suprime');
-select ok(pg_temp.sin_parte_aislada(public.resultados('{"curso":"2025/26","colectivo":"alumnos"}',
+select ok(pg_temp.sin_parte_aislada(public.resultados('{"curso":"2000/01","colectivo":"alumnos"}',
   '{"tipo":"pregunta","codigo":"centro_ambiente"}', '{grupo}')), 'una pregunta por grupos no deja partes aisladas');
 select ok((select bool_and(pg_temp.sin_parte_aislada(e -> 'resultado'))
-           from jsonb_array_elements(public.detalle_preguntas('{"curso":"2025/26","colectivo":"alumnos"}', 'profesorado', '{grupo,asignatura}')) e),
+           from jsonb_array_elements(public.detalle_preguntas('{"curso":"2000/01","colectivo":"alumnos"}', 'profesorado', '{grupo,asignatura}')) e),
   'el detalle por pregunta, asignatura y grupo no deja partes aisladas');
 
 -- Tabla asignatura por grupo (dos dimensiones, supresión iterativa)
 create temp table r_tabla as
-  select public.resultados('{"curso":"2025/26","colectivo":"alumnos"}', '{"tipo":"bloque","codigo":"profesorado"}', '{grupo,asignatura}') as r;
+  select public.resultados('{"curso":"2000/01","colectivo":"alumnos"}', '{"tipo":"bloque","codigo":"profesorado"}', '{grupo,asignatura}') as r;
 select is((select pg_temp.parte(r, '{"grupo":"Y7 A","asignatura":"Lengua"}') ->> 'motivo' from r_tabla), 'menos_de_5', 'Lengua en Y7 A (4) se suprime');
 select is((select pg_temp.parte(r, '{"grupo":"Y7 A","asignatura":"Matemáticas"}') ->> 'motivo' from r_tabla), 'complementaria',
   'Matemáticas en Y7 A se suprime para proteger Lengua en Y7 A (columna)');
@@ -96,32 +96,32 @@ select is((select pg_temp.parte(r, '{"grupo":"Y7 D","asignatura":"Lengua"}') ->>
   'Lengua en Y7 D sigue visible: con el total de su columna oculto no permite deducir Matemáticas en Y7 D');
 select is((select pg_temp.parte(r, '{"grupo":"Y7 B","asignatura":"Matemáticas"}') ->> 'suprimido' from r_tabla), 'false', 'Matemáticas en Y7 B es visible');
 select ok((select pg_temp.sin_parte_aislada(r) from r_tabla), 'la tabla no deja partes aisladas en filas, columnas ni márgenes');
-select is((public.resultados('{"curso":"2025/26","colectivo":"alumnos","grupo":"Y7 A","asignatura":"Matemáticas"}',
+select is((public.resultados('{"curso":"2000/01","colectivo":"alumnos","grupo":"Y7 A","asignatura":"Matemáticas"}',
   '{"tipo":"bloque","codigo":"profesorado"}') -> 'total' ->> 'motivo'), 'complementaria',
   'pedir directamente Matemáticas en Y7 A no lo destapa');
 
 -- Familias: Bachillerato (3) siempre suprimido, con aviso, y su complementaria
 create temp table r_fam as
-  select public.resultados('{"curso":"2025/26","colectivo":"familias"}', '{"tipo":"pregunta","codigo":"centro_ambiente"}', '{etapa}') as r;
+  select public.resultados('{"curso":"2000/01","colectivo":"familias"}', '{"tipo":"pregunta","codigo":"centro_ambiente"}', '{etapa}') as r;
 select is((select pg_temp.parte(r, '{"etapa":"bachillerato"}') ->> 'motivo' from r_fam), 'menos_de_5', 'familias de Bachillerato se suprime y se devuelve (no se omite)');
 select is((select pg_temp.parte(r, '{"etapa":"infantil"}') ->> 'motivo' from r_fam), 'complementaria', 'familias de Infantil se suprime por complementaria');
 
 -- Personal: un filtro a la vez
-select throws_ok($$ select public.resultados('{"curso":"2025/26","colectivo":"personal","docente":true,"antiguedad":"primer_ano"}', '{"tipo":"personas"}') $$,
+select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"personal","docente":true,"antiguedad":"primer_ano"}', '{"tipo":"personas"}') $$,
   'P0001', 'Los filtros de personal no se combinan: usa uno a la vez', 'no se combinan dos filtros de personal');
-select throws_ok($$ select public.resultados('{"curso":"2025/26","colectivo":"personal","docente":true}', '{"tipo":"personas"}', '{antiguedad}') $$,
+select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"personal","docente":true}', '{"tipo":"personas"}', '{antiguedad}') $$,
   'P0001', 'Los filtros de personal no se combinan: usa uno a la vez', 'no se combina un filtro con un reparto por otro segmento');
-select throws_ok($$ select public.resultados('{"curso":"2025/26","colectivo":"personal"}', '{"tipo":"personas"}', '{docente,departamento_equipo}') $$,
+select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"personal"}', '{"tipo":"personas"}', '{docente,departamento_equipo}') $$,
   'P0001', 'Los filtros de personal no se combinan: usa uno a la vez', 'no se reparte por dos segmentos a la vez');
-select is((public.resultados('{"curso":"2025/26","colectivo":"personal","docente":true}', '{"tipo":"personas"}') -> 'total' ->> 'motivo'),
+select is((public.resultados('{"curso":"2000/01","colectivo":"personal","docente":true}', '{"tipo":"personas"}') -> 'total' ->> 'motivo'),
   'complementaria', 'docentes (20) se suprime porque no docentes (4) queda por debajo de 5');
-select is((public.resultados('{"curso":"2025/26","colectivo":"personal","docente":false}', '{"tipo":"bloque","codigo":"superiores"}') -> 'total' ->> 'motivo'),
+select is((public.resultados('{"curso":"2000/01","colectivo":"personal","docente":false}', '{"tipo":"bloque","codigo":"superiores"}') -> 'total' ->> 'motivo'),
   'menos_de_5', 'el bloque Superiores de no docentes (4) se suprime');
-select is((public.resultados('{"curso":"2025/26","colectivo":"personal","departamento_equipo":"Letras"}', '{"tipo":"bloque","codigo":"superiores"}') -> 'total' ->> 'n')::int,
+select is((public.resultados('{"curso":"2000/01","colectivo":"personal","departamento_equipo":"Letras"}', '{"tipo":"bloque","codigo":"superiores"}') -> 'total' ->> 'n')::int,
   9, 'Superiores de un departamento con 9 personas es visible');
-select throws_ok($$ select public.resultados('{"curso":"2025/26","colectivo":"personal","sexo":"m"}', '{"tipo":"personas"}') $$,
+select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"personal","sexo":"m"}', '{"tipo":"personas"}') $$,
   'P0001', 'Filtro no válido para personal: sexo', 'no existe filtro por sexo');
-select throws_ok($$ select public.resultados('{"curso":"2025/26","colectivo":"alumnos"}', '{"tipo":"personas"}', '{cuestionario,grupo,asignatura}') $$,
+select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"alumnos"}', '{"tipo":"personas"}', '{cuestionario,grupo,asignatura}') $$,
   'P0001', 'Como máximo dos dimensiones a la vez', 'como máximo dos dimensiones');
 
 select * from finish();

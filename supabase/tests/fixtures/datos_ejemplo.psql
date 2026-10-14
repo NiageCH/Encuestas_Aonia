@@ -34,7 +34,7 @@ declare
   g record; r bigint; s integer; v_n integer;
   v_dep integer; v_uno integer; v_dos integer; v_letras integer; v_artes integer;
 begin
-  insert into public.curso (nombre) values ('2025/26') returning id into v_curso;
+  insert into public.curso (nombre) values ('2000/01') returning id into v_curso;
 
   -- Diccionario
   insert into public.pregunta (codigo_diccionario, texto_es, tipo, escala_min, escala_max)
@@ -48,7 +48,7 @@ begin
   insert into public.pregunta (codigo_diccionario, texto_es, tipo, escala_min, escala_max)
     values ('rec_alumnos', 'Recomendaría el colegio', 'recomendacion', 0, 10) returning id into q_rec;
   insert into public.pregunta (codigo_diccionario, texto_es, tipo)
-    values ('mas_valorado', 'Lo más valorado', 'seleccion_multiple') returning id into q_val;
+    values ('test_mas_valorado', 'Lo más valorado', 'seleccion_multiple') returning id into q_val;
   insert into public.pregunta (codigo_diccionario, texto_es, tipo, escala_min, escala_max)
     values ('ib_autoeval', 'Autoevaluación IB', 'escala', 1, 4) returning id into q_ib;
   insert into public.pregunta (codigo_diccionario, texto_es, tipo, escala_min, escala_max)

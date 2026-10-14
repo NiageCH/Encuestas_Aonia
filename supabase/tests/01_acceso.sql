@@ -7,7 +7,7 @@ select plan(22);
 -- anon
 set local role anon;
 select throws_ok($$ select count(*) from privado.respuesta $$, '42501', null, 'anon no lee privado.respuesta');
-select throws_ok($$ select public.resultados('{"curso":"2025/26","colectivo":"alumnos"}', '{"tipo":"personas"}') $$,
+select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"alumnos"}', '{"tipo":"personas"}') $$,
   '42501', null, 'anon no puede ejecutar resultados');
 select throws_ok($$ select count(*) from public.cuestionario $$, '42501', null, 'anon no ve el catálogo');
 
@@ -35,21 +35,21 @@ select is((select count(*) from public.persona_responsable), 0::bigint, 'coordin
 
 -- sin perfil o inactivo
 reset role; select pg_temp.como('sin_perfil'); set local role authenticated;
-select throws_ok($$ select public.resumen('{"curso":"2025/26","colectivo":"familias"}') $$, '42501', 'Sin acceso',
+select throws_ok($$ select public.resumen('{"curso":"2000/01","colectivo":"familias"}') $$, '42501', 'Sin acceso',
   'un usuario sin perfil no obtiene resultados');
 select is((select count(*) from public.cuestionario), 0::bigint, 'un usuario sin perfil no ve el catálogo');
 reset role; select pg_temp.como('inactivo'); set local role authenticated;
-select throws_ok($$ select public.resumen('{"curso":"2025/26","colectivo":"familias"}') $$, '42501', 'Sin acceso',
+select throws_ok($$ select public.resumen('{"curso":"2000/01","colectivo":"familias"}') $$, '42501', 'Sin acceso',
   'un usuario desactivado no obtiene resultados');
 
 -- administrador: doble factor obligatorio
 reset role; select pg_temp.como('admin', 'aal1'); set local role authenticated;
-select throws_ok($$ select public.resumen('{"curso":"2025/26","colectivo":"familias"}') $$, '42501',
+select throws_ok($$ select public.resumen('{"curso":"2000/01","colectivo":"familias"}') $$, '42501',
   'Doble factor obligatorio para administradores', 'un administrador sin aal2 no obtiene resultados');
 select is((select count(*) from public.usuario_perfil), 1::bigint,
   'un administrador sin aal2 solo ve su propio perfil (para saber que debe verificar el doble factor)');
 reset role; select pg_temp.como('admin', 'aal2'); set local role authenticated;
-select lives_ok($$ select public.resumen('{"curso":"2025/26","colectivo":"familias"}') $$,
+select lives_ok($$ select public.resumen('{"curso":"2000/01","colectivo":"familias"}') $$,
   'un administrador con aal2 obtiene resultados');
 select is((select count(*) from public.usuario_perfil), 6::bigint, 'un administrador con aal2 ve todos los perfiles');
 

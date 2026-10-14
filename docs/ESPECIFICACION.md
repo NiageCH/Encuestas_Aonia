@@ -173,7 +173,7 @@ Profesores y jefes no tienen cuenta en la Fase 1: reciben su informe en PDF.
     - el informe explica la limitación.
 - **Resultado de la comprobación (13/10/2026): el fichero de 2025/26 no lo trae.** Se aplica el plan alternativo: Superiores agregado y `departamento_equipo` vacío. No se deduce la pertenencia a un departamento a partir de qué columnas rellenó cada persona.
 - **Bloques que sí existen en 2025/26:**
-  - **Reuniones de departamento:** 7 afirmaciones sobre las reuniones de cada departamento, contestadas solo por sus miembros. Se carga con el departamento como dimensión del ítem y solo se expone agregada por departamento (§5.7), en el informe del jefe de departamento y en la vista de personal.
+  - **Reuniones de departamento:** 21 afirmaciones sobre las reuniones de cada departamento y sobre su jefe (trato, dirección, trabajo en equipo, reconocimiento, comunicación), contestadas solo por sus miembros. Hay 8 departamentos. Se carga con el departamento como dimensión del ítem y solo se expone agregada por departamento (§5.7), en el informe del jefe de departamento y en la vista de personal.
   - **Equipo de Individualización:** 22 afirmaciones que contestan los tutores sobre sus reuniones y sobre su jefe de equipo (trato, dirección, trabajo en equipo, reconocimiento, comunicación). Va en el informe de ese jefe de equipo.
 - **Dirección:** su informe incluye el bloque Superiores del conjunto y la valoración del centro por parte del personal.
 
