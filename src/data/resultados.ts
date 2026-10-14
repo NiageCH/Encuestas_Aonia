@@ -35,6 +35,7 @@ export interface Filtro {
   colectivo: Colectivo;
   cuestionario?: string;
   etapa?: string;
+  etapas?: string[];
   grupo?: string;
   asignatura?: string;
   docente?: boolean;
@@ -132,4 +133,26 @@ export async function recuentoIdiomas(): Promise<Record<string, number>> {
   const { data, error } = await supabase.rpc("recuento_idiomas", { p_curso: CURSO });
   if (error) throw error;
   return (data ?? {}) as Record<string, number>;
+}
+
+export interface PreguntaComun {
+  codigo: string;
+  texto: string;
+  /** colectivo -> código de la pregunta en el diccionario */
+  preguntas: Partial<Record<Colectivo, string>>;
+}
+
+/** Preguntas comunes entre colectivos (§7.1), candidatas pendientes de confirmar con el colegio. */
+export async function preguntasComunes(): Promise<PreguntaComun[]> {
+  const { data, error } = await supabase
+    .from("pregunta_comun")
+    .select("codigo_comun, texto_es, colectivo, pregunta!inner(codigo_diccionario)");
+  if (error) throw error;
+  const porCodigo = new Map<string, PreguntaComun>();
+  for (const fila of (data ?? []) as unknown as { codigo_comun: string; texto_es: string; colectivo: Colectivo; pregunta: { codigo_diccionario: string } }[]) {
+    const c = porCodigo.get(fila.codigo_comun) ?? { codigo: fila.codigo_comun, texto: fila.texto_es, preguntas: {} };
+    c.preguntas[fila.colectivo] = fila.pregunta.codigo_diccionario;
+    porCodigo.set(fila.codigo_comun, c);
+  }
+  return [...porCodigo.values()];
 }

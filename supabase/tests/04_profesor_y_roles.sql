@@ -1,7 +1,7 @@
 -- Vista de profesor (§7.2 y §5.3) y permisos por rol (§6).
 begin;
 \ir fixtures/datos_ejemplo.psql
-select plan(27);
+select plan(29);
 
 create temp table ids as
   select (select id from public.persona_responsable where apellidos = 'Uno') as uno,
@@ -36,6 +36,9 @@ select is((public.resultados_profesor('2000/01', (select uno from ids), '{"tipo"
   'la vista de profesor admite el detalle por pregunta');
 select is(jsonb_array_length(public.listar_profesores('2000/01')), 2, 'dirección ve todos los profesores');
 
+select is((public.resultados('{"curso":"2000/01","colectivo":"alumnos","etapas":["pai","bachillerato"]}', '{"tipo":"personas"}') -> 'total' ->> 'n')::int,
+  29, 'el ámbito de varias etapas en alumnos suma sus cuestionarios');
+
 -- Coordinación de PAI
 reset role; select pg_temp.como('coord_pai'); set local role authenticated;
 select lives_ok($$ select public.resultados_profesor('2000/01', (select uno from ids)) $$, 'coordinación de PAI ve a un profesor de PAI');
@@ -50,6 +53,8 @@ select is((public.resultados('{"curso":"2000/01","colectivo":"familias"}', '{"ti
   '[]'::jsonb, 'y no recibe las demás etapas');
 select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"familias","etapa":"primaria"}', '{"tipo":"personas"}') $$,
   '42501', 'Sin acceso a la etapa primaria', 'coordinación no pide otra etapa en familias');
+select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"alumnos","etapas":["primaria"]}', '{"tipo":"personas"}') $$,
+  'P0002', 'No hay datos para este filtro', 'con varias etapas, la coordinación solo obtiene la intersección con la suya');
 select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"alumnos","etapa":"primaria"}', '{"tipo":"personas"}') $$,
   '42501', 'Sin acceso a la etapa primaria', 'coordinación no pide otra etapa en alumnos');
 select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"personal"}', '{"tipo":"personas"}') $$,

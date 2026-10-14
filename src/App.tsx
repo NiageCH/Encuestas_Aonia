@@ -7,10 +7,11 @@ import { t } from "./i18n";
 import { Acceso } from "./vistas/Acceso";
 import { Alumnos } from "./vistas/Alumnos";
 import { Familias } from "./vistas/Familias";
+import { Panel } from "./vistas/Panel";
 import { Personal } from "./vistas/Personal";
 
 const ENLACES: Enlace[] = [
-  { ruta: "/", texto: t.nav_panel, pronto: true },
+  { ruta: "/", texto: t.nav_panel },
   { ruta: "/alumnos", texto: t.nav_alumnos },
   { ruta: "/familias", texto: t.nav_familias },
   { ruta: "/personal", texto: t.nav_personal },
@@ -64,13 +65,13 @@ export function App() {
   const enlaces = perfil!.rol === "coordinacion" ? ENLACES.filter((e) => e.ruta !== "/personal") : ENLACES;
   if (perfil!.rol === "coordinacion" && ruta === "/personal") window.location.hash = "#/alumnos";
 
-  // Mientras el panel general no exista, la portada lleva a alumnos.
-  const vista = ruta === "/" || ruta === "/alumnos" ? <Alumnos perfil={perfil!} />
+  const vista = ruta === "/" ? <Panel perfil={perfil!} />
+    : ruta === "/alumnos" ? <Alumnos perfil={perfil!} />
     : ruta === "/familias" ? <Familias perfil={perfil!} />
     : ruta === "/personal" ? <Personal />
     : <Pronto ruta={ruta} />;
   return (
-    <Marco ruta={ruta === "/" ? "/alumnos" : ruta} enlaces={enlaces} usuario={{ nombre: perfil!.nombre, onSalir: salir }}>
+    <Marco ruta={ruta} enlaces={enlaces} usuario={{ nombre: perfil!.nombre, onSalir: salir }}>
       <ProveedorAyuda>{vista}</ProveedorAyuda>
     </Marco>
   );

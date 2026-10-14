@@ -26,6 +26,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ / "etl"))
 
 from cuestionarios_2526 import CURSO, Cuestionario, Diccionario, convertir_todo  # noqa: E402
+from preguntas_comunes_2526 import cargar_comunes  # noqa: E402
 
 LOCAL = "postgresql://postgres:postgres@127.0.0.1:55422/postgres"
 
@@ -205,6 +206,8 @@ def main() -> None:
     import psycopg
     with psycopg.connect(url_bd(args.remoto)) as conn:
         cargar(conn, dic, cuestionarios)
+        with conn.cursor() as cur:
+            print(f"  Preguntas comunes (candidatas): {cargar_comunes(cur)} filas")
         conn.commit()
     print("Carga terminada.")
 
