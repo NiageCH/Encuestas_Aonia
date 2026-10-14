@@ -13,7 +13,6 @@ const ENLACES: Enlace[] = [
   { ruta: "/alumnos", texto: t.nav_alumnos },
   { ruta: "/familias", texto: t.nav_familias },
   { ruta: "/personal", texto: t.nav_personal, pronto: true },
-  { ruta: "/profesores", texto: t.nav_profesores, pronto: true },
 ];
 
 function rutaActual(): string {

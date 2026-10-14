@@ -11,7 +11,6 @@ export const I18N = {
     nav_alumnos: "Alumnos",
     nav_familias: "Familias",
     nav_personal: "Personal",
-    nav_profesores: "Profesores",
     salir: "Salir",
     f_sub: "Curso 2025/26 · Colegio Internacional de Sevilla – San Francisco de Paula",
     f_school: "Web del Colegio",

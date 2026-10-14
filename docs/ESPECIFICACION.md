@@ -145,6 +145,9 @@ Profesores y jefes no tienen cuenta en la Fase 1: reciben su informe en PDF.
 
 ## 7. Funcionalidades
 
+### 7.0 Navegación
+Menú: **Panel general · Alumnos · Familias · Personal**. Los profesores son personal docente, así que no tienen botón propio: dentro de **Personal** se elige **Todos, Docentes o No docentes**. Con **Docentes** aparece además la vista e informe por profesor (§7.2), con sus resultados en las encuestas de alumnos. Los informes de responsables (§7.3) también cuelgan de Personal. La administración de usuarios (§7.5) solo aparece para administradores.
+
 ### 7.1 Panel general (inicio tras el login)
 1. **Recomendación del colegio por colectivo:**
    - barra 100 % apilada (detractores, neutros y promotores) con NPS;
