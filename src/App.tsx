@@ -9,12 +9,14 @@ import { Alumnos } from "./vistas/Alumnos";
 import { Familias } from "./vistas/Familias";
 import { Panel } from "./vistas/Panel";
 import { Personal } from "./vistas/Personal";
+import { Profesores } from "./vistas/Profesores";
 
 const ENLACES: Enlace[] = [
-  { ruta: "/", texto: t.nav_panel },
+  { ruta: "/", texto: t.nav_inicio },
   { ruta: "/alumnos", texto: t.nav_alumnos },
   { ruta: "/familias", texto: t.nav_familias },
   { ruta: "/personal", texto: t.nav_personal },
+  { ruta: "/profesorado", texto: t.nav_profesorado },
 ];
 
 function rutaActual(): string {
@@ -61,12 +63,15 @@ export function App() {
     );
   }
 
-  const enlaces = ENLACES;
+  // La coordinación no tiene acceso a la encuesta de personal (§6); sí a Profesorado (su etapa).
+  const enlaces = perfil!.rol === "coordinacion" ? ENLACES.filter((e) => e.ruta !== "/personal") : ENLACES;
+  if (perfil!.rol === "coordinacion" && ruta === "/personal") window.location.hash = "#/profesorado";
 
   const vista = ruta === "/" ? <Panel perfil={perfil!} />
     : ruta === "/alumnos" ? <Alumnos perfil={perfil!} />
     : ruta === "/familias" ? <Familias perfil={perfil!} />
-    : ruta === "/personal" ? <Personal perfil={perfil!} />
+    : ruta === "/personal" ? <Personal />
+    : ruta === "/profesorado" ? <Profesores perfil={perfil!} />
     : <Pronto ruta={ruta} />;
   return (
     <Marco ruta={ruta} enlaces={enlaces} usuario={{ nombre: perfil!.nombre, onSalir: salir }}>

@@ -78,7 +78,7 @@ Pendiente del paso 3:
 Hecho:
 - Frontend Vite + React + TypeScript con los bloques A y B de la plantilla (`scripts/extraer_plantilla.py`), estilos propios `en-`, textos en `src/i18n.ts` y acceso a datos solo en `src/data/`.
 - Acceso provisional con correo y contraseña (usuarios locales con `supabase/scripts/crear_usuario_local.py`).
-- Menú: Panel general · Alumnos · Familias · Personal (los informes por profesor irán dentro de Personal, §7.0). La coordinación no ve Personal.
+- Menú: Inicio · Alumnos · Familias · Personal · Profesorado (§7.0). La coordinación no ve Personal; en Profesorado, solo su etapa.
 - Alumnos: filtros de cuestionario y grupo, indicadores, profesorado por asignatura, bloques y recomendación.
 - Familias: etapas (con la parte implícita «Sin etapa», §5.6), valoración general destacada y por etapa, bloques, detalle por pregunta, recomendación y lo más valorado.
 - Personal: un filtro a la vez (docentes, no docentes, antigüedad), eNPS, dimensiones, Superiores (solo lo contestó el personal no docente), reuniones de departamento por departamento, Equipo de Individualización, detalle, recomendación, lo más valorado y dato de idioma.
@@ -91,7 +91,7 @@ Hecho:
 - Panel general (paso 6): indicadores por colectivo, recomendación comparada con barras de reparto (alumnos en dos: Primaria y PAI con Bachillerato, migración 10), 26 preguntas comunes candidatas (`etl/preguntas_comunes_2526.py`) y lo más valorado comparado.
 
 - Plantilla de asignación para el colegio: `etl/plantillas/asignacion_docente_2526.xlsx` (curso, grupo, asignatura, apellidos, nombre, correo, departamento; hojas de instrucciones y listas). Carga con `etl/cargar_asignaciones.py` (lo que no casa va a un informe para revisarlo a mano).
-- Vista de profesor (paso 7) dentro de Personal → Docentes: buscador, combinaciones asignatura y grupo, media global con las visibles, comparación con etapa y colegio, detalle por pregunta. La coordinación ve en Personal solo los informes de los profesores de su etapa. Probada con 193 docentes inventados (`etl/ejemplo_asignaciones.py`, en `datos_locales/`).
+- Vista de profesor (paso 7) en «Profesorado», con entrada propia en el menú: buscador, combinaciones asignatura y grupo, media global con las visibles, comparación con etapa y colegio, detalle por pregunta. La coordinación solo ve a los profesores de su etapa. Probada con 193 docentes inventados (`etl/ejemplo_asignaciones.py`, en `datos_locales/`).
 
 Pendiente: PDF por profesor (individual y en lote), revisión en móvil e iPad.
 

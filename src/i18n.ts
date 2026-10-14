@@ -8,6 +8,8 @@ export const I18N = {
     brand_title: "Encuestas de satisfacción",
     brand_sub: "Intranet CIS-SFP · Herramientas",
     nav_panel: "Panel general",
+    nav_inicio: "Inicio",
+    nav_profesorado: "Profesorado",
     nav_alumnos: "Alumnos",
     nav_familias: "Familias",
     nav_personal: "Personal",
@@ -182,7 +184,8 @@ export const I18N = {
     panel_valorado_lead: "Porcentaje de personas de cada colectivo que eligen el aspecto entre los tres que más valoran. Los cinco más elegidos de cada colectivo.",
 
     prof_titulo: "Informes por profesor",
-    prof_lead: "Resultados de cada docente en las encuestas de alumnos de sus asignaturas y grupos.",
+    prof_lead: "Resultados de cada docente según las encuestas de alumnos de sus asignaturas y grupos. No es la encuesta de personal: aquí opinan los alumnos.",
+    prof_lead_coord: "Resultados de los docentes de tu etapa según las encuestas de alumnos de sus asignaturas y grupos.",
     prof_sin_profesores: "Todavía no hay asignación de profesores para este curso. Se carga con el Excel del Colegio (plantilla en etl/plantillas/).",
     prof_buscar: "Buscar profesor",
     prof_buscar_ph: "Nombre, apellidos o departamento",
@@ -205,7 +208,6 @@ export const I18N = {
     prof_detalle_lead: "Media del profesor en cada pregunta, comparada con su etapa y el colegio.",
     prof_col_profesor: "Profesor",
     prof_col_colegio: "Colegio",
-    per_coord_lead: "Informes de los profesores con docencia en tu etapa.",
 
     oculto_menos5: "menos de 5",
     oculto_compl: "oculto",
