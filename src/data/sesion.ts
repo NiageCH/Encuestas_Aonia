@@ -64,8 +64,17 @@ export async function factoresTotp(): Promise<FactorTotp[]> {
   return data.all.filter((f) => f.factor_type === "totp").map((f) => ({ id: f.id, verificado: f.status === "verified" }));
 }
 
-/** Alta de un factor nuevo: devuelve el QR (SVG en data URL) y el secreto para escribirlo a mano. */
-export async function altaTotp(): Promise<{ id: string; qr: string; secreto: string }> {
+/** Alta de un factor nuevo: devuelve el QR (SVG en data URL) y el secreto para escribirlo a mano.
+ *  Si se pide dos veces a la vez (React lo hace en desarrollo), se reutiliza la misma alta:
+ *  dos altas simultáneas dejaban dos factores y un QR que no correspondía. */
+let altaEnCurso: Promise<{ id: string; qr: string; secreto: string }> | null = null;
+
+export function altaTotp(): Promise<{ id: string; qr: string; secreto: string }> {
+  altaEnCurso ??= nuevaAltaTotp().finally(() => { setTimeout(() => { altaEnCurso = null; }, 1000); });
+  return altaEnCurso;
+}
+
+async function nuevaAltaTotp(): Promise<{ id: string; qr: string; secreto: string }> {
   // Un alta a medias (sin verificar) impide empezar otra: se quita antes.
   for (const f of await factoresTotp()) {
     if (!f.verificado) await supabase.auth.mfa.unenroll({ factorId: f.id });

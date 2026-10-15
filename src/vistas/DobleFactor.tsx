@@ -13,13 +13,16 @@ export function DobleFactor({ alSalir }: { alSalir: () => void }) {
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
+    let vigente = true;
     (async () => {
       const verificado = (await factoresTotp()).find((f) => f.verificado);
-      if (verificado) { setFactor(verificado.id); return; }
+      if (verificado) { if (vigente) setFactor(verificado.id); return; }
       const nuevo = await altaTotp();
+      if (!vigente) return;
       setFactor(nuevo.id);
       setAlta({ qr: nuevo.qr, secreto: nuevo.secreto });
-    })().catch(() => setError(t.mfa_error_carga));
+    })().catch(() => vigente && setError(t.mfa_error_carga));
+    return () => { vigente = false; };
   }, []);
 
   async function enviar(e: FormEvent) {
