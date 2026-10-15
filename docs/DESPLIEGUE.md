@@ -52,6 +52,7 @@ Cada paso se comprueba antes de pasar al siguiente.
    - Configuración de Auth igual que `supabase/config.toml`: alta libre desactivada, enlaces de
      24 horas, contraseñas de 10 caracteres con letras y números, TOTP activado, plantillas de
      correo en español (`supabase/templates/`), URL del sitio y de redirección.
+   - Comprobar que el doble factor es obligatorio: `select public.mfa_admin_obligatorio()` debe devolver `true` (el interruptor `app.mfa_admin_obligatorio` solo existe en local).
    - Tests de la base de datos contra la nube: `npx supabase test db --linked` (corren en
      transacciones que se deshacen; no dejan datos).
 2. **Carga de datos en la nube:** `DATABASE_URL` de producción en el `.env` local de Rodrigo,

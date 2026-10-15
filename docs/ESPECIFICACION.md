@@ -223,7 +223,7 @@ Funciones del mockup `referencia/mockups/Mockup_Encuestas_5_admin_usuarios.png`;
 - **Caducidad del enlace:** Supabase limita la validez de los enlaces de correo (como máximo 24 horas, compruébalo en la versión actual). Se usa el máximo permitido y el botón "Reenviar invitación". El texto de la interfaz dirá la caducidad real, no 72 horas.
 - Desactivar, reactivar y reenviar invitación. Último acceso y aviso a los 90 días sin entrar.
 - Registro de actividad, escrito por el servidor: invitaciones, cambios de rol, desactivaciones, exportaciones e informes generados.
-- Doble factor (TOTP) obligatorio para administradores.
+- Doble factor (TOTP) obligatorio para administradores. Solo en la base de datos local de desarrollo puede desactivarse (`app.mfa_admin_obligatorio = 'off'`, ver README); en producción no existe ese ajuste.
 - Un usuario desactivado puede autenticarse, pero no obtiene ningún resultado (todas las RPC lo rechazan) y la aplicación le muestra que no tiene acceso.
 - Reglas: un administrador no puede desactivarse ni quitarse el rol a sí mismo, y siempre queda al menos un administrador activo.
 

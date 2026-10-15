@@ -267,6 +267,19 @@ Para probarlo a mano con una app de autenticación:
 
 En la aplicación, un administrador que entra con contraseña ve la pantalla de doble factor: la primera vez, un QR para su aplicación de autenticación; después, el código de 6 cifras.
 
+### Doble factor desactivado en local (solo desarrollo)
+
+Para probar las pantallas de administración sin la aplicación de autenticación, la base de datos local puede tener el doble factor de administradores desactivado. No está en ninguna migración: en producción sigue siendo obligatorio. Mientras está desactivado, la aplicación lo avisa en una franja. Los tests SQL lo activan siempre para comprobar la regla real.
+
+```sh
+# Desactivar (solo local)
+docker exec supabase_db_encuestas-cis-sfp psql -U supabase_admin -d postgres -c "alter database postgres set app.mfa_admin_obligatorio = 'off'"
+# Volver a activarlo
+docker exec supabase_db_encuestas-cis-sfp psql -U supabase_admin -d postgres -c "alter database postgres reset app.mfa_admin_obligatorio"
+# En los dos casos, reiniciar la API y las funciones
+docker restart supabase_rest_encuestas-cis-sfp supabase_edge_runtime_encuestas-cis-sfp
+```
+
 ### Invitaciones y usuarios en local
 
 - Las invitaciones las envía la Edge Function `supabase/functions/admin-usuarios` (necesita la clave de servicio, que nunca llega al navegador). Supabase local la sirve sola al arrancar.

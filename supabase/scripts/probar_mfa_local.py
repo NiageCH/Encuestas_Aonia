@@ -63,7 +63,18 @@ def sql(sentencia: str) -> None:
     subprocess.run(["docker", "exec", CONTENEDOR_DB, "psql", "-U", "postgres", "-qc", sentencia], check=True)
 
 
+def mfa_activo() -> bool:
+    salida = subprocess.run(["docker", "exec", CONTENEDOR_DB, "psql", "-U", "postgres", "-qAt", "-c",
+                             "select permisos.mfa_obligatorio()"], capture_output=True, text=True, check=True).stdout.strip()
+    return salida == "t"
+
+
 def main() -> int:
+    if not mfa_activo():
+        print("El doble factor está desactivado en esta base de datos local (app.mfa_admin_obligatorio = off).")
+        print("Para probarlo, actívalo: docker exec supabase_db_encuestas-cis-sfp psql -U supabase_admin -d postgres "
+              "-c \"alter database postgres reset app.mfa_admin_obligatorio\" y reinicia la API.")
+        return 0
     env = estado_local()
     base, anon, servicio = env["API_URL"], env["ANON_KEY"], env["SERVICE_ROLE_KEY"]
 

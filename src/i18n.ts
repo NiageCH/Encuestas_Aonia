@@ -53,6 +53,7 @@ export const I18N = {
     mfa_codigo: "Código de 6 cifras",
     mfa_verificar: "Verificar",
     mfa_codigo_incorrecto: "El código no es correcto o ha caducado. Prueba con el siguiente.",
+    mfa_desactivado_local: "Entorno de desarrollo: el doble factor de administradores está desactivado en esta base de datos local. En producción es obligatorio.",
     mfa_error_carga: "No se ha podido preparar el doble factor. Sal y vuelve a entrar.",
 
     cargando: "Cargando…",

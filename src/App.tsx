@@ -3,7 +3,7 @@ import type { Session } from "@supabase/supabase-js";
 import { ProveedorAyuda } from "./componentes/Ayuda";
 import { Marco, type Enlace } from "./componentes/Marco";
 import { tipoEnlace } from "./data/cliente";
-import { alCambiarSesion, miPerfil, salir, sesionActual, type Perfil } from "./data/sesion";
+import { alCambiarSesion, mfaAdminObligatorio, miPerfil, salir, sesionActual, type Perfil } from "./data/sesion";
 import { t } from "./i18n";
 import { aHash, leerRuta } from "./navegacion";
 import { Acceso } from "./vistas/Acceso";
@@ -29,6 +29,7 @@ export function App() {
   const [perfil, setPerfil] = useState<Perfil | null | undefined>(undefined);
   // Llegada desde el enlace de invitación o de recuperación: primero, la contraseña nueva.
   const [pidiendoClave, setPidiendoClave] = useState(tipoEnlace);
+  const [mfaObligatorio, setMfaObligatorio] = useState<boolean | undefined>(undefined);
 
   useEffect(() => {
     const alCambiar = () => { setHash(window.location.hash); document.getElementById("app")?.focus(); };
@@ -44,9 +45,10 @@ export function App() {
   useEffect(() => {
     if (!sesion) { setPerfil(sesion === null ? null : undefined); return; }
     miPerfil(sesion.user.id).then(setPerfil).catch(() => setPerfil(null));
+    mfaAdminObligatorio().then(setMfaObligatorio);
   }, [sesion]);
 
-  if (sesion === undefined || (sesion && perfil === undefined)) {
+  if (sesion === undefined || (sesion && (perfil === undefined || mfaObligatorio === undefined))) {
     return <Marco ruta="" enlaces={[]}><div className="page"><p className="en-cargando">{t.cargando}</p></div></Marco>;
   }
 
@@ -67,7 +69,8 @@ export function App() {
     return <Marco ruta="" enlaces={[]} usuario={usuario}><Acceso mensaje={t.sin_perfil} /></Marco>;
   }
   // Administradores: doble factor obligatorio (aal2) antes de entrar (§3).
-  if (perfil.rol === "administrador" && nivelAcceso(sesion.access_token) !== "aal2") {
+  // Solo en el entorno local de desarrollo puede estar desactivado (docs/DESPLIEGUE.md).
+  if (perfil.rol === "administrador" && mfaObligatorio !== false && nivelAcceso(sesion.access_token) !== "aal2") {
     return <Marco ruta="" enlaces={[]} usuario={usuario}><DobleFactor alSalir={salir} /></Marco>;
   }
 
@@ -83,6 +86,7 @@ export function App() {
     : <Usuarios perfil={perfil} />;
   return (
     <Marco ruta={ruta.seccion} enlaces={enlaces} usuario={{ nombre: perfil.nombre, onSalir: salir }}>
+      {perfil.rol === "administrador" && mfaObligatorio === false && <p className="en-aviso-entorno" role="note">{t.mfa_desactivado_local}</p>}
       <ProveedorAyuda>{vista}</ProveedorAyuda>
     </Marco>
   );

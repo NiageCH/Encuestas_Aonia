@@ -21,6 +21,10 @@
 
 create extension if not exists pgtap with schema extensions;
 
+-- Los tests comprueban la regla real: doble factor obligatorio para administradores, aunque
+-- la base de datos local lo tenga desactivado para desarrollo.
+set local app.mfa_admin_obligatorio = 'on';
+
 do $fixture$
 declare
   v_curso smallint;

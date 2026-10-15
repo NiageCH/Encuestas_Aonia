@@ -45,7 +45,9 @@ Deno.serve(async (req) => {
 
   const { data: yo } = await admin.from("usuario_perfil").select("rol, activo").eq("id", sesion.user.id).maybeSingle();
   if (!yo?.activo || yo.rol !== "administrador") return respuesta(403, { error: "Solo para administradores" });
-  if (nivelAcceso(jwt) !== "aal2") return respuesta(403, { error: "Doble factor obligatorio para administradores" });
+  // Doble factor obligatorio salvo que la base de datos local lo tenga desactivado (desarrollo).
+  const { data: mfa } = await admin.rpc("mfa_admin_obligatorio");
+  if (mfa !== false && nivelAcceso(jwt) !== "aal2") return respuesta(403, { error: "Doble factor obligatorio para administradores" });
 
   let cuerpo: Record<string, unknown>;
   try {

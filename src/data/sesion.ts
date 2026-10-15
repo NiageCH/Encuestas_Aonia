@@ -89,3 +89,10 @@ export async function verificarTotp(factorId: string, codigo: string): Promise<v
   const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId, code: codigo.replace(/\s+/g, "") });
   if (error) throw error;
 }
+
+/** ¿Doble factor obligatorio para administradores? Siempre sí, salvo que la base de datos local
+ *  lo tenga desactivado para desarrollo. Ante cualquier duda, se considera obligatorio. */
+export async function mfaAdminObligatorio(): Promise<boolean> {
+  const { data, error } = await supabase.rpc("mfa_admin_obligatorio");
+  return error ? true : data !== false;
+}

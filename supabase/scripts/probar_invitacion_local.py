@@ -16,7 +16,7 @@ import sys
 import time
 import urllib.request
 
-from probar_mfa_local import CONTENEDOR_DB, aal, codigo_totp, estado_local, peticion
+from probar_mfa_local import CONTENEDOR_DB, aal, codigo_totp, estado_local, mfa_activo, peticion
 
 ADMIN, CLAVE = "admin.invita@ejemplo.test", "Prueba-local-2026"
 BUZON = "http://127.0.0.1:55424/api/v1"
@@ -86,8 +86,11 @@ def main() -> int:
     t2 = v["access_token"]
     print(f"Administrador: {aal(t2)}")
 
-    estado, r = funcion(base, anon, t1, {"accion": "invitar", "nombre": "X", "correo": "x@ejemplo.test", "rol": "direccion"})
-    comprobar(estado == 403, f"sin doble factor (aal1), la función rechaza la invitación ({estado})")
+    if mfa_activo():
+        estado, r = funcion(base, anon, t1, {"accion": "invitar", "nombre": "X", "correo": "x@ejemplo.test", "rol": "direccion"})
+        comprobar(estado == 403, f"sin doble factor (aal1), la función rechaza la invitación ({estado})")
+    else:
+        print("  · doble factor desactivado en local: no se comprueba el rechazo sin aal2")
 
     correo = f"invitada.{int(time.time())}@ejemplo.test"
     estado, r = funcion(base, anon, t2, {"accion": "invitar", "nombre": "Persona Invitada", "correo": correo, "rol": "coordinacion", "etapa": "pai"})

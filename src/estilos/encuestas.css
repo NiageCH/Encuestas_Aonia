@@ -13,6 +13,7 @@
 .en-form input:focus { outline: 2px solid var(--sky); outline-offset: 1px; }
 .en-form .btn { border: 0; justify-self: start; }
 .en-error { color: var(--warn); font-weight: 600; margin: 0; }
+.en-aviso-entorno { margin: 0; padding: .5rem 1rem; background: color-mix(in srgb, var(--warn) 14%, #fff); color: var(--ink); font-size: .85rem; font-weight: 600; text-align: center; border-bottom: 1px solid color-mix(in srgb, var(--warn) 35%, #fff); }
 .en-enlace { justify-self: start; border: 0; background: none; padding: 0; font: inherit; font-size: .9rem; color: var(--brand); text-decoration: underline; cursor: pointer; }
 .en-enlace:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
 .en-mfa-alta { display: grid; gap: .5rem; justify-items: start; }
