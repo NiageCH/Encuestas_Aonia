@@ -38,10 +38,22 @@ def leer(ruta: Path) -> list[dict]:
     cab = [str(c or "").strip() for c in filas[0]]
     if cab[:len(COLUMNAS)] != COLUMNAS:
         raise ValueError(f"Columnas inesperadas: {cab}. Deben ser {COLUMNAS}")
+    # Hoja opcional «Departamentos» (la genera convertir_alexia_2526.py): manda sobre la de
+    # asignación en departamento, apellidos y nombre de cada correo.
+    por_correo = {}
+    if "Departamentos" in hoja.parent.sheetnames:
+        deps = list(hoja.parent["Departamentos"].iter_rows(values_only=True))
+        cd = [str(c or "").strip() for c in deps[0]]
+        for f in deps[1:]:
+            r = {c: (str(v).strip() if v is not None else "") for c, v in zip(cd, f)}
+            if r.get("Correo"):
+                por_correo[r["Correo"].lower()] = r
     salida = []
     for n, f in enumerate(filas[1:], start=2):
         d = {c: (str(v).strip() if v is not None else "") for c, v in zip(COLUMNAS, f)}
         if any(d.values()):
+            for c in ("Departamento", "Apellidos", "Nombre"):
+                d[c] = por_correo.get(d["Correo"].lower(), {}).get(c) or d[c]
             d["fila"] = n
             salida.append(d)
     return salida

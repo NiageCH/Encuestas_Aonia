@@ -47,6 +47,7 @@ python3 supabase/scripts/probar_mfa_local.py   # prueba el doble factor del admi
 python3 supabase/scripts/probar_invitacion_local.py   # prueba invitaciones, contraseñas y permisos
 .venv/bin/python etl/cargar_2526.py            # carga 2025/26 (--ensayo: sin tocar la base de datos)
 .venv/bin/python etl/validar_2526.py           # validación contra el prototipo
+.venv/bin/python etl/convertir_alexia_2526.py      # listado de Alexia → plantilla de asignación (datos_locales/)
 .venv/bin/python etl/cargar_asignaciones.py RUTA.xlsx  # asignación de profesores (plantilla en etl/plantillas/)
 npm run dev                                    # frontend en http://127.0.0.1:5173
 python3 supabase/scripts/crear_usuario_local.py CORREO CLAVE direccion   # usuario de prueba local
@@ -62,5 +63,5 @@ Lleva el avance en `docs/PROGRESO.md`: qué está hecho, qué falta y qué está
 
 Bloqueos actuales (detalle en la especificación §10):
 - Cuestionario de personal en inglés (4 respuestas): falta el fichero.
-- Excel de profesores por asignatura y grupo, con departamento: pendiente del colegio.
+- Departamento de cada docente: el listado de Alexia no lo trae; hay una propuesta automática que el colegio debe confirmar.
 - Departamento o equipo en la encuesta de personal: no viene en 2025/26; se aplica el plan alternativo (§7.3).

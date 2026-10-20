@@ -10,7 +10,7 @@ Plan de trabajo en `docs/ESPECIFICACION.md` §9.
 | 4. Auth, perfiles, invitaciones, doble factor | Hecho en local (falta Brevo, en el despliegue) |
 | 5. Diseño de la intranet y vistas por colectivo | En curso: alumnos, familias y personal hechas en local |
 | 6. Panel general | Hecho en local (preguntas comunes candidatas, pendientes de confirmar) |
-| 7. Vista e informes de profesor | Hecho con datos de ejemplo (vista y PDF individual y en ZIP); falta el Excel del colegio |
+| 7. Vista e informes de profesor | Hecho con la asignación real de Alexia (en local); falta que el colegio confirme los departamentos |
 | 8. Informes de responsables | Hecho: Equipo de Individualización, departamentos con 5 o más y Superiores (no docentes); vista y PDF |
 | 9. Administración de usuarios y registro | Hecho en local |
 | 10. Despliegue | Plan preparado (`docs/DESPLIEGUE.md`); pendiente de las decisiones y cuentas de Rodrigo |
@@ -116,8 +116,18 @@ Pendiente: Excel de asignación del colegio, revisión en móvil e iPad; en el d
 - `supabase/tests/08_personal_informes.sql`: lo que cada rol puede pedir al servidor en la nueva navegación (la coordinación, solo Profesores de su etapa) y la media de departamento según los alumnos (solo combinaciones visibles).
 - Total: 194 tests SQL y 10 de navegación.
 
+## Asignación real de profesores (20/10/2026)
+
+- El colegio entrega el listado de Alexia (grupos, asignaturas y docentes de 2025/26), en `datos_locales/fuentes/`. No trae departamento.
+- `etl/convertir_alexia_2526.py` lo pasa al formato de la plantilla:
+  - Equivalencias por cuestionario: las encuestas agrupan varias materias de Alexia en una pregunta («Lengua española o lengua adaptada»).
+  - No se cargan tutorías, refuerzos, CICE, Mindfulness, Unidad de Indagación, Aprendizaje Interdisciplinario, Música PIM de Primaria, Monografía y similares, porque los alumnos no las valoran.
+  - No se atribuyen «Inmersión lingüística» ni «Optativa» de la encuesta: sus grupos no son grupos de clase.
+  - Departamento propuesto por lo que imparte cada docente (26 a revisar), en la hoja «Departamentos», que manda al cargar.
+- Cargado en local: 97 docentes, 799 filas, 396 combinaciones grupo y asignatura, 135 con varios docentes (cada docente recibe el resultado de la combinación).
+
 ## Bloqueos
 
 - Cuestionario de personal en inglés (4 respuestas).
-- Excel de profesores por asignatura y grupo, con departamento (paso 7 con datos reales).
+- Departamento de cada docente: propuesta automática pendiente de confirmar por el colegio.
 - Departamento o equipo en el fichero de personal: se verifica en el paso 3.
