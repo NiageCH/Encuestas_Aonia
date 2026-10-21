@@ -219,11 +219,14 @@ python3 -m venv .venv && .venv/bin/pip install -r etl/requirements.txt
 
 - Cada columna de cada fichero se carga o se descarta con un motivo; una columna sin regla detiene la carga.
 - Nunca se cargan identificadores, fechas, IP, correo, nombres, respuestas abiertas, sexo ni el Plan de Igualdad.
+- El nombre del profesor o de la optativa que escriben los alumnos solo se usa en memoria para atribuir la respuesta a un docente; el texto nunca se carga. Del nivel de tutoría del personal solo se carga el tramo, y solo para el bloque del Equipo de Individuación.
 - Informes de carga y de validación: `datos_locales/informes/`.
 
-Asignación de profesores (Excel del colegio):
+Asignación de profesores y responsables (orden de carga: encuestas, conversión, asignación y responsables):
 
 ```sh
+.venv/bin/python etl/convertir_alexia_2526.py                         # listado de Alexia + revisión del colegio → plantilla (datos_locales/)
+.venv/bin/python etl/cargar_responsables.py                           # jefes de departamento y del Equipo de Individuación (datos_locales/)
 .venv/bin/python etl/crear_plantilla_asignacion.py                    # plantilla para el colegio (etl/plantillas/)
 .venv/bin/python etl/cargar_asignaciones.py RUTA.xlsx --ensayo         # valida y lista lo que no casa
 .venv/bin/python etl/cargar_asignaciones.py RUTA.xlsx                  # carga (sustituye las del curso)
@@ -244,6 +247,10 @@ npm run db:test
 | `03_calculos.sql` | Media agrupada, NS/NC, significado de n, distribución, NPS en escalas de 0 a 10 y de 1 a 10, lo más valorado |
 | `04_profesor_y_roles.sql` | Vista de profesor y permisos de cada rol |
 | `05_integridad.sql` | Reglas de carga que la ETL no puede saltarse |
+| `06_etapas_y_departamentos.sql` | Familias con varias etapas, reuniones de departamento aisladas, alumnos sin grupo |
+| `07_administracion.sql` | Usuarios, roles, desactivación y registro de actividad |
+| `08_personal_informes.sql` | Lo que cada rol puede pedir en Personal → Informes por persona |
+| `09_jefes_tramos_atribucion.sql` | Jefes de departamento, tramo de tutoría aislado de todo lo demás, partes ocultas juntas, clases propias, compartidas y atribuidas |
 
 Los datos de `supabase/tests/fixtures/datos_ejemplo.psql` son **inventados** y están diseñados para provocar cada caso.
 

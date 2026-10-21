@@ -142,10 +142,18 @@ Análisis hechos, a la espera de decisión (§10, puntos 11 a 14):
 - Los dos departamentos de un mismo jefe, juntos.
 - Huecos de Alexia en Inglés de Y10 y Y12.
 
-Pendiente de aplicar en código: plan presentado a Rodrigo el 21/10/2026.
+Hecho (21/10/2026, fases A y B del plan):
+- Migración 16: departamentos oficiales y su equivalencia con la encuesta, situación de cada docente, tramo de tutoría y atribución a un docente, clases propias, compartidas y atribuidas, informes por jefe y por tramo, conjuntos de partes ocultas.
+- Carga: `etl/departamentos_2526.py` (nombres oficiales y equivalencias), `etl/convertir_alexia_2526.py` (aplica la revisión del colegio y reparte Inglés y Adquisición; los 9 dudosos, donde más clases dan, con un Excel para el colegio), `etl/atribucion_2526.py` (nombre del profesor y optativa) y `etl/cargar_responsables.py` (jefes y responsables del equipo, desde `datos_locales/responsables_2526.xlsx`).
+- En local: 9 cargos de jefe de departamento y 4 del equipo; tramos 7, 5, 4 y 2; 331 respuestas atribuidas (Inglés de Y10 y Y12 sin atribuir).
+- Vistas y PDF: informe del profesor con «Sus clases» y «Valoraciones compartidas»; Departamentos por jefe (un PDF por persona con sus departamentos); Equipos con todo el equipo y cada tramo (el compartido, con nota); «Individuación» en todos los textos.
+- Tests: 234 SQL (40 nuevos, entre ellos que el tramo no es accesible desde ninguna otra RPC) y 10 de navegación. Las migraciones se aplican desde cero sin errores.
+
+Orden de carga: `cargar_2526.py` → `convertir_alexia_2526.py` → `cargar_asignaciones.py` → `cargar_responsables.py`.
 
 ## Bloqueos
 
 - Cuestionario de personal en inglés (4 respuestas).
-- Docentes que imparten Lengua y Literatura Inglesas y Adquisición de Lenguas a la vez: departamento por confirmar.
+- Docentes que imparten Lengua y Literatura Inglesas y Adquisición de Lenguas a la vez (9): departamento por confirmar.
+- Inglés de Y10 y Y12: posible hueco en Alexia; sin atribución por nombre hasta que el colegio lo aclare.
 - Departamento o equipo en el fichero de personal: se verifica en el paso 3.

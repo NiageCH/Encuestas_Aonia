@@ -3,7 +3,8 @@
 
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { Style } from "@react-pdf/types";
-import type { Fila, InformeProfesor } from "../data/resultados";
+import type { CeldaProfesor, Fila, InformeProfesor } from "../data/resultados";
+import { etiquetaClase, ordenarClases } from "../etiquetas";
 import * as f from "../formato";
 import { t } from "../i18n";
 import { base, C, Cabecera, Pie, textoOculto } from "./comun";
@@ -27,12 +28,25 @@ const s = StyleSheet.create({
   thFila: { flexDirection: "row", paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: C.navy },
   th: { fontSize: 7.5, fontWeight: 700, color: C.muted, textTransform: "uppercase" },
   colPregunta: { flex: 1, paddingRight: 6 },
-  colNum: { width: 52, textAlign: "right" },
+  colNum: { width: 66, textAlign: "right" },
 });
 
 function Media({ fila, estilo }: { fila?: Fila; estilo?: Style }) {
   if (!fila) return <Text style={estilo}>·</Text>;
   return fila.suprimido ? <Text style={[base.oculto, estilo ?? {}]}>{textoOculto(fila)}</Text> : <Text style={estilo}>{f.media(fila.media!)}</Text>;
+}
+
+function FilaClase({ c }: { c: CeldaProfesor }) {
+  return (
+    <View style={s.fila} wrap={false}>
+      <Text style={s.colEtiqueta}>{etiquetaClase(c)}</Text>
+      <View style={s.colBarra}>
+        {!c.suprimido && <View style={[s.relleno, { width: `${((c.media! - 1) / 5) * 100}%` }]} />}
+      </View>
+      <Media fila={c} estilo={s.colValor} />
+      <Text style={s.colN}>{c.suprimido ? "" : `n ${f.recuento(c.n!)}`}</Text>
+    </View>
+  );
 }
 
 export interface DatosInformePdf {
@@ -45,8 +59,9 @@ export function InformeProfesorPdf({ profesor, informe, generado }: DatosInforme
   const g = informe.global;
   const etapas = Object.keys(informe.comparacion).filter((k) => k !== "colegio");
   const nombreEtapa = (e: string) => t.etapas[e as keyof typeof t.etapas] ?? e;
-  const celdas = [...informe.celdas].sort((a, b) =>
-    a.clave.asignatura.localeCompare(b.clave.asignatura, "es") || a.clave.grupo.localeCompare(b.clave.grupo, "es", { numeric: true }));
+  const celdas = ordenarClases(informe.celdas);
+  const propias = celdas.filter((c) => c.tipo !== "compartida");
+  const compartidas = celdas.filter((c) => c.tipo === "compartida");
   const hayComplementaria = celdas.some((c) => c.motivo === "complementaria");
 
   return (
@@ -82,16 +97,16 @@ export function InformeProfesorPdf({ profesor, informe, generado }: DatosInforme
 
           <Text style={base.h2}>{t.prof_por_asignatura}</Text>
           <Text style={base.lead}>{t.prof_por_asignatura_lead}</Text>
-          {celdas.map((c) => (
-            <View key={`${c.clave.cuestionario}-${c.clave.grupo}-${c.clave.asignatura}`} style={s.fila} wrap={false}>
-              <Text style={s.colEtiqueta}>{c.clave.asignatura} · {c.clave.grupo}</Text>
-              <View style={s.colBarra}>
-                {!c.suprimido && <View style={[s.relleno, { width: `${((c.media! - 1) / 5) * 100}%` }]} />}
-              </View>
-              <Media fila={c} estilo={s.colValor} />
-              <Text style={s.colN}>{c.suprimido ? "" : `n ${f.recuento(c.n!)}`}</Text>
-            </View>
-          ))}
+          {propias.length === 0 && <Text style={base.muted}>{compartidas.length ? t.prof_sin_propias : t.sin_datos_seccion}</Text>}
+          {propias.map((c) => <FilaClase key={`${c.clave.cuestionario}-${c.clave.grupo}-${c.clave.asignatura}`} c={c} />)}
+
+          {compartidas.length > 0 && (
+            <>
+              <Text style={base.h2}>{t.prof_compartidas}</Text>
+              <Text style={base.aviso}>{t.prof_compartidas_nota}</Text>
+              {compartidas.map((c) => <FilaClase key={`${c.clave.cuestionario}-${c.clave.grupo}-${c.clave.asignatura}`} c={c} />)}
+            </>
+          )}
 
           <Text style={base.h2}>{t.prof_detalle}</Text>
           <Text style={base.lead}>{t.prof_detalle_lead}</Text>

@@ -1,14 +1,17 @@
 // Personal → Informes por persona (§7.0 y §7.3), de arriba abajo en la jerarquía del colegio:
-// Dirección, Equipos, Departamentos y Profesores. Cada nivel con su PDF. La coordinación solo
-// llega a Profesores (los de su etapa); el servidor lo impone.
+// Dirección, Equipos (Equipo de Individuación, todo o por tramo), Departamentos (por jefe, con
+// sus departamentos) y Profesores. Cada nivel con su PDF. La coordinación solo llega a
+// Profesores (los de su etapa); el servidor lo impone.
 
 import { useEffect, useState } from "react";
 import { CabeceraPreguntas, FilaPregunta, LeyendaAcuerdo, lineasOculto } from "../componentes/Graficos";
 import { Oculto } from "../componentes/Oculto";
 import {
-  informeResponsable, mediaDepartamentoAlumnos, resultados,
-  type InformeResponsable, type MediaDepartamentoAlumnos, type TipoResponsable,
+  informeEquipo, informeJefe, informeResponsable, listarEquipo, listarJefes,
+  type DetallePregunta, type Fila, type GrupoEquipo, type InformeJefe, type InformeResponsable, type Jefe,
+  type MediaDepartamentoAlumnos, type TipoResponsable,
 } from "../data/resultados";
+import { enumerar, notaReuniones, responsablesEquipo, textoAlumnos, tituloEquipo, tituloReuniones } from "../etiquetas";
 import type { Perfil } from "../data/sesion";
 import * as f from "../formato";
 import { t } from "../i18n";
@@ -62,68 +65,54 @@ function NivelDireccion() {
 }
 
 function NivelEquipos() {
+  const [grupos, setGrupos] = useState<GrupoEquipo[] | null>(null);
+  const [elegido, setElegido] = useState<number>(-1);   // -1: todo el equipo
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => { listarEquipo().then(setGrupos).catch(() => setError(t.error_datos)); }, []);
+  const g = grupos && elegido >= 0 ? grupos[elegido] : null;
+
   return (
     <>
       <h2 className="section-title">{t.ipp_nivel.equipos}</h2>
       <p className="sec-lead">{t.ipp_equipos_lead}</p>
-      <BotonPdfNivel nombre="Equipo_Individualizacion" titulo={t.resp_equipo} subtitulo={t.resp_equipo_sub} secciones={[EQUIPO]} />
-      <SeccionInforme seccion={EQUIPO} />
-    </>
-  );
-}
-
-function NivelDepartamentos() {
-  const [deps, setDeps] = useState<string[] | null>(null);
-  const [ocultos, setOcultos] = useState(0);
-  const [elegido, setElegido] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    resultados({ colectivo: "personal" }, { tipo: "bloque", codigo: "reuniones_departamento" }, ["departamento"])
-      .then((r) => {
-        // Solo los departamentos con su resultado visible (5 o más personas).
-        const visibles = r.partes.filter((p) => !p.suprimido).map((p) => p.clave.departamento).sort((a, b) => a.localeCompare(b, "es"));
-        setDeps(visibles);
-        setOcultos(r.partes.filter((p) => p.suprimido).length);
-        setElegido(visibles[0] ?? null);
-      })
-      .catch(() => setError(t.error_datos));
-  }, []);
-
-  const seccion = (d: string): SeccionPedida => ({
-    tipo: "departamento", ambito: d, titulo: t.ipp_reuniones, subtitulo: t.resp_departamento_sub, etiquetas: t.escala_acuerdo_dep,
-  });
-
-  return (
-    <>
-      <h2 className="section-title">{t.ipp_nivel.departamentos}</h2>
-      <p className="sec-lead">{t.ipp_departamentos_lead}</p>
       {error && <p className="notice">{error}</p>}
-      {deps && (
+      {grupos && (
         <div className="en-prof">
           <div className="card en-noprint">
-            <ul className="en-prof-lista" aria-label={t.ipp_nivel.departamentos}>
-              {deps.map((d) => (
-                <li key={d}>
-                  <button type="button" className={elegido === d ? "on" : undefined} aria-pressed={elegido === d} onClick={() => setElegido(d)}>
-                    <strong>{d}</strong>
+            <ul className="en-prof-lista" aria-label={t.ipp_nivel.equipos}>
+              <li>
+                <button type="button" className={elegido === -1 ? "on" : undefined} aria-pressed={elegido === -1} onClick={() => setElegido(-1)}>
+                  <strong>{t.eq_todo}</strong><small>{t.eq_todo_sub}</small>
+                </button>
+              </li>
+              {grupos.map((x, i) => (
+                <li key={x.tramos.join("-")}>
+                  <button type="button" className={elegido === i ? "on" : undefined} aria-pressed={elegido === i} onClick={() => setElegido(i)}>
+                    <strong>{tituloEquipo(x.tramos)}</strong>
+                    {x.responsables.length > 0 && <small>{responsablesEquipo(x)}</small>}
                   </button>
                 </li>
               ))}
             </ul>
-            {ocultos > 0 && <p className="en-hint" style={{ marginTop: ".6rem" }}>{t.resp_ocultos(ocultos)}</p>}
+            <p className="en-hint" style={{ marginTop: ".6rem" }}>{t.eq_sin_tramo}</p>
           </div>
           <div>
-            {elegido && (
+            {g ? (
               <>
                 <div className="card">
                   <p className="eyebrow">{t.resp_informe}</p>
-                  <h3 className="en-prof-nombre">{t.resp_departamento(elegido)}</h3>
-                  <BotonPdfNivel nombre={`Departamento_${elegido}`} titulo={t.resp_departamento(elegido)} subtitulo={t.resp_departamento_sub}
-                                 secciones={[seccion(elegido)]} departamento={elegido} />
-                  <AlumnosDepartamento departamento={elegido} />
+                  <h3 className="en-prof-nombre">{tituloEquipo(g.tramos)}</h3>
+                  {g.responsables.length > 0 && <p className="en-hint">{t.eq_responsables}: {responsablesEquipo(g)}</p>}
+                  <BotonPdf generar={async () => (await import("../pdf/generar")).descargarInformeEquipo(g)} />
                 </div>
-                <SeccionInforme key={elegido} seccion={seccion(elegido)} />
+                <SeccionDatos key={g.tramos.join("-")} titulo={t.resp_equipo} subtitulo={t.eq_sub_tramo} etiquetas={t.escala_acuerdo_per}
+                              nota={g.tramos.length > 1 ? t.eq_compartido_nota : undefined}
+                              cargar={() => informeEquipo(g.tramos)} />
+              </>
+            ) : (
+              <>
+                <BotonPdfNivel nombre="Equipo_Individuacion" titulo={t.resp_equipo} subtitulo={t.resp_equipo_sub} secciones={[EQUIPO]} />
+                <SeccionInforme seccion={EQUIPO} />
               </>
             )}
           </div>
@@ -133,29 +122,108 @@ function NivelDepartamentos() {
   );
 }
 
-function AlumnosDepartamento({ departamento }: { departamento: string }) {
-  const [m, setM] = useState<MediaDepartamentoAlumnos | null>(null);
+function NivelDepartamentos() {
+  const [jefes, setJefes] = useState<Jefe[] | null>(null);
+  const [elegido, setElegido] = useState<Jefe | null>(null);
+  const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    setM(null);
-    mediaDepartamentoAlumnos(departamento).then(setM).catch(() => {});
-  }, [departamento]);
-  if (!m) return <p className="en-cargando">{t.cargando}</p>;
+    listarJefes().then((j) => { setJefes(j); setElegido(j[0] ?? null); }).catch(() => setError(t.error_datos));
+  }, []);
+
   return (
-    <div className="en-kpis en-kpis3" style={{ marginTop: ".6rem" }}>
-      <div className="card en-kpi">
-        <div className="l">{t.dep_alumnos_media}</div>
-        <div className="v">{m.global.suprimido
-          ? <span className="en-oculto">{m.global.motivo === "sin_asignacion" ? t.dep_alumnos_pendiente_corto : t.prof_sin_visibles}</span>
-          : <>{f.media(m.global.media!)} <small>/ 6</small></>}</div>
-        <div className="d">{m.global.suprimido ? (m.global.motivo === "sin_asignacion" ? t.dep_alumnos_pendiente : "")
-          : t.dep_alumnos_detalle(m.profesores, m.global.combinaciones!, f.recuento(m.global.n_valoraciones!))}</div>
+    <>
+      <h2 className="section-title">{t.ipp_nivel.departamentos}</h2>
+      <p className="sec-lead">{t.ipp_departamentos_lead}</p>
+      {error && <p className="notice">{error}</p>}
+      {jefes && (
+        <div className="en-prof">
+          <div className="card en-noprint">
+            <ul className="en-prof-lista" aria-label={t.jefe_lista}>
+              {jefes.map((j) => (
+                <li key={j.id}>
+                  <button type="button" className={elegido?.id === j.id ? "on" : undefined} aria-pressed={elegido?.id === j.id} onClick={() => setElegido(j)}>
+                    <strong>{enumerar(j.departamentos)}</strong><small>{j.nombre} {j.apellidos}</small>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>{elegido && <InformeDeJefe key={elegido.id} jefe={elegido} />}</div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function InformeDeJefe({ jefe }: { jefe: Jefe }) {
+  const [inf, setInf] = useState<InformeJefe | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => { informeJefe(jefe.id).then(setInf).catch(() => setError(t.error_datos)); }, [jefe.id]);
+  if (error) return <p className="notice">{error}</p>;
+  if (!inf) return <p className="en-cargando">{t.cargando}</p>;
+  return (
+    <>
+      <div className="card">
+        <p className="eyebrow">{t.resp_informe}</p>
+        <h3 className="en-prof-nombre">{jefe.nombre} {jefe.apellidos}</h3>
+        <p className="en-hint">{t.jefe_departamentos(inf.departamentos)}</p>
+        <BotonPdf generar={async () => (await import("../pdf/generar")).descargarInformeJefe(jefe)} />
+        <div className="en-kpis en-kpis3" style={{ marginTop: ".6rem" }}>
+          {inf.alumnos.map((a) => <AlumnosDepartamento key={a.departamento} departamento={a.departamento} m={a.media} />)}
+        </div>
       </div>
-      {m.combinaciones_excluidas > 0 && <p className="en-hint" style={{ gridColumn: "span 2", alignSelf: "center" }}>{t.prof_excluidas(m.combinaciones_excluidas)}</p>}
+      {inf.reuniones.length === 0 && <p className="notice" style={{ marginTop: ".9rem" }}>{t.jefe_sin_reuniones}</p>}
+      {inf.reuniones.map((r) => (
+        <DatosSeccion key={r.unidades.join("-")} titulo={tituloReuniones(r)} subtitulo={t.resp_departamento_sub} etiquetas={t.escala_acuerdo_dep}
+                      nota={notaReuniones(r, inf.departamentos, inf.reuniones.length)} datos={r} />
+      ))}
+    </>
+  );
+}
+
+function AlumnosDepartamento({ departamento, m }: { departamento: string; m: MediaDepartamentoAlumnos }) {
+  const x = textoAlumnos(m);
+  return (
+    <div className="card en-kpi">
+      <div className="l">{t.jefe_alumnos(departamento)}</div>
+      <div className="v">{m.global.suprimido ? <span className="en-oculto">{m.global.motivo === "sin_asignacion" ? t.dep_alumnos_pendiente_corto : t.prof_sin_visibles}</span>
+        : <>{f.media(m.global.media!)} <small>/ 6</small></>}</div>
+      <div className="d">{m.global.suprimido ? "" : x.detalle}{x.nota && <><br />{x.nota}</>}</div>
     </div>
   );
 }
 
-/** Media de un bloque y el detalle de cada pregunta. */
+/** Carga los datos de una sección y la pinta. */
+function SeccionDatos(props: { titulo: string; subtitulo: string; etiquetas: string[]; nota?: string;
+                               cargar: () => Promise<{ total: Fila; preguntas: DetallePregunta[] }> }) {
+  const [datos, setDatos] = useState<{ total: Fila; preguntas: DetallePregunta[] } | null>(null);
+  useEffect(() => {
+    let vigente = true;
+    props.cargar().then((d) => vigente && setDatos(d)).catch(() => {});
+    return () => { vigente = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  if (!datos) return <p className="en-cargando">{t.cargando}</p>;
+  return <DatosSeccion {...props} datos={datos} />;
+}
+
+function BotonPdf({ generar }: { generar: () => Promise<void> }) {
+  const [estado, setEstado] = useState<"" | "generando" | "error">("");
+  async function pulsar() {
+    setEstado("generando");
+    try { await generar(); setEstado(""); } catch { setEstado("error"); }
+  }
+  return (
+    <p className="en-noprint">
+      <button type="button" className="btn primary" onClick={pulsar} disabled={estado === "generando"}>
+        📄 {estado === "generando" ? t.pdf_generando : t.pdf_descargar}
+      </button>
+      {estado === "error" && <span className="en-error" role="alert"> {t.pdf_error}</span>}
+    </p>
+  );
+}
+
+/** Media de un bloque y el detalle de cada pregunta (Dirección y todo el equipo). */
 function SeccionInforme({ seccion }: { seccion: SeccionPedida }) {
   const [datos, setDatos] = useState<InformeResponsable | null>(null);
   useEffect(() => {
@@ -164,13 +232,18 @@ function SeccionInforme({ seccion }: { seccion: SeccionPedida }) {
     informeResponsable(seccion.tipo as TipoResponsable, seccion.ambito).then((d) => vigente && setDatos(d)).catch(() => {});
     return () => { vigente = false; };
   }, [seccion.tipo, seccion.ambito]);
-
   if (!datos) return <p className="en-cargando">{t.cargando}</p>;
+  return <DatosSeccion titulo={seccion.titulo} subtitulo={seccion.subtitulo} nota={seccion.nota} etiquetas={seccion.etiquetas} datos={datos} />;
+}
+
+function DatosSeccion({ titulo, subtitulo, nota, etiquetas, datos }: {
+  titulo: string; subtitulo: string; nota?: string; etiquetas: string[]; datos: { total: Fila; preguntas: DetallePregunta[] };
+}) {
   const tot = datos.total;
   return (
     <div className="card" style={{ marginTop: ".9rem" }}>
-      <h3>{seccion.titulo}</h3>
-      <p className="en-hint">{seccion.subtitulo}</p>
+      <h3>{titulo}</h3>
+      <p className="en-hint">{subtitulo}</p>
       <div className="en-kpis en-kpis3">
         <div className="card en-kpi hl">
           <div className="l">{t.resp_media_bloque}</div>
@@ -178,19 +251,19 @@ function SeccionInforme({ seccion }: { seccion: SeccionPedida }) {
           <div className="d">{tot.suprimido ? lineasOculto(tot) : t.tip_personas(f.recuento(tot.n!))}</div>
         </div>
       </div>
-      {seccion.nota && <p className="notice" style={{ marginTop: ".9rem" }}>{seccion.nota}</p>}
+      {nota && <p className="notice" style={{ marginTop: ".9rem" }}>{nota}</p>}
       {!tot.suprimido && (
         <div style={{ marginTop: ".9rem" }}>
-          <LeyendaAcuerdo etiquetas={seccion.etiquetas} />
+          <LeyendaAcuerdo etiquetas={etiquetas} />
           <CabeceraPreguntas />
-          {datos.preguntas.map((p) => <FilaPregunta key={p.codigo} texto={p.texto} fila={p.resultado.total} etiquetas={seccion.etiquetas} />)}
+          {datos.preguntas.map((p) => <FilaPregunta key={p.codigo} texto={p.texto} fila={p.resultado.total} etiquetas={etiquetas} />)}
         </div>
       )}
     </div>
   );
 }
 
-function BotonPdfNivel(props: { nombre: string; titulo: string; subtitulo: string; secciones: SeccionPedida[]; departamento?: string }) {
+function BotonPdfNivel(props: { nombre: string; titulo: string; subtitulo: string; secciones: SeccionPedida[] }) {
   const [estado, setEstado] = useState<"" | "generando" | "error">("");
   async function generar() {
     setEstado("generando");

@@ -1,6 +1,6 @@
 // Vista de personal (§7.4 y §7.0): un filtro a la vez (docentes o no docentes, o antigüedad),
 // indicadores con la recomendación, dimensiones, Superiores agregado, reuniones de departamento por
-// departamento, Equipo de Individualización, detalle por pregunta, recomendación y lo más
+// departamento, Equipo de Individuación, detalle por pregunta, recomendación y lo más
 // valorado. Sin sexo.
 
 import { useEffect, useState } from "react";

@@ -1,10 +1,10 @@
-// PDF de un nivel de «Informes por persona» (§7.0 y §7.3): Dirección, Equipos o un
-// departamento. Una o varias secciones, cada una con su media y cada pregunta con su
-// distribución divergente; en los departamentos, además, la media de sus profesores según los
-// alumnos.
+// PDF de un nivel de «Informes por persona» (§7.0 y §7.3): Dirección, el Equipo de
+// Individuación (todo o un tramo) o un jefe de departamento. Una o varias secciones, cada una con
+// su media y cada pregunta con su distribución divergente; en el de un jefe, además, la media de
+// los profesores de cada uno de sus departamentos según los alumnos.
 
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
-import type { Fila, InformeResponsable } from "../data/resultados";
+import type { DetallePregunta, Fila } from "../data/resultados";
 import * as f from "../formato";
 import { t } from "../i18n";
 import { base, C, Cabecera, Pie, textoOculto } from "./comun";
@@ -51,11 +51,12 @@ export interface SeccionPdf {
   subtitulo: string;
   nota?: string;
   etiquetas: string[];
-  informe: InformeResponsable;
+  informe: { total: Fila; preguntas: DetallePregunta[] };
 }
 
 /** Media de los profesores de un departamento según los alumnos (§7.0, Departamentos). */
 export interface AlumnosDepartamentoPdf {
+  titulo?: string;        // «Profesores de Ciencias según los alumnos»
   texto: string;          // «4,52 / 6» o el motivo por el que no hay cifra
   detalle?: string;       // combinaciones y valoraciones
   nota?: string;          // combinaciones excluidas
@@ -66,7 +67,9 @@ export interface DatosNivelPdf {
   titulo: string;
   subtitulo: string;
   secciones: SeccionPdf[];
-  alumnos?: AlumnosDepartamentoPdf;
+  alumnos?: AlumnosDepartamentoPdf[];
+  /** Texto en lugar de las secciones cuando no hay ninguna (departamento sin datos de reuniones). */
+  sinSecciones?: string;
   generado: Date;
 }
 
@@ -108,7 +111,7 @@ function Seccion({ seccion, primera }: { seccion: SeccionPdf; primera: boolean }
   );
 }
 
-export function InformeNivelPdf({ eyebrow, titulo, subtitulo, secciones, alumnos, generado }: DatosNivelPdf) {
+export function InformeNivelPdf({ eyebrow, titulo, subtitulo, secciones, alumnos, sinSecciones, generado }: DatosNivelPdf) {
   const hayComplementaria = secciones.some((x) => x.informe.preguntas.some((p) => p.resultado.total.motivo === "complementaria")
     || x.informe.total.motivo === "complementaria");
   return (
@@ -120,22 +123,23 @@ export function InformeNivelPdf({ eyebrow, titulo, subtitulo, secciones, alumnos
           <Text style={base.titulo}>{titulo}</Text>
           <Text style={base.muted}>{subtitulo}</Text>
 
+          {secciones.length === 0 && sinSecciones && <Text style={[base.aviso, { marginTop: 14 }]}>{sinSecciones}</Text>}
           {secciones.map((x, i) => <Seccion key={i} seccion={x} primera={i === 0} />)}
 
-          {alumnos && (
-            <View wrap={false}>
-              <Text style={base.h2}>{t.dep_alumnos_titulo}</Text>
+          {alumnos?.map((a, i) => (
+            <View key={i} wrap={false}>
+              <Text style={base.h2}>{a.titulo ?? t.dep_alumnos_titulo}</Text>
               <Text style={base.lead}>{t.dep_alumnos_lead}</Text>
               <View style={s.kpis}>
                 <View style={[s.kpi, s.kpiSuave]}>
                   <Text style={[s.kpiL, s.kpiLSuave]}>{t.dep_alumnos_media}</Text>
-                  <Text style={[s.kpiV, s.kpiVSuave]}>{alumnos.texto}</Text>
-                  {alumnos.detalle && <Text style={s.kpiD}>{alumnos.detalle}</Text>}
+                  <Text style={[s.kpiV, s.kpiVSuave]}>{a.texto}</Text>
+                  {a.detalle && <Text style={[s.kpiD, s.kpiLSuave]}>{a.detalle}</Text>}
                 </View>
               </View>
-              {alumnos.nota && <Text style={base.aviso}>{alumnos.nota}</Text>}
+              {a.nota && <Text style={base.aviso}>{a.nota}</Text>}
             </View>
-          )}
+          ))}
 
           <Text style={[base.nota, { marginTop: 14 }]}>{t.pdf_nota_escala}</Text>
           <Text style={base.nota}>{t.pdf_nota_oculto}{hayComplementaria ? ` ${t.pdf_nota_asterisco}` : ""}</Text>

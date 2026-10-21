@@ -86,15 +86,15 @@ Estas reglas son las que usó el prototipo que produjo los valores de control.
 - `grupo` (id, curso, etapa, nivel, nombre). **La etapa se obtiene siempre del grupo.**
 - `asignatura` (id, curso, nombre normalizado)
 - `departamento` (id, curso, nombre, oficial). Los oficiales del colegio son nueve (Lengua y Literatura Españolas, Lengua y Literatura Inglesas, Adquisición de Lenguas, Matemáticas, Ciencias, Individuos y Sociedades, Artes Escénicas, Artes Visuales y Tecnología, Educación Física). «Otros» no es oficial ni tiene jefe: agrupa a quien no pertenece a ninguno.
-- `departamento_encuesta` (id, curso, nombre) y `departamento_encuesta_oficial` (departamento_encuesta, departamento): los departamentos tal como aparecen en la matriz de reuniones de la encuesta de personal y a qué departamentos oficiales corresponden. En 2025/26, «Lengua Española y Literatura» corresponde a Lengua y Literatura Españolas, «Artes Visuales y Diseño» a Artes Visuales y Tecnología, e «Inglés y Adquisición de Lenguas» a dos oficiales: Lengua y Literatura Inglesas y Adquisición de Lenguas.
-- `persona_responsable` (id, nombre, apellidos, correo, departamento nullable, situacion: alta o baja)
+- `departamento_equivalencia` (departamento de la encuesta, departamento oficial): los departamentos tal como aparecen en la matriz de reuniones de la encuesta de personal (filas de `departamento` con `oficial = false` cuando su nombre no es oficial) y a qué departamentos oficiales corresponden. Sin fila, un departamento de la encuesta equivale a sí mismo. En 2025/26, «Lengua Española y Literatura» corresponde a Lengua y Literatura Españolas, «Artes Visuales y Diseño» a Artes Visuales y Tecnología, e «Inglés y Adquisición de Lenguas» a dos oficiales: Lengua y Literatura Inglesas y Adquisición de Lenguas.
+- `persona_responsable` (id, nombre, apellidos, correo, departamento nullable, situacion: alta o baja). Situación según Alexia; los dados de baja se incluyen y la vista lo indica.
 - `cargo` (persona_responsable, curso, tipo: jefe_departamento, jefe_equipo o direccion, ambito). Para jefe_departamento, el ámbito es el departamento oficial (una persona puede tener varios). Para jefe_equipo, el tramo del Equipo de Individuación: infantil, y1_y5, y6_y9 o y10_y12. Se carga desde `datos_locales/responsables_2526.xlsx` (no va a git).
 - `asignacion_docente` (curso, grupo, asignatura, docente). **Clave primaria de las cuatro columnas:** admite varios docentes por asignatura y grupo (codocencia, desdobles). Se genera desde el listado de Alexia (`etl/convertir_alexia_2526.py`). Una combinación grupo y asignatura con más de un docente es una **clase compartida** (§5.12).
-- `privado.respuesta_docente` (respuesta, asignatura, docente), **pendiente de decisión** (§7.2): atribución de una respuesta de alumno a un docente concreto a partir del nombre que escribió. Se guarda solo el docente resultante, nunca el texto.
+- `privado.respuesta_docente` (respuesta, asignatura, docente): atribución de una respuesta de alumno a un docente concreto a partir del nombre que escribió o de la optativa (§7.2). Se guarda solo el docente resultante, nunca el texto.
+- `privado.respuesta_tramo` (respuesta, tramo): tramo de tutoría (infantil, y1_y5, y6_y9, y10_y12), solo de quien contestó el bloque del Equipo de Individuación (§5.13).
 - `respuesta` (id interno, cuestionario, grupo nullable, idioma_origen, docente, antiguedad, departamento_equipo). El grupo solo existe en alumnos (y puede faltar). Los segmentos de personal son columnas tipadas; no hay jsonb ni sexo.
 - `respuesta_etapa` (respuesta, etapa): **solo familias**, una fila por etapa marcada. En alumnos la etapa se obtiene del grupo o del cuestionario.
 - `respuesta_item` (respuesta, pregunta, asignatura nullable, departamento nullable, valor nullable, ns_nc). El departamento (de `departamento_encuesta`) solo aparece en el bloque "Reuniones de departamento" de personal.
-- **Pendiente de decisión:** tramo de tutoría (infantil, y1_y5, y6_y9, y10_y12) como dimensión del ítem, solo en el bloque del Equipo de Individuación (§5.13).
 - `respuesta_opcion` (respuesta, pregunta, opcion)
 - `usuario_perfil` (auth user id, nombre, rol, etapa nullable, activo, ultimo_acceso)
 - `registro_actividad` (usuario, accion, detalle, fecha). **Solo se escribe desde el servidor** (dentro de las RPC o por trigger), nunca con un insert del cliente.
@@ -125,8 +125,9 @@ Ninguna política RLS permite `select` desde el cliente sobre `respuesta`, `resp
    - en el informe del profesor van aparte, en «Valoraciones compartidas», con las mismas reglas de mínimo y complementaria;
    - la **media global del profesor se calcula solo con sus clases propias visibles** (las de un solo docente); las compartidas no entran;
    - en los resultados generales (Alumnos) siguen apareciendo como hasta ahora.
-13. **Tramo de tutoría en el Equipo de Individuación** (solo si se aprueba, §7.3): es una dimensión del ítem de ese bloque, como el departamento en las reuniones (§5.7). Nunca se cruza con otros bloques ni con los filtros de personal, y se aplica la complementaria entre los cuatro tramos.
-14. **Atribución por nombre** (solo si se aprueba, §7.2): parte una clase compartida en un subconjunto por docente y uno «sin atribuir». La complementaria se aplica entre esos subconjuntos con el total de la clase visible, igual que entre los grupos de un cuestionario.
+13. **Tramo de tutoría en el Equipo de Individuación** (autorizado el 21/10/2026, §7.3): solo existe como dimensión del bloque del Equipo de Individuación y de sus preguntas, sin otras dimensiones ni filtros. Ninguna otra métrica ni RPC lo admite (tests en `supabase/tests/09_jefes_tramos_atribucion.sql`). Complementaria entre los cuatro tramos.
+15. **Partes de un mismo responsable juntas:** dos o más partes (tramos o departamentos) se muestran juntas solo si cada una está oculta por separado y juntas llegan a 5. Si una se ve y otra no, el conjunto se oculta, porque restando la visible se deduciría la oculta. Las RPC aceptan esos conjuntos solo internamente: el cliente no puede pedirlos.
+14. **Atribución por nombre** (autorizada el 21/10/2026, §7.2): parte una clase compartida en un subconjunto por docente y uno «sin atribuir». La complementaria se aplica entre esos subconjuntos con el total de la clase visible, igual que entre los grupos de un cuestionario.
 
 Tests obligatorios: una batería de casos en `supabase/tests` que intente saltar la regla por resta y por combinación de filtros.
 
@@ -192,11 +193,12 @@ Direcciones: `#/personal/encuesta` y `#/personal/informes/<direccion|equipos|dep
   - **«Sus clases»:** grupos y asignaturas en los que es el único docente. De aquí sale la media global.
   - **«Valoraciones compartidas»:** clases con más de un docente (codocencia, desdobles por niveles, Música y preguntas que agrupan varias materias), con una nota: «Los alumnos valoran la asignatura, no a cada profesor. Estas valoraciones son compartidas con otros docentes y no entran en su media».
 - **Profesores dados de baja:** se incluyen, porque dieron clase ese curso.
-- **Inmersión lingüística y Optativa** (Y6 a Y10): no se atribuyen mientras no se decida la atribución por nombre de optativa (ver abajo).
+- **Inmersión lingüística** (Y6 a Y10): no se atribuye; sus grupos no son grupos de clase.
+- **Optativa** (Y6 a Y9): se atribuye por el nombre de la optativa cuando esta tiene un solo docente. Como las optativas mezclan grupos, el resultado del docente es de todos sus grupos juntos, con la complementaria entre docentes dentro de la asignatura.
 - **PDF por profesor:** descarga individual y en lote (ZIP, `Informe_2526_Apellido_Nombre.pdf`), con el estilo del colegio. La generación queda en el registro de actividad.
 - **Origen:** el listado de Alexia del colegio (grupos, asignaturas y docentes), convertido con `etl/convertir_alexia_2526.py` al formato de la plantilla (`etl/plantillas/asignacion_docente_2526.xlsx`) y cargado con `etl/cargar_asignaciones.py`. Las materias de Alexia se casan con las de la encuesta mediante una tabla de equivalencias por cuestionario. Las que los alumnos no valoran (tutoría, refuerzos, CICE y similares) no se cargan.
 - **Departamento:** el que confirmó el colegio en la revisión (la columna «Departamento correcto» manda; «Sin dpto.» es «Otros»), con los nombres oficiales. El antiguo «Inglés y Adquisición de Lenguas» se reparte entre Lengua y Literatura Inglesas y Adquisición de Lenguas según lo que imparte cada docente; quien dé de las dos se marca para revisión.
-- **Atribución por el nombre que escribió el alumno: pendiente de decisión.** Análisis del 21/10/2026 (cifras agregadas; el texto libre no se carga):
+- **Atribución por el nombre que escribió el alumno** (decisión del 21/10/2026): se aplica en las clases con varios docentes y solo en las columnas en las que el nombre casa con un único docente de Alexia en el 90 % o más (`etl/atribucion_2526.py`). **No se aplica en Inglés de Y10 y Y12** hasta que el colegio aclare el posible hueco de Alexia: esas clases siguen como valoración compartida. El texto nunca se carga: solo la atribución. El informe de la carga recoge, en cifras, cuántos alumnos rellenaron cada columna, cuántos casan y cuántas respuestas se atribuyen. Análisis del 21/10/2026 (cifras agregadas; el texto libre no se carga):
   - Solo hay columnas de nombre en Y10 (Lengua Española, Inglés y Francés), Y11 (Inglés, Historia, Matemáticas y Química) y Y12 (Inglés, Matemáticas, Química y Biología). En Primaria solo se pregunta por el profesor de instrumento (Música PIM, que no se atribuye) y en Y6 a Y10 no hay ninguna.
   - La rellenan entre el 84 % y el 92 % de los alumnos en las asignaturas comunes, el 70 % en Francés y entre el 36 % y el 44 % en Química y Biología (optativas: no las cursan todos).
   - El nombre casa con un único docente de Alexia de esa asignatura y ese grupo en el 98 % al 100 % de los casos, salvo Inglés de Y10 (34 %) y de Y12 (38 %). Ahí los alumnos nombran a docentes que Alexia no pone en ese grupo o en esa asignatura, lo que apunta a un hueco en el listado de Alexia.
@@ -207,12 +209,12 @@ Direcciones: `#/personal/encuesta` y `#/personal/informes/<direccion|equipos|dep
 - **Nombres oficiales** (21/10/2026): departamentos como en §4 y «Equipo de Individuación» (antes «Individualización» en la interfaz). Jefes de departamento y de equipo en `datos_locales/responsables_2526.xlsx`.
 - **Informe de departamento por jefe:** un PDF por persona con cada uno de sus departamentos dentro. Dos jefes tienen dos departamentos:
   - uno tiene Lengua y Literatura Inglesas y Adquisición de Lenguas, que en la encuesta de 2025/26 son una sola unidad: una sección de reuniones con nota, y la media de alumnos por cada departamento;
-  - otro tiene Artes Visuales y Tecnología (4 personas en la matriz) y Educación Física (2): por separado los dos quedan ocultos. Juntos son 6 personas distintas; mostrar el conjunto como «sus departamentos» queda **pendiente de decisión**.
+  - otro tiene Artes Visuales y Tecnología (4 personas en la matriz) y Educación Física (2): por separado los dos quedan ocultos y se muestran juntos como «sus departamentos», con una nota (decisión del 21/10/2026, §5.15).
 - **Equipo de Individuación por jefe** (análisis del 21/10/2026, con recuentos): de los 18 tutores que contestaron el bloque, por el nivel de tutoría que marcaron, Y6 a Y9 son 7, Y10 a Y12 son 5, Y1 a Y5 son 4 e Infantil 2. Con el mínimo de 5 y la complementaria:
   - el jefe de Y6 a Y9 tendría resultado en las 22 preguntas;
   - el de Y10 a Y12 en 20 de 22 (en dos preguntas contestaron 4);
   - Y1 a Y5 e Infantil quedan ocultos. Juntos suman 6 y su resultado se deduce del total menos los otros dos, así que se puede mostrar como «Infantil y Y1 a Y5», compartido por sus dos responsables.
-  - Requiere cargar el nivel de tutoría, que la carga descartaba por acotar a la persona. Se cargaría solo como tramo (cuatro valores) y solo para este bloque (§5.13). **Pendiente de decisión.** Si no se aprueba, el informe es único para el equipo y lo explica.
+  - **Autorizado el 21/10/2026:** se carga el nivel de tutoría solo como tramo (cuatro valores) y solo para este bloque (§5.13). Resultados: Y6 a Y9, Y10 a Y12, e «Infantil y Y1 a Y5» compartido por sus dos responsables, con una nota. La lista de grupos se calcula con los datos: cada tramo visible va solo y los ocultos se juntan (§5.15). Se mantiene también el informe de todo el equipo.
 - El personal valora a su jefe en el bloque **"Superiores"** (7 preguntas: trato, dirección del equipo, trabajo en equipo, escucha, reconocimiento, comunicación descendente y comunicación ascendente).
 - **Primer paso, bloqueante:** comprobar si el fichero de personal 2025/26 trae el departamento o el equipo de cada persona.
   - **Si lo trae:**
@@ -327,10 +329,11 @@ Commits pequeños. Al cerrar cada paso, actualiza `docs/PROGRESO.md`.
 | 8 | Idiomas: ¿entra el inglés en la Fase 1? | Rodrigo | No |
 | 9 | Registros DNS para el dominio y el remitente | Sistemas del colegio | Paso 10 |
 | 10 | ¿Construir el análisis de "qué pesa más en la recomendación"? | Rodrigo | No |
-| 11 | ¿Atribuir por el nombre del profesor que escribió el alumno? ¿Y la optativa por su nombre? (§7.2) | Colegio | No |
-| 12 | ¿Resultado del Equipo de Individuación por jefe, con el tramo de tutoría? (§7.3, §5.13) | Colegio | No |
-| 13 | ¿Mostrar juntos los dos departamentos de un mismo jefe cuando por separado quedan ocultos? (§7.3) | Colegio | No |
-| 14 | Inglés de Y10 y Y12: los alumnos nombran a docentes que Alexia no pone en ese grupo. ¿Falta algo en el listado? | Colegio | No |
+| 11 | ~~Atribución por nombre y optativa~~ Autorizada (21/10/2026), salvo Inglés de Y10 y Y12 | Colegio | No |
+| 12 | ~~Equipo de Individuación por jefe~~ Autorizado (21/10/2026) | Colegio | No |
+| 13 | ~~Departamentos de un mismo jefe juntos~~ Autorizado (21/10/2026) | Colegio | No |
+| 14 | Inglés de Y10 y Y12: los alumnos nombran a docentes que Alexia no pone en ese grupo. ¿Falta algo en el listado? Hasta saberlo, sin atribución | Colegio | No |
+| 15 | Revisar el departamento de 9 docentes que dan Lengua y Literatura Inglesas y Adquisición de Lenguas (`datos_locales/revisar_ingles_adquisicion_2526.xlsx`) | Colegio | No |
 
 ---
 

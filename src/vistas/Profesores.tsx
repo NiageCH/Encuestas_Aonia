@@ -1,8 +1,7 @@
-// Informe por profesor (§7.2 y §7.0), dentro de Personal → Docentes: lo que opinan los alumnos de
-// cada docente en las encuestas de alumnos. Buscador, resultados
-// por asignatura y grupo (las combinaciones con menos de 5 respuestas se ocultan), media
-// global con las combinaciones visibles, comparación con su etapa y el colegio, y detalle
-// por pregunta.
+// Informe por profesor (§7.2 y §7.0), dentro de Personal → Informes por persona: lo que opinan
+// los alumnos de cada docente. Buscador, «Sus clases» (único docente o alumnos que escribieron su
+// nombre; de ahí sale la media global) y «Valoraciones compartidas» (varios docentes), con el
+// mínimo de 5 y la complementaria, comparación con su etapa y el colegio, y detalle por pregunta.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAyuda } from "../componentes/Ayuda";
@@ -13,6 +12,7 @@ import {
   listarProfesores, preguntasProfesorado, resultadosProfesor,
   type PreguntaBloque, type Profesor, type ResultadoProfesor,
 } from "../data/resultados";
+import { etiquetaClase, ordenarClases } from "../etiquetas";
 import * as f from "../formato";
 import { t } from "../i18n";
 
@@ -48,7 +48,7 @@ export function InformesProfesor({ perfil }: { perfil: Perfil }) {
                 <li key={p.id}>
                   <button type="button" className={elegido?.id === p.id ? "on" : undefined} aria-pressed={elegido?.id === p.id}
                           onClick={() => setElegido(p)}>
-                    <strong>{p.apellidos}, {p.nombre}</strong>
+                    <strong>{p.apellidos}, {p.nombre}{p.situacion === "baja" && <small> · {t.prof_baja}</small>}</strong>
                     {p.departamento && <small>{p.departamento}</small>}
                   </button>
                 </li>
@@ -94,8 +94,9 @@ function Informe({ profesor }: { profesor: Profesor }) {
 
   const etapas = Object.keys(datos.comparacion).filter((k) => k !== "colegio");
   const g = datos.global;
-  const celdas = [...datos.celdas].sort((a, b) =>
-    a.clave.asignatura.localeCompare(b.clave.asignatura, "es") || a.clave.grupo.localeCompare(b.clave.grupo, "es", { numeric: true }));
+  const celdas = ordenarClases(datos.celdas);
+  const propias = celdas.filter((c) => c.tipo !== "compartida");
+  const compartidas = celdas.filter((c) => c.tipo === "compartida");
 
   return (
     <div className="en-informe">
@@ -129,12 +130,17 @@ function Informe({ profesor }: { profesor: Profesor }) {
       <div className="card" style={{ marginTop: ".9rem" }}>
         <h3>{t.prof_por_asignatura}</h3>
         <p className="en-hint">{t.prof_por_asignatura_lead}</p>
-        {celdas.length === 0 ? <p className="en-hint">{t.sin_datos_seccion}</p>
-          : celdas.map((c) => (
-              <Barra key={`${c.clave.cuestionario}-${c.clave.grupo}-${c.clave.asignatura}`}
-                     etiqueta={`${c.clave.asignatura} · ${c.clave.grupo}`} fila={c} />
-            ))}
+        {propias.length === 0 ? <p className="en-hint">{compartidas.length ? t.prof_sin_propias : t.sin_datos_seccion}</p>
+          : propias.map((c) => <Barra key={`${c.clave.cuestionario}-${c.clave.grupo}-${c.clave.asignatura}`} etiqueta={etiquetaClase(c)} fila={c} />)}
       </div>
+
+      {compartidas.length > 0 && (
+        <div className="card" style={{ marginTop: ".9rem" }}>
+          <h3>{t.prof_compartidas}</h3>
+          <p className="notice">{t.prof_compartidas_nota}</p>
+          {compartidas.map((c) => <Barra key={`${c.clave.cuestionario}-${c.clave.grupo}-${c.clave.asignatura}`} etiqueta={etiquetaClase(c)} fila={c} />)}
+        </div>
+      )}
 
       <div className="card" style={{ marginTop: ".9rem" }}>
         <h3>{t.prof_detalle}</h3>

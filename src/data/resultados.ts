@@ -162,6 +162,7 @@ export interface Profesor {
   nombre: string;
   apellidos: string;
   departamento: string | null;
+  situacion?: "alta" | "baja";
 }
 
 /** Profesores con docencia en el curso (la coordinación solo recibe los de su etapa). */
@@ -173,6 +174,9 @@ export async function listarProfesores(): Promise<Profesor[]> {
 
 export interface CeldaProfesor extends Fila {
   etapa: string;
+  /** propia: único docente · atribuida: alumnos que escribieron su nombre · compartida: varios docentes */
+  tipo: "propia" | "atribuida" | "compartida";
+  docentes_clase: number;
 }
 
 export interface ResultadoProfesor {
@@ -180,6 +184,7 @@ export interface ResultadoProfesor {
   celdas: CeldaProfesor[];
   global: { suprimido: boolean; motivo?: string; combinaciones?: number; n_personas_por_asignatura?: number; n_valoraciones?: number; media?: number };
   combinaciones_excluidas: number;
+  compartidas: number;
   comparacion: Record<string, Fila>;
 }
 
@@ -250,4 +255,56 @@ export async function mediaDepartamentoAlumnos(departamento: string): Promise<Me
   const { data, error } = await supabase.rpc("media_departamento_alumnos", { p_curso: CURSO, p_departamento: departamento });
   if (error) throw error;
   return data as MediaDepartamentoAlumnos;
+}
+
+export interface Jefe { id: number; nombre: string; apellidos: string; departamentos: string[] }
+
+/** Jefes de departamento con sus departamentos oficiales. */
+export async function listarJefes(): Promise<Jefe[]> {
+  const { data, error } = await supabase.rpc("listar_jefes", { p_curso: CURSO });
+  if (error) throw error;
+  return (data ?? []) as Jefe[];
+}
+
+export interface SeccionReuniones {
+  /** Departamentos tal como aparecen en la encuesta de personal */
+  unidades: string[];
+  /** true: varios departamentos ocultos por separado que se muestran juntos */
+  conjunto: boolean;
+  total: Fila;
+  preguntas: DetallePregunta[];
+}
+
+export interface InformeJefe {
+  persona: { id: number; nombre: string; apellidos: string };
+  departamentos: string[];
+  reuniones: SeccionReuniones[];
+  alumnos: { departamento: string; media: MediaDepartamentoAlumnos }[];
+}
+
+/** Informe de un jefe de departamento con todos sus departamentos (§7.3). */
+export async function informeJefe(persona: number, registrar = false): Promise<InformeJefe> {
+  const { data, error } = await supabase.rpc("informe_jefe_departamento", { p_curso: CURSO, p_persona: persona, p_registrar: registrar });
+  if (error) throw error;
+  return data as InformeJefe;
+}
+
+export interface GrupoEquipo {
+  tramos: string[];
+  responsables: { nombre: string; apellidos: string; tramo: string }[];
+}
+
+/** Resultados del Equipo de Individuación por tramo: los visibles por separado y los ocultos juntos. */
+export async function listarEquipo(): Promise<GrupoEquipo[]> {
+  const { data, error } = await supabase.rpc("listar_equipo", { p_curso: CURSO });
+  if (error) throw error;
+  return (data ?? []) as GrupoEquipo[];
+}
+
+export interface InformeEquipo { tramos: string[]; total: Fila; preguntas: DetallePregunta[] }
+
+export async function informeEquipo(tramos: string[], registrar = false): Promise<InformeEquipo> {
+  const { data, error } = await supabase.rpc("informe_equipo", { p_curso: CURSO, p_tramos: tramos, p_registrar: registrar });
+  if (error) throw error;
+  return data as InformeEquipo;
 }
