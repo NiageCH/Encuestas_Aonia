@@ -126,8 +126,26 @@ Pendiente: Excel de asignación del colegio, revisión en móvil e iPad; en el d
   - Departamento propuesto por lo que imparte cada docente (26 a revisar), en la hoja «Departamentos», que manda al cargar.
 - Cargado en local: 97 docentes, 799 filas, 396 combinaciones grupo y asignatura, 135 con varios docentes (cada docente recibe el resultado de la combinación).
 
+## Respuestas del colegio (21/10/2026)
+
+Recibidas. Los datos personales (usuarios iniciales, contacto técnico, jefes de departamento y del Equipo de Individuación) están en `datos_locales/responsables_2526.xlsx`, fuera de git. Especificación actualizada (§4, §5.9, §5.12 a §5.14, §7.0, §7.2, §7.3, §7.5 y §10).
+
+Decidido por el colegio:
+- Nombres oficiales de los nueve departamentos y «Equipo de Individuación».
+- Informe de departamento por jefe, con sus departamentos dentro.
+- Informe de profesor con «Sus clases» y «Valoraciones compartidas»; media global solo con las propias; los dados de baja se incluyen.
+- Acceso con correo y contraseña; Microsoft queda para más adelante, con la autenticación aislada.
+
+Análisis hechos, a la espera de decisión (§10, puntos 11 a 14):
+- Atribución por el nombre del profesor (Y10 a Y12) y de la optativa (Y6 a Y9).
+- Equipo de Individuación por jefe con el tramo de tutoría.
+- Los dos departamentos de un mismo jefe, juntos.
+- Huecos de Alexia en Inglés de Y10 y Y12.
+
+Pendiente de aplicar en código: plan presentado a Rodrigo el 21/10/2026.
+
 ## Bloqueos
 
 - Cuestionario de personal en inglés (4 respuestas).
-- Departamento de cada docente: propuesta automática pendiente de confirmar por el colegio.
+- Docentes que imparten Lengua y Literatura Inglesas y Adquisición de Lenguas a la vez: departamento por confirmar.
 - Departamento o equipo en el fichero de personal: se verifica en el paso 3.
