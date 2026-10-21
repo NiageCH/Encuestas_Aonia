@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional, Set, Tuple
 
 from encuesta_facil import (Columna, Tabla, etapa_de_nivel, frase, leer, normalizar_grupo,
-                            normalizar_texto, slug)
+                            normalizar_texto, sin_acentos, slug)
 
 CURSO = "2025/26"
 
@@ -89,6 +89,10 @@ class Respuesta:
     antiguedad: Optional[str] = None
     items: List[Item] = field(default_factory=list)
     opciones: List[Tuple[str, str]] = field(default_factory=list)   # (pregunta, código de opción)
+    tramo: Optional[str] = None      # personal: tramo de tutoría (solo para el Equipo de Individuación)
+    # Alumnos: texto libre con el nombre del profesor por asignatura o de la optativa. Solo se
+    # usa en memoria para atribuir la respuesta a un docente (atribucion_2526.py); nunca se carga.
+    textos: Dict[str, str] = field(default_factory=dict)
 
     def tiene_datos(self) -> bool:
         return any(i.valor is not None for i in self.items) or bool(self.opciones)
@@ -173,8 +177,10 @@ REGLAS_ALUMNOS = [
     descartar(r"^¿Vienes al Colegio|^¿Comes en el comedor|^¿Usas el servicio de canasto", "uso de servicios (acota a la persona)"),
     descartar(r"idioma que cursas|segundo idioma|nivel de inglés|materias? (que )?cursas|Marca TODAS las materias|Marca la materia",
               "materias e idiomas cursados (acota a la persona)"),
-    descartar(r"nombre de la OPTATIVA|Indica la optativa|Plan Integral de Música|Diversificación Musical|Si cursas ESPAÑOL B",
+    Regla(r"nombre de la OPTATIVA", "nombre_optativa"),
+    descartar(r"Indica la optativa|Plan Integral de Música|Diversificación Musical|Si cursas ESPAÑOL B",
               "optativas y programas cursados (acota a la persona)"),
+    Regla(r"nombre de tu profesora? de", "nombre_profesor"),
     descartar(r"nombre de tu profesor", "nombre del profesor (texto libre)"),
     descartar(r"echas en falta|dejarnos un comentario", "respuesta abierta"),
     Regla(PATRON_ASIGNATURA.pattern, "profesorado"),
@@ -209,7 +215,8 @@ REGLAS_PERSONAL = [
     descartar(r"indique su sexo", "sexo"),
     descartar(r"requisito previo legal a la realización del Plan de Igualdad", "Plan de Igualdad"),
     descartar(r"respuesta libre y no hay obligación", "respuesta abierta"),
-    descartar(r"Si es Tutor|niveles en los que imparta", "tutoría y niveles (acota a la persona)"),
+    Regla(r"Si es Tutor", "tramo_tutoria"),
+    descartar(r"niveles en los que imparta", "niveles en los que imparte (acota a la persona)"),
     descartar(r"echa en falta|añadir algún comentario", "respuesta abierta"),
     Regla(r"¿Es personal docente", "docente"),
     Regla(r"primer año trabajando", "antiguedad"),
@@ -220,7 +227,7 @@ REGLAS_PERSONAL = [
     Regla(r"perfil de la comunidad de aprendizaje", "bloque_texto",
           {"codigo": "perfil_ib", "nombre": "Perfil IB: grado de logro", "entra": False}),
     bloque(r"^Por favor, indique su grado de acuerdo con las siguientes afirmaciones:?$",
-           "equipo_individualizacion", "Equipo de Individualización", entra=False),
+           "equipo_individualizacion", "Equipo de Individuación", entra=False),
     bloque(r"^Por favor valore su grado de acuerdo", "centro", "Valoración del centro"),
     bloque(r"^Condiciones de trabajo", "condiciones", "Condiciones de trabajo"),
     bloque(r"^Relaciones interpersonales", "relaciones", "Relaciones interpersonales"),
@@ -423,6 +430,23 @@ class Conversor:
             elif a == "seleccion":
                 p = regla.params
                 self._seleccion(r, fila, col, p["codigo"], p["texto"], p["bloque"], p["nombre"])
+            elif a == "nombre_profesor":
+                m = re.search(r"profesora? de (?P<asig>.+?):?\s*$", col.cabecera, re.IGNORECASE)
+                if v.strip():
+                    r.textos[sin_acentos(m.group("asig")).lower().strip()] = v
+                if fila is self.t.filas[0]:
+                    self.c.descartes["nombre del profesor (solo para atribuir; el texto no se carga)"] += 1
+            elif a == "nombre_optativa":
+                if v.strip():
+                    r.textos["optativa"] = v
+                if fila is self.t.filas[0]:
+                    self.c.descartes["nombre de la optativa (solo para atribuir; el texto no se carga)"] += 1
+            elif a == "tramo_tutoria":
+                if v.strip() and col.texto != "Ninguno":
+                    t = tramo_de_nivel(col.texto)
+                    r.tramo = t if r.tramo in (None, t) else "varios"
+                if fila is self.t.filas[0]:
+                    self.c.descartes["nivel de tutoría (solo se carga el tramo, para el Equipo de Individuación)"] += 1
             elif a == "docente":
                 r.docente = {"Sí": True, "No": False}.get(v)
             elif a == "antiguedad":
@@ -539,6 +563,14 @@ class Conversor:
             if normalizar_texto(v) != normalizar_texto(col.texto):
                 raise ValueError(f"{self.t.origen}: opción con texto inesperado en la columna {col.col}")
             r.opciones.append((codigo, op))
+
+
+def tramo_de_nivel(nivel: str) -> str:
+    """Nivel de tutoría → tramo del Equipo de Individuación."""
+    if nivel in ("EPS", "PS", "PK", "K"):
+        return "infantil"
+    n = int(nivel[1:])
+    return "y1_y5" if n <= 5 else "y6_y9" if n <= 9 else "y10_y12"
 
 
 def convertir_todo(carpeta: Path) -> Tuple[Diccionario, List[Cuestionario]]:

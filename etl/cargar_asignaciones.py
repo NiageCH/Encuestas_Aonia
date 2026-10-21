@@ -23,6 +23,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ / "etl"))
 from cargar_2526 import url_bd  # noqa: E402
 from encuesta_facil import normalizar_grupo, sin_acentos  # noqa: E402
+from departamentos_2526 import OTROS  # noqa: E402
 
 COLUMNAS = ["Curso", "Grupo", "Asignatura", "Apellidos", "Nombre", "Correo", "Departamento"]
 
@@ -54,6 +55,7 @@ def leer(ruta: Path) -> list[dict]:
         if any(d.values()):
             for c in ("Departamento", "Apellidos", "Nombre"):
                 d[c] = por_correo.get(d["Correo"].lower(), {}).get(c) or d[c]
+            d["Situación"] = por_correo.get(d["Correo"].lower(), {}).get("Situación") or "Alta"
             d["fila"] = n
             salida.append(d)
     return salida
@@ -132,15 +134,18 @@ def main() -> None:
             cur.execute("delete from public.asignacion_docente where curso_id = %s", (cursos[curso],))
         for f, g, a in casadas:
             cid = cursos[f["Curso"]]
-            cur.execute("insert into public.departamento (curso_id, nombre) values (%s, %s) on conflict (curso_id, nombre) do nothing",
-                        (cid, f["Departamento"]))
+            cur.execute("""insert into public.departamento (curso_id, nombre, oficial) values (%s, %s, %s)
+                           on conflict (curso_id, nombre) do update set oficial = excluded.oficial""",
+                        (cid, f["Departamento"], f["Departamento"] != OTROS))
             cur.execute("select id from public.departamento where curso_id = %s and nombre = %s", (cid, f["Departamento"]))
             dep = cur.fetchone()[0]
             cur.execute(
-                """insert into public.persona_responsable (nombre, apellidos, correo, departamento_id) values (%s, %s, lower(%s), %s)
+                """insert into public.persona_responsable (nombre, apellidos, correo, departamento_id, situacion)
+                   values (%s, %s, lower(%s), %s, %s)
                    on conflict (correo) do update set nombre = excluded.nombre, apellidos = excluded.apellidos,
-                     departamento_id = excluded.departamento_id
-                   returning id""", (f["Nombre"], f["Apellidos"], f["Correo"], dep))
+                     departamento_id = excluded.departamento_id, situacion = excluded.situacion
+                   returning id""", (f["Nombre"], f["Apellidos"], f["Correo"], dep,
+                                     "baja" if f["Situación"].lower() == "baja" else "alta"))
             pid = cur.fetchone()[0]
             cur.execute("insert into public.asignacion_docente (curso_id, grupo_id, asignatura_id, docente_id) values (%s, %s, %s, %s) on conflict do nothing",
                         (cid, g, a, pid))

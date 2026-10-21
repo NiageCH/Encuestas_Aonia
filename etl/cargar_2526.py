@@ -27,6 +27,7 @@ sys.path.insert(0, str(RAIZ / "etl"))
 
 from cuestionarios_2526 import CURSO, Cuestionario, Diccionario, convertir_todo  # noqa: E402
 from preguntas_comunes_2526 import cargar_comunes  # noqa: E402
+from departamentos_2526 import EQUIVALENCIAS_ENCUESTA, OFICIALES  # noqa: E402
 
 LOCAL = "postgresql://postgres:postgres@127.0.0.1:55422/postgres"
 
@@ -50,7 +51,11 @@ def url_bd(remoto: bool) -> str:
     return url
 
 
-def cargar(conn, dic: Diccionario, cuestionarios: List[Cuestionario]) -> None:
+def cargar(conn, dic: Diccionario, cuestionarios: List[Cuestionario]) -> list:
+    """Carga todo y devuelve el resumen de la atribución a docentes (solo cifras)."""
+    from atribucion_2526 import ALEXIA, atribuir, leer_alexia, nombre_y_apellidos
+    alexia = leer_alexia() if ALEXIA.exists() else None
+    resumen_atrib = []
     with conn.cursor() as cur:
         cur.execute("insert into public.curso (nombre) values (%s) on conflict (nombre) do nothing", (CURSO,))
         cur.execute("select id from public.curso where nombre = %s", (CURSO,))
@@ -93,6 +98,22 @@ def cargar(conn, dic: Diccionario, cuestionarios: List[Cuestionario]) -> None:
 
         cache: Dict[tuple, int] = {}
 
+        # Departamentos oficiales y los de la matriz de reuniones de la encuesta, con su
+        # equivalencia (un departamento de la encuesta puede cubrir varios oficiales).
+        def departamento(nombre: str) -> int:
+            cur.execute("""insert into public.departamento (curso_id, nombre, oficial) values (%s, %s, %s)
+                           on conflict (curso_id, nombre) do update set oficial = excluded.oficial returning id""",
+                        (curso, nombre, nombre in OFICIALES))
+            return cur.fetchone()[0]
+
+        for nombre in OFICIALES:
+            cache[("departamento", nombre)] = departamento(nombre)
+        for nombre, oficiales in EQUIVALENCIAS_ENCUESTA.items():
+            cache[("departamento", nombre)] = enc = departamento(nombre)
+            for o in oficiales:
+                cur.execute("insert into public.departamento_equivalencia values (%s, %s) on conflict do nothing",
+                            (enc, cache[("departamento", o)]))
+
         def id_de(tabla: str, nombre: str, **extra) -> int:
             clave = (tabla, nombre)
             if clave not in cache:
@@ -127,7 +148,7 @@ def cargar(conn, dic: Diccionario, cuestionarios: List[Cuestionario]) -> None:
                        values (%s, %s, %s, %s, %s, %s) on conflict do nothing""",
                     (id_cuest, id_pregunta[pc.pregunta], id_bloque[pc.bloque], pc.orden, pc.por_asignatura, pc.por_departamento))
 
-            items, opciones, etapas = [], [], []
+            items, opciones, etapas, tramos, rids = [], [], [], [], []
             for r in c.respuestas:
                 grupo = None
                 if r.grupo:
@@ -138,17 +159,25 @@ def cargar(conn, dic: Diccionario, cuestionarios: List[Cuestionario]) -> None:
                        values (%s, %s, %s, %s, %s) returning id""",
                     (id_cuest, grupo, c.idioma, r.docente, r.antiguedad))
                 rid = cur.fetchone()[0]
+                rids.append(rid)
+                # Tramo de tutoría: solo de quien contestó el bloque del Equipo de Individuación.
+                if r.tramo in ("infantil", "y1_y5", "y6_y9", "y10_y12") and any(
+                        i.valor is not None and c.preguntas_cuest[(i.pregunta, None)].bloque == "equipo_individualizacion"
+                        for i in r.items):
+                    tramos.append((rid, r.tramo))
                 for e in sorted(r.etapas):
                     etapas.append((rid, e))
                 for i in r.items:
                     items.append((rid, id_pregunta[i.pregunta],
                                   id_de("asignatura", i.asignatura) if i.asignatura else None,
-                                  id_de("departamento", i.departamento) if i.departamento else None,
+                                  cache[("departamento", i.departamento)] if i.departamento and ("departamento", i.departamento) in cache
+                                  else (id_de("departamento", i.departamento, oficial=i.departamento in OFICIALES) if i.departamento else None),
                                   i.valor, i.ns_nc))
                 for pregunta, op in r.opciones:
                     opciones.append((rid, id_pregunta[pregunta], id_opcion[(pregunta, op)]))
 
             cur.executemany("insert into privado.respuesta_etapa (respuesta_id, etapa) values (%s, %s)", etapas)
+            cur.executemany("insert into privado.respuesta_tramo (respuesta_id, tramo) values (%s, %s)", tramos)
             with cur.copy("copy privado.respuesta_item (respuesta_id, pregunta_id, asignatura_id, departamento_id, valor, ns_nc) from stdin") as cp:
                 for fila in items:
                     cp.write_row(fila)
@@ -156,6 +185,20 @@ def cargar(conn, dic: Diccionario, cuestionarios: List[Cuestionario]) -> None:
                 for fila in opciones:
                     cp.write_row(fila)
             print(f"  {c.codigo:10} {len(c.respuestas):4} respuestas · {len(items):6} valoraciones · {len(opciones):5} opciones")
+
+            # Atribución a un docente por el nombre escrito (el texto no se carga).
+            if alexia and c.colectivo == "alumnos":
+                atribuciones, res = atribuir(alexia, c.codigo, c.respuestas)
+                resumen_atrib += res
+                for n, asignatura, correo in atribuciones:
+                    nombre, apellidos = nombre_y_apellidos(alexia, correo)
+                    cur.execute("""insert into public.persona_responsable (nombre, apellidos, correo) values (%s, %s, %s)
+                                   on conflict (correo) do update set correo = excluded.correo returning id""",
+                                (nombre, apellidos, correo))
+                    docente = cur.fetchone()[0]
+                    cur.execute("insert into privado.respuesta_docente (respuesta_id, asignatura_id, docente_id) values (%s, %s, %s)",
+                                (rids[n], id_de("asignatura", asignatura), docente))
+    return resumen_atrib
 
 
 def informe(dic: Diccionario, cuestionarios: List[Cuestionario]) -> str:
@@ -205,7 +248,17 @@ def main() -> None:
 
     import psycopg
     with psycopg.connect(url_bd(args.remoto)) as conn:
-        cargar(conn, dic, cuestionarios)
+        resumen = cargar(conn, dic, cuestionarios)
+        with (carpeta / "carga_2526.md").open("a") as f:
+            f.write("\n## Atribución a un docente por el nombre escrito\n\n"
+                    "Solo cifras: el texto no se carga. Se aplica en clases con más de un docente.\n\n"
+                    "| Cuestionario | Columna | Alumnos | Rellenan | Casan con un docente | Atribuidas | Aplicada |\n|---|---|---|---|---|---|---|\n")
+            for r in resumen:
+                pct = f"{100 * r.casan / r.rellenan:.0f} %" if r.rellenan else "-"
+                f.write(f"| {r.cuestionario} | {r.columna} | {r.alumnos} | {r.rellenan} | {pct} | {r.atribuidas} | "
+                        f"{'sí' if r.aplicada else 'no: ' + r.motivo} |\n")
+        for r in resumen:
+            print(f"  Atribución {r.cuestionario} {r.columna}: {'sí' if r.aplicada else 'no (' + r.motivo + ')'}, {r.atribuidas} respuestas")
         with conn.cursor() as cur:
             print(f"  Preguntas comunes (candidatas): {cargar_comunes(cur)} filas")
         conn.commit()

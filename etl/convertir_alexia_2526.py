@@ -30,10 +30,17 @@ RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ / "etl"))
 from cargar_2526 import url_bd  # noqa: E402
 from encuesta_facil import sin_acentos  # noqa: E402
+from departamentos_2526 import INGLES_Y_ADQUISICION, OFICIALES, OTROS, RENOMBRAR  # noqa: E402
 
 CURSO = "2025/26"
 ORIGEN = RAIZ / "datos_locales" / "fuentes" / "Grupos_asignaturas_docentes_2025-26.xlsx"
 SALIDA = RAIZ / "datos_locales" / "asignacion_2526_desde_alexia.xlsx"
+REVISION = RAIZ / "datos_locales" / "Revision_profesores_departamentos_2526_cumplimentado.xlsx"
+REVISAR_INGLES = RAIZ / "datos_locales" / "revisar_ingles_adquisicion_2526.xlsx"
+
+# Reparto del antiguo «Inglés y Adquisición de Lenguas» según lo que imparte cada docente.
+INGLESAS = r"^(lengua inglesa y literatura|ingles a |ingles i+ hsd)"
+ADQUISICION = r"adquisicion de lengua inglesa|ingles b |frances|aleman|chino|arabe|inmersion|adquisicion de lengua espanola|espanol b"
 
 
 def k(s: str) -> str:
@@ -197,6 +204,8 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("alexia", type=Path, nargs="?", default=ORIGEN)
     ap.add_argument("--salida", type=Path, default=SALIDA)
+    ap.add_argument("--revision", type=Path, default=REVISION,
+                    help="revisión del colegio (hoja Departamentos; «Departamento correcto» manda)")
     args = ap.parse_args()
 
     import openpyxl
@@ -232,6 +241,7 @@ def main() -> None:
     sin_encuesta: Counter = Counter()
     docentes: dict[str, dict] = {}
     deps: dict[str, Counter] = defaultdict(Counter)
+    imparte: dict[str, Counter] = defaultdict(Counter)
     for f in filas[1:]:
         correo = str(f[i["Correo"]] or "").strip().lower()
         nombre = str(f[i["Docente"]] or "").strip()
@@ -241,6 +251,7 @@ def main() -> None:
         asig_alexia = str(f[i["Asignatura"]] or "").strip()
         if not k(asig_alexia).startswith(("tutoria", "refuerzo", "final")):
             deps[correo][departamento_de(asig_alexia)] += 1
+            imparte[correo][k(asig_alexia) + " "] += 1
         g = grupo(f[i["Grupo"]])
         q = cuest_de.get(g or "")
         if q is None:
@@ -262,6 +273,40 @@ def main() -> None:
         propuestos[correo] = (dep, "segura" if total and n / total >= 0.6 else "a revisar",
                               ", ".join(f"{d} ({m})" for d, m in cnt.most_common()))
 
+    # Revisión del colegio: «Departamento correcto» manda sobre la propuesta; nombres oficiales.
+    situacion = {str(r[1]).strip().lower(): str(r[2] or "Alta").strip()
+                 for r in list(libro["Docentes"].iter_rows(values_only=True))[1:] if r[1]}
+    finales: dict[str, tuple[str, str]] = {}
+    revisar_ingles = []
+    if args.revision.exists():
+        rev = list(openpyxl.load_workbook(args.revision, read_only=True, data_only=True)["Departamentos"].iter_rows(values_only=True))
+        cr = [str(c or "").strip() for c in rev[0]]
+        for r in rev[1:]:
+            d = dict(zip(cr, r))
+            correo = str(d.get("Correo") or "").strip().lower()
+            if not correo:
+                continue
+            correcto = str(d.get("Departamento correcto") or "").strip()
+            dep = correcto or str(d.get("Departamento propuesto") or OTROS).strip()
+            finales[correo] = (RENOMBRAR.get(dep, RENOMBRAR.get(dep.lower(), dep)), "colegio" if correcto else "propuesta confirmada")
+    for correo, (dep, origen) in list(finales.items()):
+        if dep != INGLES_Y_ADQUISICION:
+            continue
+        ing = sum(n for a, n in imparte[correo].items() if re.search(INGLESAS, a))
+        adq = sum(n for a, n in imparte[correo].items() if re.search(ADQUISICION, a))
+        nuevo = "Lengua y Literatura Inglesas" if ing > adq else "Adquisición de Lenguas"
+        if ing and adq or not (ing or adq):
+            revisar_ingles.append((correo, ing, adq, nuevo))
+            finales[correo] = (nuevo, "a revisar: imparte de los dos" if ing and adq else "a revisar: no encaja en ninguno")
+        else:
+            finales[correo] = (nuevo, origen + " (reparto de Inglés y Adquisición)")
+    for correo, (dep, _) in finales.items():
+        if dep not in OFICIALES and dep != OTROS:
+            raise SystemExit(f"Departamento no oficial para {correo}: {dep!r}")
+    if finales:
+        propuestos = {c: (finales[c][0], finales[c][1], propuestos.get(c, (None, None, ""))[2]) if c in finales
+                      else propuestos.get(c, (OTROS, "a revisar", "")) for c in docentes}
+
     salida = openpyxl.Workbook()
     negrita = Font(bold=True, color="FFFFFF")
     azul = PatternFill("solid", fgColor="1F3A5F")
@@ -275,14 +320,14 @@ def main() -> None:
 
     hd = salida.active
     hd.title = "Departamentos"
-    cabecera(hd, ["Correo", "Apellidos", "Nombre", "Departamento", "Propuesta", "Lo que imparte (clases por departamento)", "Etapas", "Nombre partido"],
-             [34, 26, 22, 30, 12, 70, 40, 14])
+    cabecera(hd, ["Correo", "Apellidos", "Nombre", "Departamento", "Propuesta", "Lo que imparte (clases por departamento)", "Etapas", "Nombre partido", "Situación"],
+             [34, 26, 22, 30, 30, 70, 40, 14, 10])
     for correo in sorted(docentes, key=lambda c: partir_nombre(docentes[c]["completo"], c)[1]):
         nombre, apellidos, seguro = partir_nombre(docentes[correo]["completo"], correo)
         dep, confianza, base = propuestos.get(correo, ("Otros", "a revisar", ""))
         hd.append([correo, apellidos, nombre, dep, confianza, base, ", ".join(sorted(docentes[correo]["etapas"])),
-                   "sí" if seguro else "revisar"])
-    lista = DataValidation(type="list", formula1='"' + ",".join(d for d, _ in DEPARTAMENTO) + ',Otros"')
+                   "sí" if seguro else "revisar", situacion.get(correo, "Alta")])
+    lista = DataValidation(type="list", formula1='"' + ",".join(OFICIALES + [OTROS]) + '"')
     hd.add_data_validation(lista)
     lista.add(f"D2:D{hd.max_row}")
 
@@ -311,6 +356,26 @@ def main() -> None:
 
     args.salida.parent.mkdir(parents=True, exist_ok=True)
     salida.save(args.salida)
+
+    # Excel corto para el colegio: docentes del antiguo «Inglés y Adquisición» por revisar.
+    if revisar_ingles:
+        rv = openpyxl.Workbook()
+        hr = rv.active
+        hr.title = "Revisar"
+        cabecera(hr, ["Docente", "Lo que imparte", "Departamento propuesto", "Departamento correcto"], [32, 80, 30, 30])
+        for correo, ing, adq, nuevo in sorted(revisar_ingles, key=lambda x: partir_nombre(docentes[x[0]]["completo"], x[0])[1]):
+            materias = ", ".join(f"{a.strip().capitalize()} ({n})" for a, n in imparte[correo].most_common())
+            hr.append([docentes[correo]["completo"], materias, nuevo, None])
+        for c in hr["B"]:
+            c.alignment = openpyxl.styles.Alignment(wrap_text=True, vertical="top")
+        lista2 = DataValidation(type="list", formula1='"Lengua y Literatura Inglesas,Adquisición de Lenguas,Otros"')
+        hr.add_data_validation(lista2)
+        lista2.add(f"D2:D{hr.max_row}")
+        hr.append([])
+        hr.append(["Imparten materias de Lengua y Literatura Inglesas y de Adquisición de Lenguas (o de ninguna de las dos). "
+                   "Se han cargado en el departamento donde dan más clases. Si no es el correcto, elegidlo en la última columna."])
+        rv.save(REVISAR_INGLES)
+        print(f"Para revisar (Inglés y Adquisición): {len(revisar_ingles)} docentes → {REVISAR_INGLES.relative_to(RAIZ)}")
 
     revisar_dep = sum(1 for c in docentes if propuestos.get(c, ("", "a revisar"))[1] == "a revisar")
     revisar_nom = sum(1 for c in docentes if not partir_nombre(docentes[c]["completo"], c)[2])
