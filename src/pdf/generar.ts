@@ -8,7 +8,7 @@ import {
   informeEquipo, informeJefe, informeProfesor, informeResponsable,
   type GrupoEquipo, type Jefe, type Profesor, type TipoResponsable,
 } from "../data/resultados";
-import { notaReuniones, responsablesEquipo, textoAlumnos, tituloEquipo, tituloReuniones } from "../etiquetas";
+import { notaReuniones, responsablesEquipo, textoAlumnos, tituloAlumnosJefe, tituloEquipo, tituloReuniones } from "../etiquetas";
 import { t } from "../i18n";
 import { InformeProfesorPdf } from "./InformeProfesorPdf";
 import { InformeNivelPdf, type AlumnosDepartamentoPdf, type DatosNivelPdf, type SeccionPdf } from "./InformeNivelPdf";
@@ -90,7 +90,7 @@ export async function descargarInformeJefe(jefe: Jefe): Promise<void> {
     titulo: tituloReuniones(r), subtitulo: t.resp_departamento_sub,
     nota: notaReuniones(r, inf.departamentos, inf.reuniones.length), etiquetas: t.escala_acuerdo_dep, informe: r,
   }));
-  const alumnos: AlumnosDepartamentoPdf[] = inf.alumnos.map((a) => ({ titulo: t.jefe_alumnos(a.departamento), ...textoAlumnos(a.media) }));
+  const alumnos: AlumnosDepartamentoPdf[] = [{ titulo: tituloAlumnosJefe(inf.alumnos.departamentos), ...textoAlumnos(inf.alumnos.media) }];
   await descargarNivel(`Departamentos_${jefe.apellidos}_${jefe.nombre}`, {
     eyebrow: t.resp_informe, titulo: `${jefe.nombre} ${jefe.apellidos}`, subtitulo: t.jefe_departamentos(inf.departamentos),
     secciones, alumnos, sinSecciones: t.jefe_sin_reuniones,

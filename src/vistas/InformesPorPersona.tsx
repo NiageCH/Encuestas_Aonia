@@ -12,7 +12,7 @@ import {
   type DetallePregunta, type Fila, type GrupoEquipo, type InformeJefe, type InformeResponsable, type Jefe,
   type MediaDepartamentoAlumnos, type TipoResponsable,
 } from "../data/resultados";
-import { enumerar, notaReuniones, responsablesEquipo, textoAlumnos, tituloEquipo, tituloReuniones } from "../etiquetas";
+import { enumerar, notaReuniones, responsablesEquipo, textoAlumnos, tituloAlumnosJefe, tituloEquipo, tituloReuniones } from "../etiquetas";
 import type { Perfil } from "../data/sesion";
 import * as f from "../formato";
 import { t } from "../i18n";
@@ -174,7 +174,7 @@ function InformeDeJefe({ jefe }: { jefe: Jefe }) {
         <p className="en-hint">{t.jefe_departamentos(inf.departamentos)}</p>
         <BotonPdf generar={async () => (await import("../pdf/generar")).descargarInformeJefe(jefe)} />
         <div className="en-kpis en-kpis3" style={{ marginTop: ".6rem" }}>
-          {inf.alumnos.map((a) => <AlumnosDepartamento key={a.departamento} departamento={a.departamento} m={a.media} />)}
+          <AlumnosDepartamento titulo={tituloAlumnosJefe(inf.alumnos.departamentos)} m={inf.alumnos.media} />
         </div>
       </div>
       {inf.reuniones.length === 0 && <p className="notice" style={{ marginTop: ".9rem" }}>{t.jefe_sin_reuniones}</p>}
@@ -186,11 +186,11 @@ function InformeDeJefe({ jefe }: { jefe: Jefe }) {
   );
 }
 
-function AlumnosDepartamento({ departamento, m }: { departamento: string; m: MediaDepartamentoAlumnos }) {
+function AlumnosDepartamento({ titulo, m }: { titulo: string; m: MediaDepartamentoAlumnos }) {
   const x = textoAlumnos(m);
   return (
     <div className="card en-kpi">
-      <div className="l">{t.jefe_alumnos(departamento)}</div>
+      <div className="l">{titulo}</div>
       <div className="v">{m.global.suprimido ? <span className="en-oculto">{m.global.motivo === "sin_asignacion" ? t.dep_alumnos_pendiente_corto : t.prof_sin_visibles}</span>
         : <>{f.media(m.global.media!)} <small>/ 6</small></>}</div>
       <div className="d">{m.global.suprimido ? "" : x.detalle}{x.nota && <><br />{x.nota}</>}</div>

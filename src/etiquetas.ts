@@ -42,6 +42,11 @@ export function responsablesEquipo(g: GrupoEquipo): string {
   return enumerar(g.responsables.map((r) => `${r.nombre} ${r.apellidos}`));
 }
 
+/** Título de la media de alumnos de un jefe: su departamento, o «sus departamentos» si tiene varios. */
+export function tituloAlumnosJefe(departamentos: string[]): string {
+  return departamentos.length === 1 ? t.jefe_alumnos(departamentos[0]) : t.jefe_alumnos_varios;
+}
+
 /** Media de los profesores de un departamento según los alumnos, en texto. */
 export function textoAlumnos(m: MediaDepartamentoAlumnos): { texto: string; detalle?: string; nota?: string } {
   if (m.global.suprimido) return { texto: m.global.motivo === "sin_asignacion" ? t.dep_alumnos_pendiente : t.prof_sin_visibles };

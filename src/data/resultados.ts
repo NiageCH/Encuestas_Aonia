@@ -289,7 +289,8 @@ export interface InformeJefe {
   persona: { id: number; nombre: string; apellidos: string };
   departamentos: string[];
   reuniones: SeccionReuniones[];
-  alumnos: { departamento: string; media: MediaDepartamentoAlumnos }[];
+  /** Una sola media por jefe, con las clases propias visibles de todos sus departamentos. */
+  alumnos: { departamentos: string[]; media: MediaDepartamentoAlumnos };
 }
 
 /** Informe de un jefe de departamento con todos sus departamentos (§7.3). */

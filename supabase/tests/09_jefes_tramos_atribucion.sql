@@ -3,7 +3,7 @@
 -- y atribuidas por nombre en el informe del profesor.
 begin;
 \ir fixtures/datos_ejemplo.psql
-select plan(43);
+select plan(47);
 
 -- Datos añadidos para este fichero (inventados) ----------------------------------------------
 do $$
@@ -162,6 +162,17 @@ select is(jsonb_array_length(public.informe_jefe_departamento('2000/01', (select
   'uno visible y otro oculto: por separado, sin conjunto');
 select is((select count(*)::int from jsonb_array_elements(public.informe_jefe_departamento('2000/01', (select cuatro from ids)) -> 'reuniones') s
            where (s ->> 'conjunto')::boolean), 0, 'y nunca juntos');
+
+-- Una sola media de alumnos por jefe, con todos sus departamentos
+select is(jsonb_typeof(public.informe_jefe_departamento('2000/01', (select cuatro from ids)) -> 'alumnos'), 'object',
+  'la media de alumnos es una sola por jefe, sin desglose por departamento');
+select is(public.informe_jefe_departamento('2000/01', (select cuatro from ids)) -> 'alumnos' -> 'departamentos', '["Artes", "Ciencias"]'::jsonb,
+  'y abarca todos sus departamentos');
+select is(public.informe_jefe_departamento('2000/01', (select cuatro from ids)) -> 'alumnos' -> 'media' -> 'global',
+          public.media_departamento_alumnos('2000/01', 'Ciencias') -> 'global',
+  'con los docentes de todos sus departamentos (aquí solo Ciencias tiene docentes)');
+select is(public.informe_jefe_departamento('2000/01', (select tres from ids)) -> 'alumnos' -> 'media' -> 'global' ->> 'motivo', 'sin_asignacion',
+  'un jefe cuyos departamentos no tienen docentes no tiene media');
 
 -- Clases propias, compartidas y atribuidas ------------------------------------------------------
 select is(pg_temp.celda(public.resultados_profesor('2000/01', (select tres from ids)), 'Y7 D', 'Lengua') ->> 'tipo', 'compartida',

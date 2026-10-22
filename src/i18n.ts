@@ -236,6 +236,7 @@ export const I18N = {
     jefe_unidad_varios: "En la encuesta de este curso estos departamentos aparecen como uno solo, así que el resultado de las reuniones es común.",
     jefe_sin_reuniones: "Este departamento no tiene datos válidos de reuniones en la encuesta de personal.",
     jefe_alumnos: (d: string) => `Profesores de ${d} según los alumnos`,
+    jefe_alumnos_varios: "Profesores de sus departamentos según los alumnos",
     ipp_reuniones: "Reuniones de departamento",
     dep_alumnos_titulo: "Profesores del departamento según los alumnos",
     dep_alumnos_lead: "Media de las valoraciones de los alumnos sobre los profesores del departamento, solo con las combinaciones asignatura y grupo visibles.",
