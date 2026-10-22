@@ -57,7 +57,7 @@ select ok(not pg_temp.sin_parte_aislada('{"dimensiones":["grupo"],"total":{"supr
   "partes":[{"clave":{"grupo":"X"},"suprimido":true},{"clave":{"grupo":"Y"},"suprimido":false}]}'),
   'control: el comprobador detecta una parte suprimida aislada');
 
-reset role; select pg_temp.como('direccion'); set local role authenticated;
+set local role postgres; select pg_temp.como('direccion'); set local role authenticated;
 
 -- Mínimo de 5 y supresión complementaria por grupos
 create temp table r_grupos as

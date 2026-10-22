@@ -16,7 +16,7 @@ create temp table ids as
 grant select on ids to authenticated;
 
 -- Dirección ve todos los niveles
-reset role; select pg_temp.como('direccion'); set local role authenticated;
+set local role postgres; select pg_temp.como('direccion'); set local role authenticated;
 select lives_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"personal"}', '{"tipo":"personas"}') $$, 'dirección: encuesta de personal');
 select lives_ok($$ select public.informe_responsable('2000/01', 'superiores') $$, 'dirección: nivel Dirección (Superiores)');
 select is((public.informe_responsable('2000/01', 'centro') -> 'total' ->> 'n')::int, 24, 'dirección: nivel Dirección (valoración del centro por el personal)');
@@ -34,7 +34,7 @@ select is((public.media_departamento_alumnos('2000/01', 'Letras') -> 'global' ->
   'un departamento sin profesores asignados no tiene media de alumnos');
 
 -- Coordinación: solo Profesores de su etapa
-reset role; select pg_temp.como('coord_pai'); set local role authenticated;
+set local role postgres; select pg_temp.como('coord_pai'); set local role authenticated;
 select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"personal"}', '{"tipo":"personas"}') $$,
   '42501', 'Sin acceso a los resultados de personal', 'coordinación: no ve la encuesta de personal');
 select throws_ok($$ select public.informe_responsable('2000/01', 'superiores') $$,
@@ -50,7 +50,7 @@ select throws_ok($$ select public.media_departamento_alumnos('2000/01', 'Ciencia
 select is(jsonb_array_length(public.listar_profesores('2000/01')), 2, 'coordinación de PAI: ve los profesores de su etapa');
 select lives_ok($$ select public.informe_profesor('2000/01', (select uno from ids)) $$, 'coordinación de PAI: informe de un profesor de su etapa');
 
-reset role; select pg_temp.como('coord_primaria'); set local role authenticated;
+set local role postgres; select pg_temp.como('coord_primaria'); set local role authenticated;
 select is(public.listar_profesores('2000/01'), '[]'::jsonb, 'coordinación de Primaria: no ve profesores de otras etapas');
 select throws_ok($$ select public.informe_profesor('2000/01', (select uno from ids)) $$,
   '42501', 'Sin acceso a este profesor', 'coordinación de Primaria: ni su informe');

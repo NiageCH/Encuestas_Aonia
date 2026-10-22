@@ -19,6 +19,10 @@
 --   Recomendación: 10 dieces, 4 nueves, 5 sietes y 5 treses (NPS 37,5; media 7,75).
 --   Reuniones de departamento (por departamento): Ciencias 8 personas, Letras 6 y Artes 2.
 
+-- Contra la base enlazada (supabase test db --linked), la herramienta conecta con un usuario
+-- temporal (cli_login_postgres): los tests trabajan como postgres, igual que en local.
+set local role postgres;
+set local search_path = public, extensions;
 create extension if not exists pgtap with schema extensions;
 
 -- Los tests comprueban la regla real: doble factor obligatorio para administradores, aunque
@@ -215,7 +219,7 @@ end
 $fixture$;
 
 -- Cambia el usuario simulado. Uso, siempre como postgres:
---   reset role; select pg_temp.como('direccion'); set local role authenticated;
+--   set local role postgres; select pg_temp.como('direccion'); set local role authenticated;
 create function pg_temp.como(p_quien text, p_aal text default 'aal1') returns void
 language plpgsql as $$
 declare

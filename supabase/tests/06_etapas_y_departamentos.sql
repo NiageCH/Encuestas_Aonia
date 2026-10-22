@@ -19,7 +19,7 @@ create temp table esperado as select
      where d.nombre = 'Ciencias' and d.curso_id = (select id from public.curso where nombre = '2000/01') and i.valor is not null) as dep_ciencias;
 grant select on esperado to authenticated;
 
-reset role; select pg_temp.como('direccion'); set local role authenticated;
+set local role postgres; select pg_temp.como('direccion'); set local role authenticated;
 
 -- Familias: una familia con hijos en Primaria y PAI cuenta en las dos etapas y una vez en el total
 create temp table r_etapas as
@@ -72,7 +72,7 @@ select is((public.resultados('{"curso":"2000/01","colectivo":"personal"}', '{"ti
   (select satisfaccion_personal from esperado), 'la satisfacción media de personal no incluye el bloque de departamento');
 
 -- n de personas y alumnos sin grupo
-reset role;
+set local role postgres;
 insert into privado.respuesta (cuestionario_id, grupo_id)
   select id, null from public.cuestionario where codigo = 'PAI_T';
 insert into privado.respuesta_item (respuesta_id, pregunta_id, valor, ns_nc)
@@ -105,13 +105,13 @@ select is(jsonb_array_length(public.informe_responsable('2000/01', 'departamento
 select is((public.informe_responsable('2000/01', 'superiores') -> 'total' ->> 'motivo'), 'menos_de_5',
   'Superiores de no docentes con menos de 5 personas se oculta');
 select lives_ok($$ select public.informe_responsable('2000/01', 'departamento', 'Ciencias', true) $$, 'generar el PDF de un informe');
-reset role;
+set local role postgres;
 select is((select count(*) from public.registro_actividad where accion = 'informe_responsable' and detalle ->> 'ambito' = 'Ciencias'), 1::bigint,
   'la generación del informe queda en el registro de actividad');
 select pg_temp.como('coord_pai'); set local role authenticated;
 select throws_ok($$ select public.informe_responsable('2000/01', 'departamento', 'Ciencias') $$,
   '42501', 'Sin acceso a los informes de responsables', 'la coordinación no ve informes de responsables');
-reset role; select pg_temp.como('direccion'); set local role authenticated;
+set local role postgres; select pg_temp.como('direccion'); set local role authenticated;
 
 -- «Sin etapa» (§5.6): familias sin ninguna etapa marcada
 create function pg_temp.familias_sin_etapa(p_cuantas int) returns void language plpgsql as $$
@@ -134,7 +134,7 @@ select is(pg_temp.parte(pg_temp.etapas(), '{"etapa":"infantil"}') ->> 'motivo', 
   'sin etapa = 0: Bachillerato queda sola oculta y se oculta Infantil, la siguiente más pequeña');
 
 -- Con 2 familias sin etapa: dos partes ocultas (Sin etapa y Bachillerato), Infantil visible
-reset role; select pg_temp.familias_sin_etapa(2); select pg_temp.como('direccion'); set local role authenticated;
+set local role postgres; select pg_temp.familias_sin_etapa(2); select pg_temp.como('direccion'); set local role authenticated;
 select is(pg_temp.parte(pg_temp.etapas(), '{"etapa":"(sin dato)"}') ->> 'motivo', 'menos_de_5',
   'sin etapa = 2: la parte implícita queda oculta por tener menos de 5');
 select is(pg_temp.parte(pg_temp.etapas(), '{"etapa":"infantil"}') ->> 'suprimido', 'false',
@@ -142,7 +142,7 @@ select is(pg_temp.parte(pg_temp.etapas(), '{"etapa":"infantil"}') ->> 'suprimido
 select is((pg_temp.etapas() -> 'total' ->> 'n')::int, 31, 'las familias sin etapa cuentan en el total');
 
 -- Con 5 familias sin etapa: cuenta como parte visible; la complementaria la oculta a ella (5 < 6)
-reset role; select pg_temp.familias_sin_etapa(3); select pg_temp.como('direccion'); set local role authenticated;
+set local role postgres; select pg_temp.familias_sin_etapa(3); select pg_temp.como('direccion'); set local role authenticated;
 select is(pg_temp.parte(pg_temp.etapas(), '{"etapa":"(sin dato)"}') ->> 'motivo', 'complementaria',
   'sin etapa = 5: cuenta como visible y, al ser la más pequeña, es la que se oculta por complementaria');
 select is(pg_temp.parte(pg_temp.etapas(), '{"etapa":"infantil"}') ->> 'suprimido', 'false',

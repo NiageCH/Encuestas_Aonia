@@ -34,7 +34,7 @@ select
 
 grant select on esperado to authenticated;
 
-reset role; select pg_temp.como('direccion'); set local role authenticated;
+set local role postgres; select pg_temp.como('direccion'); set local role authenticated;
 
 -- Media agrupada, no media de medias por persona
 select ok((select prof_agrupada <> prof_por_persona from esperado), 'la fixture distingue media agrupada y media por persona');

@@ -155,6 +155,12 @@ Respuestas del colegio del 22/10/2026:
 - Inicio de sesión con la nueva intranet: se verá más adelante; la autenticación sigue aislada en `src/data/sesion.ts`.
 - En local: 388 respuestas atribuidas. Tests: 237 SQL.
 
+Supabase en la nube (22/10/2026, Irlanda, plan Free, sin datos reales):
+- 17 migraciones aplicadas. Tests contra la nube: 241 en verde, sin dejar ningún registro (recuento de las 26 tablas, Auth incluido, idéntico antes y después). Los tests preparan los datos como postgres y comprueban como anon y authenticated (hay tests que lo verifican).
+- Seguridad: RLS en las 24 tablas; el esquema privado no está expuesto por la API (solo public y graphql_public) y anon no lee ni ejecuta nada. Revisor de Supabase: sin errores; avisa de las funciones security definer (intencionado, regla 3) y de una política mejorable (migración 18, preparada en local).
+- Función admin-usuarios subida y activa (exige sesión). Falta el secreto SITIO_URL cuando haya alojamiento.
+- Correo: el de Supabase por defecto, solo para pruebas internas, hasta tener encuestas@sfpaula.com. No se invita a nadie del colegio.
+
 Orden de carga: `cargar_2526.py` → `convertir_alexia_2526.py` → `cargar_asignaciones.py` → `cargar_responsables.py`.
 
 ## Bloqueos

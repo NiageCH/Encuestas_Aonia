@@ -108,7 +108,7 @@ create function pg_temp.celda(p jsonb, p_grupo text, p_asig text) returns jsonb 
 grant execute on function pg_temp.celda(jsonb, text, text) to authenticated;
 
 -- Tramo de tutoría ----------------------------------------------------------------------------
-reset role; select pg_temp.como('direccion'); set local role authenticated;
+set local role postgres; select pg_temp.como('direccion'); set local role authenticated;
 
 select is(public.listar_equipo('2000/01') -> 0 -> 'tramos', '["infantil", "y1_y5"]'::jsonb,
   'los tramos ocultos (Infantil 2 e Y1 a Y5 4) se juntan en un resultado compartido');
@@ -188,7 +188,7 @@ select is(pg_temp.celda(public.resultados_profesor('2000/01', (select dos from i
   'y el titular al que no nombró nadie no la recibe');
 
 -- Coordinación: sin acceso a los informes de responsables
-reset role; select pg_temp.como('coord_pai'); set local role authenticated;
+set local role postgres; select pg_temp.como('coord_pai'); set local role authenticated;
 select throws_ok($$ select public.listar_jefes('2000/01') $$, '42501', 'Sin acceso a los informes de responsables', 'coordinación: no ve los jefes');
 select throws_ok($$ select public.informe_equipo('2000/01', '{y6_y9}') $$, '42501', 'Sin acceso a los informes de responsables', 'ni el Equipo de Individuación');
 select throws_ok($$ select public.resultados_profesor('2000/01', (select cinco from ids)) $$, '42501', 'Sin acceso a este profesor',

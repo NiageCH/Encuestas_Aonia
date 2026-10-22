@@ -14,15 +14,15 @@ select ok((select ultimo_acceso is not null from public.usuario_perfil where id 
   'el último acceso se copia al perfil al iniciar sesión');
 
 -- Permisos
-reset role; select pg_temp.como('direccion'); set local role authenticated;
+set local role postgres; select pg_temp.como('direccion'); set local role authenticated;
 select throws_ok($$ select public.admin_usuarios() $$, '42501', 'Solo para administradores', 'dirección no administra usuarios');
 select throws_ok($$ select public.admin_registrar_invitacion('00000000-0000-0000-0000-00000000000b', gen_random_uuid(), 'X', 'direccion', null) $$,
   '42501', null, 'el alta de perfiles solo la hace la Edge Function (clave de servicio)');
-reset role; select pg_temp.como('admin', 'aal1'); set local role authenticated;
+set local role postgres; select pg_temp.como('admin', 'aal1'); set local role authenticated;
 select throws_ok($$ select public.admin_usuarios() $$, '42501', 'Doble factor obligatorio para administradores', 'un administrador sin aal2 tampoco');
 
 -- Lista
-reset role; select pg_temp.como('admin', 'aal2'); set local role authenticated;
+set local role postgres; select pg_temp.como('admin', 'aal2'); set local role authenticated;
 create temp table lista as select public.admin_usuarios() as l;
 select is((select pg_temp.usuario(l, 'coord.pai@ejemplo.test') ->> 'estado' from lista), 'pendiente', 'un invitado que no ha entrado está pendiente');
 select is((select pg_temp.usuario(l, 'inactivo@ejemplo.test') ->> 'estado' from lista), 'desactivado', 'estado desactivado');
@@ -49,7 +49,7 @@ select throws_ok($$ select public.admin_actualizar_usuario('00000000-0000-0000-0
   'P0001', 'La coordinación necesita etapa, y los demás roles no la llevan', 'la coordinación necesita etapa');
 
 -- Un usuario desactivado no obtiene resultados (aunque pueda autenticarse)
-reset role; select pg_temp.como('inactivo'); set local role authenticated;
+set local role postgres; select pg_temp.como('inactivo'); set local role authenticated;
 select throws_ok($$ select public.resumen('{"curso":"2000/01","colectivo":"familias"}') $$, '42501', 'Sin acceso',
   'un usuario desactivado no ve resultados');
 

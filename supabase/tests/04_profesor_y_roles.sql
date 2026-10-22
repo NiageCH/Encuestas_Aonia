@@ -14,7 +14,7 @@ create temp table ids as
 grant select on ids to authenticated;
 
 -- Dirección
-reset role; select pg_temp.como('direccion'); set local role authenticated;
+set local role postgres; select pg_temp.como('direccion'); set local role authenticated;
 create temp table prof_uno as select public.resultados_profesor('2000/01', (select uno from ids)) as r;
 
 select is((select jsonb_array_length(r -> 'celdas') from prof_uno), 4, 'Docente Uno tiene cuatro combinaciones (Matemáticas en Y7 A a Y7 D)');
@@ -39,7 +39,7 @@ select is(jsonb_array_length(public.informe_profesor('2000/01', (select uno from
   'el informe completo trae el detalle de cada pregunta de profesorado');
 select is((public.informe_profesor('2000/01', (select uno from ids), true) -> 'global' ->> 'media')::numeric, (select mates_y7b from ids),
   'el informe completo aplica las mismas reglas que la vista');
-reset role;
+set local role postgres;
 select is((select count(*) from public.registro_actividad where accion = 'informe_profesor' and detalle ->> 'lote' = 'true'), 1::bigint,
   'cada informe generado queda en el registro de actividad, marcando el lote');
 select pg_temp.como('direccion'); set local role authenticated;
@@ -48,7 +48,7 @@ select is((public.resultados('{"curso":"2000/01","colectivo":"alumnos","etapas":
   29, 'el ámbito de varias etapas en alumnos suma sus cuestionarios');
 
 -- Coordinación de PAI
-reset role; select pg_temp.como('coord_pai'); set local role authenticated;
+set local role postgres; select pg_temp.como('coord_pai'); set local role authenticated;
 select lives_ok($$ select public.resultados_profesor('2000/01', (select uno from ids)) $$, 'coordinación de PAI ve a un profesor de PAI');
 select ok(public.resultados_profesor('2000/01', (select uno from ids)) -> 'comparacion' ? 'colegio',
   'coordinación recibe la media del colegio como referencia');
@@ -73,7 +73,7 @@ select throws_ok($$ select public.resumen('{"curso":"2000/01","colectivo":"perso
   '42501', 'Sin acceso a los resultados de personal', 'coordinación no ve personal tampoco en el resumen');
 
 -- Coordinación de Primaria e Infantil
-reset role; select pg_temp.como('coord_primaria'); set local role authenticated;
+set local role postgres; select pg_temp.como('coord_primaria'); set local role authenticated;
 select throws_ok($$ select public.resultados_profesor('2000/01', (select uno from ids)) $$,
   '42501', 'Sin acceso a este profesor', 'coordinación de Primaria no ve a un profesor que solo da clase en PAI');
 select throws_ok($$ select public.informe_profesor('2000/01', (select uno from ids)) $$,
@@ -83,7 +83,7 @@ select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"al
   'P0002', 'No hay datos para este filtro', 'coordinación de Primaria no ve alumnos de PAI');
 select is((public.resultados('{"curso":"2000/01","colectivo":"familias"}', '{"tipo":"personas"}') -> 'total' ->> 'n')::int, 11,
   'coordinación de Primaria ve las familias de Primaria (incluida la que también tiene hijos en PAI)');
-reset role; select pg_temp.como('coord_infantil'); set local role authenticated;
+set local role postgres; select pg_temp.como('coord_infantil'); set local role authenticated;
 select is((public.resultados('{"curso":"2000/01","colectivo":"familias"}', '{"tipo":"personas"}') -> 'total' ->> 'motivo'), 'complementaria',
   'coordinación de Infantil recibe su etapa suprimida igual que la ve dirección');
 select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"alumnos"}', '{"tipo":"personas"}') $$,
