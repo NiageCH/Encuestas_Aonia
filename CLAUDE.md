@@ -46,7 +46,8 @@ npm run db:test      # tests pgTAP (supabase/tests)
 python3 supabase/scripts/probar_mfa_local.py   # prueba el doble factor del administrador
 python3 supabase/scripts/probar_invitacion_local.py   # prueba invitaciones, contraseñas y permisos
 .venv/bin/python etl/cargar_2526.py            # carga 2025/26 (--ensayo: sin tocar la base de datos)
-.venv/bin/python etl/validar_2526.py           # validación contra el prototipo
+.venv/bin/python etl/validar_2526.py           # validación contra el prototipo (--remoto: la nube)
+.venv/bin/python etl/borrar_2526.py            # borra el curso 2025/26 (sin --confirmar solo muestra el recuento)
 .venv/bin/python etl/convertir_alexia_2526.py      # listado de Alexia → plantilla de asignación (datos_locales/)
 .venv/bin/python etl/cargar_asignaciones.py RUTA.xlsx  # asignación de profesores (plantilla en etl/plantillas/)
 .venv/bin/python etl/cargar_responsables.py          # jefes de departamento y del Equipo de Individuación (datos_locales/)

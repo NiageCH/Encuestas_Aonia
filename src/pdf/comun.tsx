@@ -2,6 +2,7 @@
 // del colegio y pie con la página.
 
 import { Font, Image, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { AVISO_VALIDACION } from "../ajustes";
 import { t } from "../i18n";
 import logoBlanco from "../recursos/pdf/logo-blanco.png";
 import r400 from "../recursos/pdf/Raleway-400.ttf";
@@ -34,6 +35,7 @@ export const base = StyleSheet.create({
   cabTitulo: { fontSize: 11, fontWeight: 700, color: "#ffffff" },
   cabSub: { fontSize: 8.5, color: "#b9c6d8", marginTop: 2 },
   cuerpo: { paddingHorizontal: 36, paddingTop: 18 },
+  validacion: { backgroundColor: "#fff3d6", color: C.warn, fontSize: 8.5, fontWeight: 700, textAlign: "center", paddingVertical: 5, paddingHorizontal: 36 },
   eyebrow: { fontSize: 8, fontWeight: 800, color: C.brand, textTransform: "uppercase", letterSpacing: 0.6 },
   titulo: { fontSize: 20, fontWeight: 800, color: C.navy, marginTop: 3 },
   muted: { color: C.muted },
@@ -47,13 +49,16 @@ export const base = StyleSheet.create({
 
 export function Cabecera({ subtitulo }: { subtitulo: string }) {
   return (
-    <View style={base.cabecera} fixed>
-      <Image src={logoBlanco} style={base.logo} />
-      <View style={base.cabTexto}>
-        <Text style={base.cabTitulo}>{t.brand_title}</Text>
-        <Text style={base.cabSub}>{subtitulo}</Text>
+    <>
+      <View style={base.cabecera} fixed>
+        <Image src={logoBlanco} style={base.logo} />
+        <View style={base.cabTexto}>
+          <Text style={base.cabTitulo}>{t.brand_title}</Text>
+          <Text style={base.cabSub}>{subtitulo}</Text>
+        </View>
       </View>
-    </View>
+      {AVISO_VALIDACION && <Text style={base.validacion} fixed>{t.aviso_validacion}</Text>}
+    </>
   );
 }
 

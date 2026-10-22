@@ -165,6 +165,8 @@ Web de pruebas (22/10/2026): Clever Cloud, región París, aplicación `Encuesta
 
 Acceso en la nube (22/10/2026): configuración de Auth en `supabase/config.toml`, sección `[remotes.pruebas]`, aplicada con `npx supabase config push` tras revisar `npx supabase config diff`. Alta libre e inicio anónimo desactivados (comprobado), enlaces de 24 horas, contraseñas de 10 con letras y números, plantillas en español con pie de contacto, Site URL y Redirect URLs del subdominio. El SMTP de Brevo no se declara en el repositorio: vive solo en el panel. Invitación de prueba enviada a rodrigo@niage.es (sin perfil todavía).
 
+Decisión del 22/10/2026: no se cargan datos inventados en la nube; las pruebas con el colegio serán con los datos reales de 2025/26, cuando el colegio lo autorice. Preparado: carga, validación contra la nube (`validar_2526.py --remoto`) y borrado (`borrar_2526.py`), en `docs/DESPLIEGUE.md` §5. Estado vacío en todas las pantallas de resultados y franja «Resultados en validación» en la aplicación y los PDF (se quita con `VITE_AVISO_VALIDACION=no`).
+
 Paso de encuestas-sfp.niage.eu a encuestas.sfpaula.com (cuando el colegio publique su DNS):
 - DNS del colegio: CNAME `encuestas` → `domain.par.clever-cloud.com.` (lo crea su contacto técnico).
 - Clever Cloud: añadir `encuestas.sfpaula.com` a la aplicación (certificado automático) y, cuando funcione, quitar el subdominio de Niage.

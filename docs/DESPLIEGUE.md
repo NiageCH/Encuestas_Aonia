@@ -159,3 +159,40 @@ Supabase: proyecto `osxjfmnhcyybgffanlqo` (Irlanda, UE, plan Free), sin datos re
    solo se escribe en el panel de Supabase; nunca en git.
 5. Authentication → Rate Limits: subir el límite de correos por hora (por ejemplo, 60) cuando
    el SMTP propio esté activo.
+
+## 5. Carga de los datos reales en la nube (preparada, pendiente de autorización del colegio)
+
+**Qué se sube** (todo sale de `datos_locales/`, que no va a git; la carga va directa a la base
+de datos por conexión cifrada, sin pasar por el alojamiento web):
+
+| Paso | Orden | Qué sube |
+|---|---|---|
+| 1 | `etl/cargar_2526.py --remoto` | 8 cuestionarios, 890 respuestas, unas 132.000 valoraciones, diccionario de 340 preguntas, tramos de tutoría (18) y atribuciones por nombre (388). Sin IP, fechas, identificadores, sexo ni respuestas abiertas; los nombres que escriben los alumnos no se cargan, solo el docente atribuido. |
+| 2 | `etl/cargar_asignaciones.py datos_locales/asignacion_2526_desde_alexia.xlsx --remoto` | 799 asignaciones de 97 docentes: nombre, apellidos, correo del colegio, departamento y situación (alta o baja). **Son datos personales del personal docente**: por eso hace falta la autorización. |
+| 3 | `etl/cargar_responsables.py --remoto` | 9 cargos de jefe de departamento y 4 del Equipo de Individuación (nombre y correo). |
+
+Requisito: `DATABASE_URL` en el `.env` de Rodrigo con la cadena de conexión del proyecto
+(Supabase → Connect → *Session pooler*, IPv4), con su contraseña. Solo en su equipo; nunca en git.
+
+**Cómo se comprueba**
+
+1. `etl/validar_2526.py --remoto`: la misma validación que en local (tabla de control, 494
+   preguntas, asignaturas, grupos, etapas y segmentos) contra la nube, dentro de una transacción
+   que se deshace. Informe en `datos_locales/informes/validacion_2526_nube.md`, que debe dar el
+   mismo resultado que `validacion_2526.md` (hoy: todo en verde, sin diferencias).
+2. Recuento de la nube igual al local: `etl/borrar_2526.py --remoto` sin `--confirmar` solo muestra
+   el recuento (cuestionarios, respuestas, valoraciones, atribuciones, tramos, grupos, asignaturas,
+   departamentos, asignaciones, cargos, personas y preguntas).
+3. `npx supabase test db --linked` (los tests usan su propio curso inventado y no dejan nada).
+4. Revisión en la web por Rodrigo: Inicio, Alumnos, Familias, Personal e informes, con la franja
+   «Resultados en validación».
+
+**Cómo se borraría:** `etl/borrar_2526.py --remoto --confirmar`. Borra en una sola transacción
+todo lo del curso 2025/26 (respuestas, catálogo, asignaciones, cargos, atribuciones y las
+personas y preguntas que ya no use ningún curso), comprueba que no queda nada y, si quedara algo,
+lo deshace todo. No toca usuarios, perfiles ni el registro de actividad. Probado en local
+(borrado completo, recarga y validación en verde).
+
+**Franja de validación:** la aplicación y los PDF muestran «Resultados en validación. Pendientes de
+revisión final con el Colegio». Se quita poniendo `VITE_AVISO_VALIDACION=no` en las variables de
+Clever Cloud y volviendo a desplegar.

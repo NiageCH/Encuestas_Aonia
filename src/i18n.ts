@@ -262,6 +262,7 @@ export const I18N = {
     prof_media_colegio: "Media del colegio",
     prof_comparacion_tip: "Media de las valoraciones sobre el profesorado de todos los docentes, como referencia.",
     prof_excluidas: (n: number) => `${n} ${n === 1 ? "combinación asignatura y grupo queda oculta" : "combinaciones asignatura y grupo quedan ocultas"} para proteger el anonimato (menos de 5 respuestas, o para que no se puedan deducir por resta). No cuentan en la media global.`,
+    aviso_validacion: "Resultados en validación. Pendientes de revisión final con el Colegio",
     vacio_titulo: (curso: string) => `Todavía no hay resultados cargados para el curso ${curso}`,
     vacio_general: "Cuando se carguen las encuestas del curso, los resultados aparecerán aquí.",
     vacio_colectivo: {

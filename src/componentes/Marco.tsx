@@ -5,6 +5,7 @@ import { useState, type ReactNode } from "react";
 import logo from "../recursos/logo.webp";
 import logoBlanco from "../recursos/logo-blanco.webp";
 import { t } from "../i18n";
+import { AVISO_VALIDACION } from "../ajustes";
 
 export interface Enlace {
   ruta: string;
@@ -24,6 +25,7 @@ export function Marco({ ruta, enlaces, usuario, aviso, children }: Props) {
   const [menu, setMenu] = useState(false);
   return (
     <>
+      {AVISO_VALIDACION && <p className="en-aviso-validacion" role="note">⚠️ {t.aviso_validacion}</p>}
       <a className="skip" href="#app">{t.skip}</a>
       <header className="topbar">
         <a className="brand" href="#/">

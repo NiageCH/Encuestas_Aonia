@@ -1,7 +1,8 @@
 """Validación de la carga 2025/26 contra los agregados verificados del prototipo.
 
 Uso:
-    .venv/bin/python etl/validar_2526.py
+    .venv/bin/python etl/validar_2526.py            # base de datos local
+    .venv/bin/python etl/validar_2526.py --remoto   # la de DATABASE_URL (nube); informe aparte
 
 Consulta las RPC reales (como un usuario de dirección temporal, dentro de una transacción
 que se deshace al final) y compara con datos_locales/referencia_agregados_2526.json:
@@ -130,7 +131,11 @@ def marca(ok: bool) -> str:
 
 
 def main() -> None:
+    import argparse
     import psycopg
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--remoto", action="store_true", help="valida la base de DATABASE_URL (la nube); no escribe nada")
+    args = ap.parse_args()
 
     ref = json.loads((RAIZ / "datos_locales" / "referencia_agregados_2526.json").read_text())
     _, cuestionarios = convertir_todo(RAIZ / "datos_locales" / "fuentes")
@@ -143,7 +148,7 @@ def main() -> None:
     notas_grupo: List[str] = []
     n_excl, excl_items, excl_rec = excluidas_personal()
 
-    with psycopg.connect(url_bd(False)) as conn, conn.cursor() as cur:
+    with psycopg.connect(url_bd(args.remoto)) as conn, conn.cursor() as cur:
         # Media de profesorado por grupo con la fórmula del prototipo (asignaturas con 5 o más
         # personas, ponderadas por personas), calculada como postgres sobre los datos cargados.
         cur.execute("""
@@ -384,7 +389,7 @@ def main() -> None:
         conn.rollback()
 
     texto = "\n".join(salida) + "\n"
-    destino = RAIZ / "datos_locales" / "informes" / "validacion_2526.md"
+    destino = RAIZ / "datos_locales" / "informes" / ("validacion_2526_nube.md" if args.remoto else "validacion_2526.md")
     destino.write_text(texto)
     print(texto)
     print(f"Guardado en {destino.relative_to(RAIZ)}")

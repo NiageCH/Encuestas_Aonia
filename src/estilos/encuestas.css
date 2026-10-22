@@ -208,3 +208,15 @@
 .en-vacio h2 { margin: 0 0 .3rem; font-size: 1.15rem; color: var(--ink); }
 .en-vacio p { margin: 0 0 .4rem; }
 .en-vacio-icono { font-size: 1.8rem; line-height: 1; }
+
+/* Franja «Resultados en validación» (src/ajustes.ts): fija arriba; la cabecera de la intranet
+   baja lo que ocupa la franja. */
+.en-aviso-validacion { position: sticky; top: 0; z-index: 31; margin: 0; min-height: 34px; display: flex; align-items: center; justify-content: center; padding: .35rem 1rem; background: color-mix(in srgb, var(--warn) 16%, #fff); color: var(--ink); border-bottom: 1px solid color-mix(in srgb, var(--warn) 40%, #fff); font-size: .85rem; font-weight: 700; text-align: center; }
+body:has(.en-aviso-validacion) .topbar { top: 46px; }
+body:has(.en-aviso-validacion)::before { top: 34px; }
+@media (max-width: 600px) {
+  .en-aviso-validacion { min-height: 48px; font-size: .78rem; }
+  body:has(.en-aviso-validacion) .topbar { top: 56px; }
+  body:has(.en-aviso-validacion)::before { top: 48px; }
+}
+@media print { .en-aviso-validacion { position: static; } }
