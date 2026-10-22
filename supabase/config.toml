@@ -425,3 +425,31 @@ enabled = true
 # formatted with uppercase keywords, indent 2, max width 180, trailing commas,
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
+
+# Proyecto de la nube para las pruebas (Irlanda, UE). Lo que no se declara aquí se hereda de la
+# configuración de arriba. El SMTP (Brevo) no se declara en ningún sitio: se configura solo en el
+# panel de Supabase y la clave nunca va al repositorio. El límite de correos por hora también se
+# gestiona en el panel.
+[remotes.pruebas]
+project_id = "osxjfmnhcyybgffanlqo"
+
+[remotes.pruebas.auth]
+site_url = "https://encuestas-sfp.niage.eu"
+additional_redirect_urls = ["https://encuestas-sfp.niage.eu/**"]
+enable_signup = false
+enable_anonymous_sign_ins = false
+
+[remotes.pruebas.auth.email]
+enable_signup = true
+# Como mínimo un minuto entre dos correos a la misma persona (en local, un segundo para probar).
+max_frequency = "1m0s"
+# Se deja como está en el proyecto (no afecta a las invitaciones).
+enable_confirmations = true
+
+# Valores que ya tiene el proyecto y no tocamos.
+[remotes.pruebas.db.pooler]
+default_pool_size = 15
+max_client_conn = 200
+
+[remotes.pruebas.storage.vector]
+enabled = false
