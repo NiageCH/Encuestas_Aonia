@@ -136,8 +136,8 @@ Supabase: proyecto `osxjfmnhcyybgffanlqo` (Irlanda, UE, plan Free), sin datos re
    | Tipo | Nombre | Valor |
    |---|---|---|
    | TXT | `@` | `brevo-code:…` (verificación, la da Brevo) |
-   | CNAME | `brevo1._domainkey` | `b1.niage-eu.dkim.brevo.com.` (o el que indique Brevo) |
-   | CNAME | `brevo2._domainkey` | `b2.niage-eu.dkim.brevo.com.` (o el que indique Brevo) |
+   | CNAME | `brevo1._domainkey` | el destino `….dkim.brevo.com` que indique Brevo |
+   | CNAME | `brevo2._domainkey` | el destino `….dkim.brevo.com` que indique Brevo |
    | TXT | `_dmarc` | `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com` |
    | TXT | `@` | `v=spf1 include:spf.brevo.com ~all` |
 
