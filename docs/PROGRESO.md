@@ -161,6 +161,15 @@ Supabase en la nube (22/10/2026, Irlanda, plan Free, sin datos reales):
 - Función admin-usuarios subida y activa (exige sesión). Falta el secreto SITIO_URL cuando haya alojamiento.
 - Correo: el de Supabase por defecto, solo para pruebas internas, hasta tener encuestas@sfpaula.com. No se invita a nadie del colegio.
 
+Paso de encuestas-sfp.niage.eu a encuestas.sfpaula.com (cuando el colegio publique su DNS):
+- DNS del colegio: CNAME `encuestas` → `domain.par.clever-cloud.com.` (lo crea su contacto técnico).
+- Clever Cloud: añadir `encuestas.sfpaula.com` a la aplicación (certificado automático) y, cuando funcione, quitar el subdominio de Niage.
+- Supabase: `SITIO_URL=https://encuestas.sfpaula.com`; Auth → Site URL y Redirect URLs con `https://encuestas.sfpaula.com/**`, quitando las de niage.eu.
+- Correo: dominio `sfpaula.com` en Brevo con sus registros (verificación, DKIM, DMARC; revisar el SPF y el DMARC que ya tenga el colegio para no romper su correo), remitente `encuestas@sfpaula.com` (buzón que crea su contacto técnico) en el SMTP de Supabase. Retirar `niage.eu` de Brevo y sus registros DNS si ya no se usan.
+- Cabeceras: el Caddyfile no cambia (toma la dirección de Supabase de la variable del alojamiento).
+- Plan Pro de Supabase antes de las pruebas con el colegio.
+- Invitaciones enviadas antes del cambio: sus enlaces llevan al subdominio de Niage; reenviarlas tras el cambio.
+
 Orden de carga: `cargar_2526.py` → `convertir_alexia_2526.py` → `cargar_asignaciones.py` → `cargar_responsables.py`.
 
 ## Bloqueos

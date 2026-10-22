@@ -83,3 +83,72 @@ Cada paso se comprueba antes de pasar al siguiente.
 - Guion SQL del primer administrador.
 - Lista de comprobación de la configuración de Auth para compararla con el panel.
 - Borradores del manual del administrador y de la guía de usuario.
+
+## 4. Entorno de pruebas: encuestas-sfp.niage.eu (22/10/2026)
+
+Hasta que el colegio tenga `encuestas.sfpaula.com`, las pruebas van en un subdominio de Niage.
+Supabase: proyecto `osxjfmnhcyybgffanlqo` (Irlanda, UE, plan Free), sin datos reales.
+
+### Alojamiento: Clever Cloud (empresa francesa, región París)
+
+1. Crear una aplicación **Static** en la región **Paris (par)**, tamaño mínimo (nano).
+2. Despliegue desde GitHub: conectar **solo** el repositorio `NiageCH/Encuestas_Aonia`, rama `main`.
+   Si GitHub pide acceso a toda la organización en lugar de un repositorio concreto, no
+   aceptarlo: en ese caso se despliega con una acción de GitHub que empuja a Clever Cloud, con
+   las claves de Clever guardadas como secretos solo en ese repositorio.
+3. Variables de entorno de la aplicación:
+
+   | Variable | Valor |
+   |---|---|
+   | `CC_BUILD_COMMAND` | `npm ci --ignore-scripts && npm run build` |
+   | `VITE_SUPABASE_URL` | `https://osxjfmnhcyybgffanlqo.supabase.co` |
+   | `VITE_SUPABASE_ANON_KEY` | clave pública *anon* (Project Settings → API). Es pública por diseño. |
+
+   `--ignore-scripts` evita descargar la CLI de Supabase en cada compilación. No se pone
+   `CC_WEBROOT`: el `Caddyfile` de la raíz sirve `dist/` con las cabeceras de seguridad (política
+   de contenidos que solo permite conectar con el propio origen y con `VITE_SUPABASE_URL`, HSTS,
+   sin marcos, sin rastreo de origen). Probado en local con Caddy 2.11.
+4. Dominio: añadir `encuestas-sfp.niage.eu` en la aplicación (Domain names) y activar «Force
+   HTTPS». Clever Cloud genera el certificado de Let's Encrypt solo, durante los 3 días
+   siguientes a añadir el dominio.
+
+### DNS en niage.eu (GoDaddy, servidores ns41/ns42.domaincontrol.com)
+
+| Tipo | Nombre | Valor | TTL |
+|---|---|---|---|
+| CNAME | `encuestas-sfp` | `domain.par.clever-cloud.com.` | 1 hora |
+
+### Valores de la nube
+
+- Secreto de la función de invitaciones: `SITIO_URL=https://encuestas-sfp.niage.eu`
+  (`npx supabase secrets set SITIO_URL=https://encuestas-sfp.niage.eu`).
+- Auth → URL Configuration: Site URL `https://encuestas-sfp.niage.eu`; Redirect URLs solo
+  `https://encuestas-sfp.niage.eu/**` (sin `127.0.0.1` ni `localhost`, que quedan solo en el
+  `config.toml` local).
+
+### Correo de pruebas: Brevo con remitente encuestas@niage.eu
+
+1. Cuenta de Brevo (plan gratuito, 300 correos al día). Senders, Domains & Dedicated IPs →
+   Domains → añadir `niage.eu` y autenticarlo de forma manual.
+2. Registros DNS en niage.eu (los valores exactos de la verificación y de DKIM los da Brevo al
+   añadir el dominio):
+
+   | Tipo | Nombre | Valor |
+   |---|---|---|
+   | TXT | `@` | `brevo-code:…` (verificación, la da Brevo) |
+   | CNAME | `brevo1._domainkey` | `b1.niage-eu.dkim.brevo.com.` (o el que indique Brevo) |
+   | CNAME | `brevo2._domainkey` | `b2.niage-eu.dkim.brevo.com.` (o el que indique Brevo) |
+   | TXT | `_dmarc` | `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com` |
+   | TXT | `@` | `v=spf1 include:spf.brevo.com ~all` |
+
+   niage.eu no tiene hoy ni SPF ni DMARC (solo un TXT de verificación de Canva, que se queda),
+   así que se crean nuevos. El SPF no es imprescindible con Brevo (DKIM basta para DMARC), pero
+   no estorba porque el dominio no envía correo por otra vía. niage.eu **no tiene MX**: las
+   respuestas a encuestas@niage.eu no llegarían a ningún buzón.
+3. Remitente en Brevo: `encuestas@niage.eu`, nombre «Encuestas CIS-SFP».
+4. Clave SMTP en Brevo (SMTP & API → SMTP keys) y en Supabase, Authentication → Emails → SMTP
+   Settings: host `smtp-relay.brevo.com`, puerto `587`, usuario el login SMTP de Brevo,
+   contraseña la clave SMTP, remitente `encuestas@niage.eu`, nombre «Encuestas CIS-SFP». La clave
+   solo se escribe en el panel de Supabase; nunca en git.
+5. Authentication → Rate Limits: subir el límite de correos por hora (por ejemplo, 60) cuando
+   el SMTP propio esté activo.

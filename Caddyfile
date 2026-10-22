@@ -1,0 +1,32 @@
+# Servidor de la web en Clever Cloud (runtime Static: si hay un Caddyfile en la raíz, lo usa con
+# «caddy run»). Sirve la compilación de Vite (dist/) con cabeceras de seguridad. La aplicación
+# solo habla con su propio origen y con el proyecto de Supabase (VITE_SUPABASE_URL, variable del
+# alojamiento). Las rutas van tras «#», así que no hace falta reescribir direcciones.
+{
+	admin off
+	auto_https off
+	persist_config off
+}
+
+:{$CC_STATIC_PORT:8080} {
+	root * dist
+	encode zstd gzip
+
+	header {
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' {$VITE_SUPABASE_URL}; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		-Server
+	}
+
+	# Los ficheros de assets llevan huella en el nombre: se pueden guardar en caché.
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+	@pagina path / /index.html
+	header @pagina Cache-Control "no-cache"
+
+	file_server
+}
