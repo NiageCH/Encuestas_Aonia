@@ -167,7 +167,8 @@ Acceso en la nube (22/10/2026): configuración de Auth en `supabase/config.toml`
 
 Decisión del 22/10/2026: no se cargan datos inventados en la nube; las pruebas con el colegio serán con los datos reales de 2025/26, cuando el colegio lo autorice. Preparado: carga, validación contra la nube (`validar_2526.py --remoto`) y borrado (`borrar_2526.py`), en `docs/DESPLIEGUE.md` §5. Estado vacío en todas las pantallas de resultados y franja «Resultados en validación» en la aplicación y los PDF (se quita con `VITE_AVISO_VALIDACION=no`).
 
-Pendiente de subir junto con la carga real (22/10/2026): migración 20 y aviso «Sin media de departamento» para jefes sin clases propias (Artes Escénicas), en pantalla y en PDF.
+Carga real en la nube (22/10/2026, con autorización escrita del colegio): migración 20 y web desplegadas; encuestas, asignaciones y responsables cargados. Validación contra la nube idéntica a `validacion_2526.md` (sin diferencias) y recuento idéntico al local; tests en la nube en verde sin dejar registros. Revisión interna en curso (lista en `datos_locales/Revision_interna_2526.xlsx`, PDF en `datos_locales/informes/revision_2526/pdf/`); no se invita a nadie del colegio todavía.
+- Fallos encontrados al preparar la revisión y corregidos en local (migración 21, 251 tests): el informe de 10 profesores daba error (pregunta que no está en todos sus cuestionarios con atribuciones en otro) y la optativa salía también grupo a grupo, contando doble en la media global. Pendiente de subir a la nube.
 
 Paso de encuestas-sfp.niage.eu a encuestas.sfpaula.com (cuando el colegio publique su DNS):
 - DNS del colegio: CNAME `encuestas` → `domain.par.clever-cloud.com.` (lo crea su contacto técnico).

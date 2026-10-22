@@ -3,7 +3,7 @@
 -- y atribuidas por nombre en el informe del profesor.
 begin;
 \ir fixtures/datos_ejemplo.psql
-select plan(49);
+select plan(53);
 
 -- Datos añadidos para este fichero (inventados) ----------------------------------------------
 do $$
@@ -199,6 +199,11 @@ select is((public.resultados_profesor('2000/01', (select cinco from ids)) -> 'gl
   'la media global usa solo sus subconjuntos visibles');
 select is(pg_temp.celda(public.resultados_profesor('2000/01', (select siete from ids)), null, 'Optativa') ->> 'n', '7',
   'optativa atribuida sin asignación por grupo: por cuestionario, sin grupo');
+select is((select count(*)::int from jsonb_array_elements(public.resultados_profesor('2000/01', (select siete from ids)) -> 'celdas') c
+           where c -> 'clave' ->> 'asignatura' = 'Optativa'), 1, 'la optativa sale una sola vez (todos sus grupos), no también grupo a grupo');
+select is((public.resultados_profesor('2000/01', (select siete from ids)) -> 'global' ->> 'n_valoraciones')::int,
+          (pg_temp.celda(public.resultados_profesor('2000/01', (select siete from ids)), null, 'Optativa') ->> 'n_valoraciones')::int,
+  'y sus valoraciones cuentan una sola vez en la media global');
 select ok(exists (select 1 from jsonb_array_elements(public.listar_profesores('2000/01')) p where (p ->> 'id')::int = (select siete from ids)),
   'un docente solo con respuestas atribuidas aparece en la lista de profesores');
 
@@ -207,6 +212,29 @@ select is((pg_temp.celda(public.resultados_profesor('2000/01', (select cuatro fr
 select is(pg_temp.celda(public.resultados_profesor('2000/01', (select cuatro from ids)), 'Y7 B', 'Lengua') ->> 'tipo', 'atribuida', 'como clase atribuida');
 select is(pg_temp.celda(public.resultados_profesor('2000/01', (select dos from ids)), 'Y7 B', 'Lengua'), null,
   'y el titular al que no nombró nadie no la recibe');
+
+-- Profesor con clases en dos cuestionarios, atribuciones en uno y una pregunta que solo existe en
+-- el otro: su informe completo no falla (fallo encontrado el 22/10/2026 con los datos reales).
+set local role postgres;
+do $$
+declare
+  v_curso smallint := (select id from public.curso where nombre = '2000/01');
+  q integer;
+begin
+  insert into public.pregunta (codigo_diccionario, texto_es, tipo, escala_min, escala_max)
+    values ('prof_extra', 'Pregunta solo de PAI', 'escala', 1, 6) returning id into q;
+  insert into public.pregunta_cuestionario (cuestionario_id, pregunta_id, bloque_id, orden, por_asignatura)
+    select c.id, q, b.id, 3, true from public.cuestionario c join public.bloque b on b.cuestionario_id = c.id and b.codigo = 'profesorado'
+    where c.curso_id = v_curso and c.codigo = 'PAI_T';
+  insert into public.asignacion_docente (curso_id, grupo_id, asignatura_id, docente_id)
+    select v_curso, g.id, a.id, (select siete from ids) from public.grupo g, public.asignatura a
+    where g.curso_id = v_curso and g.nombre = 'Y7 C' and a.curso_id = v_curso and a.nombre = 'Lengua';
+end $$;
+select pg_temp.como('direccion'); set local role authenticated;
+select lives_ok($$ select public.informe_profesor('2000/01', (select siete from ids)) $$,
+  'el informe de un profesor con atribuciones y preguntas que no están en todos sus cuestionarios no falla');
+select is(jsonb_array_length(public.informe_profesor('2000/01', (select siete from ids)) -> 'preguntas'), 3,
+  'e incluye todas las preguntas de sus cuestionarios');
 
 -- Coordinación: sin acceso a los informes de responsables
 set local role postgres; select pg_temp.como('coord_pai'); set local role authenticated;
