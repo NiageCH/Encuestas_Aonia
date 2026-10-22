@@ -14,7 +14,7 @@ en la nube lo autoriza Rodrigo antes de hacerlo.
 
 | # | Qué | Detalle | Dónde va |
 |---|---|---|---|
-| 1 | **Proyecto Supabase** en la región **Frankfurt (eu-central-1)**, en la organización de Niage | Recomendado el plan **Pro**: los proyectos gratuitos se pausan tras una semana sin uso y no tienen copias de seguridad diarias. | — |
+| 1 | **Proyecto Supabase** en la región **Irlanda, UE (eu-west-1)**, en la organización de Niage. **Creado el 22/10/2026** (`osxjfmnhcyybgffanlqo`, plan Free) | Pasar al plan **Pro** antes de las pruebas con el colegio: los proyectos gratuitos se pausan tras una semana sin uso y no tienen copias de seguridad diarias. | — |
 | 2 | **Referencia del proyecto** (project ref) y **contraseña de la base de datos** | Para enlazar el repositorio (`supabase link`) y subir las migraciones. | Solo en el equipo de Rodrigo (`.env`, fuera de git) |
 | 3 | Que Rodrigo ejecute `npx supabase login` en su equipo | La CLI necesita su token personal; no se comparte. | Su equipo |
 | 4 | **Clave anon** y **URL** del proyecto | Son públicas por diseño (van en el frontend; la seguridad la dan RLS y las RPC). | Variables del alojamiento web |
@@ -29,7 +29,7 @@ en la nube lo autoriza Rodrigo antes de hacerlo.
 ### Alojamiento web: decisión pendiente
 
 La aplicación es estática (HTML, CSS y JS): el alojamiento solo sirve ficheros; los datos van
-del navegador a Supabase (Frankfurt) y nunca pasan por él. Aun así, la especificación pide región
+del navegador a Supabase (Irlanda, UE) y nunca pasan por él. Aun así, la especificación pide región
 UE y despliegue automático desde GitHub. Opciones a valorar:
 
 - **Proveedor europeo** (por ejemplo, Clever Cloud o Scaleway): datos y empresa en la UE. Hay

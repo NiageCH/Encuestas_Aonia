@@ -305,7 +305,7 @@ Referencia: `referencia/plantilla-intranet-cis-sfp.html`. Ábrela en el navegado
 ## 9. Plan de trabajo
 
 1. Repositorio y `.gitignore` (como mínimo `datos_locales/`, `.env*` salvo `.env.example`, `node_modules/` y `dist/`). README y estructura del proyecto. `docs/PROGRESO.md`.
-2. Supabase (Frankfurt): migraciones, RLS, RPC con el §5 y tests de anonimato.
+2. Supabase (Irlanda, UE): migraciones, RLS, RPC con el §5 y tests de anonimato.
 3. ETL de los seis cuestionarios de alumnos, el de familias y el de personal (español e inglés unidos). Diccionario y validación contra `datos_locales/validacion_2526.md`. **No se avanza hasta que cuadre.** En este paso se verifica también si personal trae departamento o equipo (§7.3).
 4. Auth, perfiles, roles, invitaciones y doble factor de administrador.
 5. Diseño de la intranet y vistas por colectivo (portando el prototipo).

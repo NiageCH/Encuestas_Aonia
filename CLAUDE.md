@@ -20,7 +20,7 @@ La especificación completa está en `docs/ESPECIFICACION.md`. Léela antes de e
 ## Arquitectura
 
 - GitHub privado (organización Niage) · Vite + React + TypeScript · alojamiento web en la UE con despliegue desde GitHub.
-- Supabase (Frankfurt): Auth (correo y contraseña, alta por invitación, doble factor obligatorio para administradores), Postgres con RLS, RPC de agregación.
+- Supabase (Irlanda, UE; proyecto `osxjfmnhcyybgffanlqo`, plan Free hasta las pruebas con el colegio): Auth (correo y contraseña, alta por invitación, doble factor obligatorio para administradores), Postgres con RLS, RPC de agregación.
 - Brevo como SMTP de Supabase Auth (remitente previsto `encuestas@sfpaula.com`).
 - ETL en Python (`etl/`), ejecutado en local por Niage con la clave de servicio de `.env`.
 - Toda la lógica de datos del frontend en `src/data/`: el colegio aún no ha confirmado si acepta Supabase o pone su backend.

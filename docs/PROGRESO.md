@@ -5,7 +5,7 @@ Plan de trabajo en `docs/ESPECIFICACION.md` §9.
 | Paso | Estado |
 |---|---|
 | 1. Repositorio, estructura, README, PROGRESO | Hecho |
-| 2. Supabase local: migraciones, RLS, RPC, tests de anonimato | Hecho (local; falta crear el proyecto en Frankfurt) |
+| 2. Supabase local: migraciones, RLS, RPC, tests de anonimato | Hecho en local; proyecto en la nube creado en Irlanda (UE) y enlazado el 22/10/2026 |
 | 3. ETL y validación | Hecho (validación completa en verde; falta el cuestionario de personal en inglés) |
 | 4. Auth, perfiles, invitaciones, doble factor | Hecho en local (falta Brevo, en el despliegue) |
 | 5. Diseño de la intranet y vistas por colectivo | En curso: alumnos, familias y personal hechas en local |
@@ -47,7 +47,7 @@ Decisiones de diseño:
 - **Administrador sin `aal2`:** puede leer su propio perfil (para que la interfaz sepa que debe pedir el código), pero ninguna RPC ni ningún otro dato.
 
 Pendiente del paso 2:
-- Crear el proyecto en la nube (Frankfurt) y enlazarlo (`supabase link`). Esperando la decisión del colegio sobre Supabase.
+- ~~Crear el proyecto en la nube y enlazarlo~~ Hecho el 22/10/2026 (Irlanda, UE, plan Free). La decisión del colegio sobre Supabase sigue pendiente.
 - RPC de exportación CSV con registro de actividad (se hará con las vistas, pasos 5 y 6).
 - `ultimo_acceso` y aviso de 90 días (paso 4).
 - Forma de carga de la ETL: conexión directa a Postgres o RPC de carga solo para `service_role` (paso 3).

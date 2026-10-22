@@ -19,7 +19,7 @@ Desarrolla Niage Technology para Aonia. Repositorio privado.
 | Paso | Estado |
 |---|---|
 | 1. Repositorio y estructura | Hecho |
-| 2. Supabase: modelo, RLS, RPC con anonimato, tests | Hecho en local; falta el proyecto en la nube (Frankfurt) |
+| 2. Supabase: modelo, RLS, RPC con anonimato, tests | Hecho en local; proyecto en la nube creado (Irlanda, UE) |
 | 3. ETL de Encuesta Fácil y validación | Hecho (falta el cuestionario de personal en inglés) |
 | 4 a 10. Auth, vistas, panel, informes PDF, administración, despliegue | Pendiente |
 
@@ -43,7 +43,7 @@ El detalle está en [`docs/PROGRESO.md`](docs/PROGRESO.md).
 Navegador (Vite + React + TypeScript)        ← pendiente (paso 5)
    │  src/data/: única capa que habla con el backend
    ▼
-Supabase (Frankfurt)
+Supabase (Irlanda, UE)
    ├─ Auth: correo y contraseña, alta por invitación, TOTP obligatorio para administradores
    ├─ public:   catálogo legible por usuarios activos + RPC de resultados
    ├─ permisos: funciones de rol usadas por las políticas RLS (no expuesto)
