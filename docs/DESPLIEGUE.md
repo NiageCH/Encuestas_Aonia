@@ -92,10 +92,17 @@ Supabase: proyecto `osxjfmnhcyybgffanlqo` (Irlanda, UE, plan Free), sin datos re
 ### Alojamiento: Clever Cloud (empresa francesa, región París)
 
 1. Crear una aplicación **Static** en la región **Paris (par)**, tamaño mínimo (nano).
-2. Despliegue desde GitHub: conectar **solo** el repositorio `NiageCH/Encuestas_Aonia`, rama `main`.
-   Si GitHub pide acceso a toda la organización en lugar de un repositorio concreto, no
-   aceptarlo: en ese caso se despliega con una acción de GitHub que empuja a Clever Cloud, con
-   las claves de Clever guardadas como secretos solo en ese repositorio.
+2. Despliegue desde el equipo de Rodrigo con clever-tools (Clever pide acceso OAuth a todos los
+   repositorios de NiageCH, y no se autoriza). Aplicación `Encuestas-SFP`, enlazada con
+   `npx clever-tools link` (el enlace, `.clever.json`, no va a git). Para publicar una versión:
+   primero `git push origin main`, para que GitHub y Clever tengan la misma, y después
+   `npx clever-tools deploy` (sube el último commit; Clever compila y sirve). Estado y registro:
+   `npx clever-tools status` y `npx clever-tools logs`.
+   **Despliegue automático (más adelante):** acción de GitHub con las claves de un usuario de
+   Clever exclusivo para despliegues, miembro solo de una organización de Clever que contenga
+   únicamente esta aplicación, y secretos en un entorno protegido de GitHub del repositorio
+   Encuestas_Aonia limitado a `main`. Las claves de Clever tienen los permisos de su usuario, no
+   de una aplicación: de ahí el usuario y la organización exclusivos.
 3. Variables de entorno de la aplicación:
 
    | Variable | Valor |

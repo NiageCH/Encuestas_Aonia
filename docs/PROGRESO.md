@@ -161,6 +161,8 @@ Supabase en la nube (22/10/2026, Irlanda, plan Free, sin datos reales):
 - Función admin-usuarios subida y activa (exige sesión). Falta el secreto SITIO_URL cuando haya alojamiento.
 - Correo: el de Supabase por defecto, solo para pruebas internas, hasta tener encuestas@sfpaula.com. No se invita a nadie del colegio.
 
+Web de pruebas (22/10/2026): Clever Cloud, región París, aplicación `Encuestas-SFP`, desplegada desde el equipo de Rodrigo con clever-tools (versión f075817). Cabeceras de seguridad comprobadas desde fuera. Subdominio `encuestas-sfp.niage.eu` con su CNAME; certificado de Let's Encrypt en curso.
+
 Paso de encuestas-sfp.niage.eu a encuestas.sfpaula.com (cuando el colegio publique su DNS):
 - DNS del colegio: CNAME `encuestas` → `domain.par.clever-cloud.com.` (lo crea su contacto técnico).
 - Clever Cloud: añadir `encuestas.sfpaula.com` a la aplicación (certificado automático) y, cuando funcione, quitar el subdominio de Niage.
