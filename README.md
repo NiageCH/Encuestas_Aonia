@@ -251,6 +251,7 @@ npm run db:test
 | `07_administracion.sql` | Usuarios, roles, desactivación y registro de actividad |
 | `08_personal_informes.sql` | Lo que cada rol puede pedir en Personal → Informes por persona |
 | `09_jefes_tramos_atribucion.sql` | Jefes de departamento, tramo de tutoría aislado de todo lo demás, partes ocultas juntas, clases propias, compartidas y atribuidas |
+| `10_panel_mejora.sql` | Puntos fuertes y de mejora, comparación por recomendación aislada de cualquier otro filtro, mínimo de 5 y complementaria |
 
 Los datos de `supabase/tests/fixtures/datos_ejemplo.psql` son **inventados** y están diseñados para provocar cada caso.
 

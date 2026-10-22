@@ -8,7 +8,8 @@ import { BarraReparto, lineasOculto, textoReparto } from "../componentes/Grafico
 import { Migas } from "../componentes/Marco";
 import { Oculto } from "../componentes/Oculto";
 import {
-  opciones, preguntasComunes, resultados, type Colectivo, type Fila, type Filtro, type PreguntaComun,
+  comparacionRecomendacion, opciones, preguntasComunes, puntosColectivo, resultados,
+  type BloqueComparado, type Colectivo, type Fila, type Filtro, type PreguntaComun, type Punto,
 } from "../data/resultados";
 import type { Perfil } from "../data/sesion";
 import * as f from "../formato";
@@ -28,6 +29,8 @@ export function Panel({ perfil }: { perfil: Perfil }) {
   const [comunes, setComunes] = useState<Comun[] | null>(null);
   const [valorado, setValorado] = useState<Partial<Record<Colectivo, Fila>>>({});
   const [textos, setTextos] = useState<Record<string, string>>({});
+  const [puntos, setPuntos] = useState<Partial<Record<Colectivo, { mejora: Punto[]; fuertes: Punto[] }>>>({});
+  const [dif, setDif] = useState<Partial<Record<Colectivo, BloqueComparado[]>>>({});
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -62,6 +65,10 @@ export function Panel({ perfil }: { perfil: Perfil }) {
         Promise.all(colectivos.map(async (c) => [c, await seguro(resultados(filtro(c), { tipo: "seleccion", codigo: "mas_valorado" }))] as const)),
         opciones("mas_valorado"),
       ]);
+      const [pts, difs] = await Promise.all([
+        Promise.all(colectivos.map(async (c) => [c, await puntosColectivo(c).catch(() => null)] as const)),
+        coordinacion ? Promise.resolve([]) : Promise.all(colectivos.map(async (c) => [c, await comparacionRecomendacion(c).catch(() => null)] as const)),
+      ]);
       const valores = await Promise.all(lista.map(async (p) => {
         const pares = await Promise.all(colectivos.filter((c) => p.preguntas[c]).map(async (c) =>
           [c, await seguro(resultados(filtro(c), { tipo: "pregunta", codigo: p.preguntas[c]! }))] as const));
@@ -74,6 +81,8 @@ export function Panel({ perfil }: { perfil: Perfil }) {
       setComunes(valores.filter((v) => Object.keys(v.valores).length >= 2));
       setValorado(Object.fromEntries(val.filter(([, v]) => v)) as Partial<Record<Colectivo, Fila>>);
       setTextos(txt);
+      setPuntos(Object.fromEntries(pts.filter(([, v]) => v)) as Partial<Record<Colectivo, { mejora: Punto[]; fuertes: Punto[] }>>);
+      setDif(Object.fromEntries(difs.filter(([, v]) => v && v.length)) as Partial<Record<Colectivo, BloqueComparado[]>>);
     })().catch(() => vigente && setError(t.error_datos));
     return () => { vigente = false; };
   }, [perfil]);
@@ -120,6 +129,38 @@ export function Panel({ perfil }: { perfil: Perfil }) {
             </details>
           </div>
 
+          <h2 className="section-title">{t.panel_puntos}</h2>
+          <p className="sec-lead">{t.panel_puntos_lead}</p>
+          <div className="en-puntos">
+            {colectivos.filter((c) => puntos[c]).map((c) => (
+              <div key={c} className="card">
+                <h3><i className={`en-punto-color ${CLASE[c]}`} aria-hidden="true" />{t.panel_colectivo[c]}</h3>
+                <ListaPuntos titulo={t.panel_mejora} puntos={puntos[c]!.mejora} clase="en-mejora" />
+                <ListaPuntos titulo={t.panel_fuertes} puntos={puntos[c]!.fuertes} clase="en-fuerte" />
+              </div>
+            ))}
+          </div>
+
+          {colectivos.some((c) => dif[c]) && (
+            <>
+              <h2 className="section-title">{t.panel_dif}</h2>
+              <p className="sec-lead">{t.panel_dif_lead}</p>
+              <div className="card">
+                <div className="en-legend">
+                  <span><i className="en-dif-no" />{t.panel_dif_no}</span>
+                  <span><i className="en-dif-si" />{t.panel_dif_si}</span>
+                </div>
+                {colectivos.filter((c) => dif[c]).map((c) => (
+                  <div key={c} className="en-dif-colectivo">
+                    <h3>{t.panel_colectivo[c]}</h3>
+                    {dif[c]!.map((b) => <BloqueDif key={b.bloque} b={b} />)}
+                  </div>
+                ))}
+                <p className="notice" style={{ marginTop: ".8rem" }}>{t.panel_dif_nota}</p>
+              </div>
+            </>
+          )}
+
           <h2 className="section-title">{t.panel_comunes}</h2>
           <p className="sec-lead">{t.panel_comunes_lead}</p>
           <div className="card">
@@ -138,6 +179,22 @@ export function Panel({ perfil }: { perfil: Perfil }) {
             </div>
             <ValoradoComparado valorado={valorado} textos={textos} colectivos={colectivos} />
           </div>
+
+          <h2 className="section-title">{t.panel_menos}</h2>
+          <p className="sec-lead">{t.panel_menos_lead}</p>
+          <div className="en-puntos">
+            {colectivos.filter((c) => valorado[c] && !valorado[c]!.suprimido).map((c) => (
+              <div key={c} className="card">
+                <h3><i className={`en-punto-color ${CLASE[c]}`} aria-hidden="true" />{t.panel_colectivo[c]}</h3>
+                <ol className="en-lista-puntos">
+                  {[...(valorado[c]!.opciones ?? [])].filter((o) => o.n > 0).sort((a, b) => a.pct - b.pct).slice(0, 5).map((o) => (
+                    <li key={o.codigo}><span>{textos[o.codigo] ?? o.codigo}</span><b>{f.porcentaje(o.pct)}</b></li>
+                  ))}
+                </ol>
+              </div>
+            ))}
+          </div>
+          <p className="notice">{t.panel_menos_nota}</p>
 
           <p className="notice" style={{ marginTop: "1.4rem" }}>{t.leyenda_oculto} {t.aviso_cierre}</p>
         </>
@@ -222,5 +279,42 @@ function ValoradoComparado({ valorado, textos, colectivos }: {
         </div>
       ))}
     </>
+  );
+}
+
+function ListaPuntos({ titulo, puntos, clase }: { titulo: string; puntos: Punto[]; clase: string }) {
+  return (
+    <div className={`en-puntos-bloque ${clase}`}>
+      <h4>{titulo}</h4>
+      <ol className="en-lista-puntos">
+        {puntos.map((p) => (
+          <li key={p.codigo}>
+            <span>{p.texto}<small>{t.panel_pct_bajo(f.porcentaje(p.pct_bajo))} · {t.tip_valoraciones(f.recuento(p.n))}</small></span>
+            <b>{f.media(p.media)}</b>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function BloqueDif({ b }: { b: BloqueComparado }) {
+  const ancho = (fila: Fila) => (fila.suprimido ? 0 : ((fila.media! - 1) / 5) * 100);
+  return (
+    <div className="en-comun">
+      <div className="en-comun-t">{b.nombre}
+        <small className="en-hint" style={{ display: "block" }}>
+          {b.diferencia === null ? t.panel_dif_sin : t.panel_dif_valor(f.media(b.diferencia))}
+        </small>
+      </div>
+      <div className="en-comun-barras">
+        {([["no_recomienda", "en-dif-no"], ["recomienda", "en-dif-si"]] as const).map(([k, clase]) => (
+          <div key={k} className="en-comun-fila">
+            <span className="en-track" aria-hidden="true"><span className={`en-fill ${clase}`} style={{ width: `${ancho(b[k])}%` }} /></span>
+            <span className="en-val">{b[k].suprimido ? <Oculto fila={b[k]} /> : f.media(b[k].media!)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

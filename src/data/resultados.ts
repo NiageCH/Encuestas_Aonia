@@ -319,3 +319,21 @@ export async function informeEquipo(tramos: string[], registrar = false): Promis
   if (error) throw error;
   return data as InformeEquipo;
 }
+
+export interface Punto { codigo: string; texto: string; n: number; media: number; pct_bajo: number }
+
+/** Puntos fuertes y de mejora de un colectivo: preguntas de 1 a 6 con 5 o más valoraciones. */
+export async function puntosColectivo(colectivo: Colectivo): Promise<{ mejora: Punto[]; fuertes: Punto[] }> {
+  const { data, error } = await supabase.rpc("puntos_colectivo", { p_filtro: { curso: CURSO, colectivo } });
+  if (error) throw error;
+  return data as { mejora: Punto[]; fuertes: Punto[] };
+}
+
+export interface BloqueComparado { bloque: string; nombre: string; no_recomienda: Fila; recomienda: Fila; diferencia: number | null }
+
+/** Media de cada bloque entre quienes no recomendarían el Colegio (0 a 6) y quienes sí (9 y 10). */
+export async function comparacionRecomendacion(colectivo: Colectivo): Promise<BloqueComparado[]> {
+  const { data, error } = await supabase.rpc("comparacion_recomendacion", { p_curso: CURSO, p_colectivo: colectivo });
+  if (error) throw error;
+  return (data ?? []) as BloqueComparado[];
+}

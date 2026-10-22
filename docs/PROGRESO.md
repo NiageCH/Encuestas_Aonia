@@ -170,6 +170,8 @@ Decisión del 22/10/2026: no se cargan datos inventados en la nube; las pruebas 
 Carga real en la nube (22/10/2026, con autorización escrita del colegio): migración 20 y web desplegadas; encuestas, asignaciones y responsables cargados. Validación contra la nube idéntica a `validacion_2526.md` (sin diferencias) y recuento idéntico al local; tests en la nube en verde sin dejar registros. Revisión interna en curso (lista en `datos_locales/Revision_interna_2526.xlsx`, PDF en `datos_locales/informes/revision_2526/pdf/`); no se invita a nadie del colegio todavía.
 - Fallos encontrados al preparar la revisión y corregidos en local (migración 21, 251 tests): el informe de 10 profesores daba error (pregunta que no está en todos sus cuestionarios con atribuciones en otro) y la optativa salía también grupo a grupo, contando doble en la media global. Pendiente de subir a la nube.
 
+Panel de Inicio con puntos de mejora (22/10/2026, migración 22): puntos fuertes y de mejora por colectivo, «En qué se diferencian quienes no recomendarían el Colegio» y «Lo menos elegido». 273 tests (22 nuevos en `10_panel_mejora.sql`).
+
 Paso de encuestas-sfp.niage.eu a encuestas.sfpaula.com (cuando el colegio publique su DNS):
 - DNS del colegio: CNAME `encuestas` → `domain.par.clever-cloud.com.` (lo crea su contacto técnico).
 - Clever Cloud: añadir `encuestas.sfpaula.com` a la aplicación (certificado automático) y, cuando funcione, quitar el subdominio de Niage.

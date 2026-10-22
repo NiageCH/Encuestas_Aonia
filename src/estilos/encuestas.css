@@ -223,3 +223,21 @@ body:has(.en-aviso-validacion)::before { top: 34px; }
 
 /* Sin media porque todas las clases son compartidas: no es una supresión por anonimato. */
 .en-kpi .v .en-sin-media { font-size: 1.05rem; color: var(--ink); font-weight: 700; }
+
+/* Panel: puntos fuertes y de mejora, comparación por recomendación y lo menos elegido. */
+.en-puntos { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: .9rem; }
+.en-puntos h3 { margin: 0 0 .6rem; display: flex; align-items: center; gap: .5rem; font-size: 1.05rem; }
+.en-punto-color { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.en-puntos-bloque + .en-puntos-bloque { margin-top: .8rem; }
+.en-puntos-bloque h4 { margin: 0 0 .3rem; font-size: .85rem; text-transform: uppercase; letter-spacing: .03em; }
+.en-mejora h4 { color: var(--warn); }
+.en-fuerte h4 { color: var(--ok); }
+.en-lista-puntos { margin: 0; padding-left: 1.2rem; display: grid; gap: .35rem; font-size: .88rem; }
+.en-lista-puntos li > span { display: inline-block; max-width: calc(100% - 3.5rem); }
+.en-lista-puntos li { position: relative; padding-right: 3.2rem; }
+.en-lista-puntos li > b { position: absolute; right: 0; top: 0; }
+.en-lista-puntos small { display: block; color: var(--muted); font-size: .78rem; }
+.en-dif-colectivo + .en-dif-colectivo { margin-top: 1rem; }
+.en-dif-colectivo h3 { margin: .4rem 0; font-size: 1rem; }
+.en-fill.en-dif-no, .en-legend i.en-dif-no { background: var(--warn); }
+.en-fill.en-dif-si, .en-legend i.en-dif-si { background: var(--brand); }
