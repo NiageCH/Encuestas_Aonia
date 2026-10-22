@@ -241,3 +241,9 @@ body:has(.en-aviso-validacion)::before { top: 34px; }
 .en-dif-colectivo h3 { margin: .4rem 0; font-size: 1rem; }
 .en-fill.en-dif-no, .en-legend i.en-dif-no { background: var(--warn); }
 .en-fill.en-dif-si, .en-legend i.en-dif-si { background: var(--brand); }
+/* Exportar la vista (CSV y PDF) */
+.en-exportar { display: flex; align-items: center; justify-content: flex-end; gap: .5rem; flex-wrap: wrap; margin: .6rem 0 .2rem; }
+.en-exportar > span:first-child { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.en-exportar .btn { padding: .35rem .85rem; font-size: .85rem; }
+.en-exportar .btn:disabled { opacity: .55; cursor: default; }
+@media (max-width: 900px) { .en-exportar { justify-content: flex-start; } }

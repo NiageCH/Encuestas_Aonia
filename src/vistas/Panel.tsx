@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { useAyuda } from "../componentes/Ayuda";
 import { BarraReparto, lineasOculto, textoReparto } from "../componentes/Graficos";
+import { Exportar } from "../componentes/Exportar";
 import { Migas } from "../componentes/Marco";
 import { Oculto } from "../componentes/Oculto";
 import {
@@ -12,6 +13,9 @@ import {
   type BloqueComparado, type Colectivo, type Fila, type Filtro, type PreguntaComun, type Punto,
 } from "../data/resultados";
 import type { Perfil } from "../data/sesion";
+import {
+  celdas, COLUMNAS_REC, filaRecomendacion, notasComunes, num, txt, type Exportacion, type Tabla, type Valor,
+} from "../exportacion/modelo";
 import * as f from "../formato";
 import { t } from "../i18n";
 
@@ -87,12 +91,78 @@ export function Panel({ perfil }: { perfil: Perfil }) {
     return () => { vigente = false; };
   }, [perfil]);
 
+  /** Lo que se ve en pantalla, para el CSV y el PDF. */
+  async function preparar(): Promise<Exportacion> {
+    const nombreEtapa = coordinacion ? t.etapas[perfil.etapa as keyof typeof t.etapas] : "";
+    const conDatos = colectivos.filter((c) => indicadores[c]);
+    const tablas: Tabla[] = [
+      {
+        titulo: t.panel_indicadores,
+        columnas: [t.exp_col_colectivo, t.exp_col_personas, t.exp_col_indicador, t.exp_col_media],
+        filas: conDatos.map((c) => [txt(t.panel_colectivo[c]), ...celdas(indicadores[c]!.personas, ["n"]),
+          txt(indicadores[c]!.etiquetaPrincipal), ...celdas(indicadores[c]!.principal, ["media"])]),
+      },
+      {
+        titulo: t.panel_rec, columnas: COLUMNAS_REC, filas: (rec ?? []).map((r) => filaRecomendacion(r.etiqueta, r.escala, r.fila)),
+        notas: [t.calculo_reparto, t.calculo_indice, t.panel_rec_escalas],
+      },
+    ];
+    const columnasPuntos = [t.exp_col_pregunta, t.exp_col_valoraciones, t.exp_col_media, t.exp_col_pct_bajo];
+    const filaPunto = (p: Punto): Valor[] => [txt(p.texto), num(p.n), num(p.media, 2), num(p.pct_bajo)];
+    for (const c of colectivos.filter((x) => puntos[x])) {
+      tablas.push({ titulo: `${t.panel_mejora}: ${t.panel_colectivo[c]}`, columnas: columnasPuntos, filas: puntos[c]!.mejora.map(filaPunto) });
+      tablas.push({ titulo: `${t.panel_fuertes}: ${t.panel_colectivo[c]}`, columnas: columnasPuntos, filas: puntos[c]!.fuertes.map(filaPunto),
+                    notas: [t.panel_puntos_lead] });
+    }
+    for (const c of colectivos.filter((x) => dif[x])) {
+      tablas.push({
+        titulo: `${t.panel_dif}: ${t.panel_colectivo[c]}`,
+        columnas: [t.exp_col_bloque, t.exp_col_no_media, t.exp_col_no_personas, t.exp_col_si_media, t.exp_col_si_personas, t.exp_col_diferencia],
+        filas: dif[c]!.map((b) => [txt(b.nombre), ...celdas(b.no_recomienda, ["media", "personas"]), ...celdas(b.recomienda, ["media", "personas"]),
+          b.diferencia === null ? txt(t.exp_sin_comparacion) : num(b.diferencia, 2)]),
+        notas: [t.panel_dif_lead, t.panel_dif_nota],
+      });
+    }
+    tablas.push({
+      titulo: t.panel_comunes, columnas: [t.exp_col_pregunta, ...colectivos.map((c) => `${t.panel_colectivo[c]}: ${t.exp_col_media.toLowerCase()}`)],
+      filas: (comunes ?? []).map((x) => [txt(x.pregunta.texto),
+        ...colectivos.map((c) => (x.valores[c] ? celdas(x.valores[c]!, ["media"])[0] : txt(t.exp_no_se_pregunta)))]),
+      notas: [t.panel_comunes_lead, t.panel_comunes_nota],
+    });
+    const visibles = colectivos.filter((c) => valorado[c] && !valorado[c]!.suprimido);
+    const pct = (c: Colectivo, codigo: string) => valorado[c]?.opciones?.find((o) => o.codigo === codigo)?.pct ?? 0;
+    const elegidos = new Set<string>();
+    for (const c of visibles) [...(valorado[c]!.opciones ?? [])].sort((a, b) => b.pct - a.pct).slice(0, 5).forEach((o) => elegidos.add(o.codigo));
+    tablas.push({
+      titulo: t.valorado, columnas: [t.exp_col_aspecto, ...visibles.map((c) => `% ${t.panel_colectivo[c]}`)],
+      filas: [...elegidos].sort((a, b) => Math.max(...visibles.map((c) => pct(c, b))) - Math.max(...visibles.map((c) => pct(c, a))))
+        .map((codigo) => [txt(textos[codigo] ?? codigo), ...visibles.map((c) => num(pct(c, codigo)))]),
+      notas: [t.panel_valorado_lead],
+    });
+    for (const c of visibles) {
+      tablas.push({
+        titulo: `${t.panel_menos}: ${t.panel_colectivo[c]}`, columnas: [t.exp_col_aspecto, t.exp_col_porcentaje],
+        filas: [...(valorado[c]!.opciones ?? [])].filter((o) => o.n > 0).sort((a, b) => a.pct - b.pct).slice(0, 5)
+          .map((o) => [txt(textos[o.codigo] ?? o.codigo), num(o.pct)]),
+        notas: [t.panel_menos_nota],
+      });
+    }
+    return {
+      vista: "inicio", titulo: t.nav_panel,
+      filtros: coordinacion ? [[t.exp_etapa, t.exp_etapa_perfil(nombreEtapa)]] : [],
+      archivo: [t.nav_panel, ...(coordinacion ? [`${t.exp_etapa}-${nombreEtapa}`] : [])],
+      tablas, notas: notasComunes(),
+    };
+  }
+
   return (
     <div className="page">
       <Migas actual={t.nav_panel} />
       <p className="eyebrow">{t.alu_eyebrow}</p>
       <h1>📊 {t.nav_panel}</h1>
       <p className="lead">{coordinacion ? t.panel_lead_coord : t.panel_lead}</p>
+
+      <Exportar preparar={preparar} disabled={!rec || !comunes} />
 
       {error && <p className="notice">{error}</p>}
       {!rec && !error && <p className="en-cargando">{t.cargando}</p>}

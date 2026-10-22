@@ -48,7 +48,7 @@ Decisiones de diseño:
 
 Pendiente del paso 2:
 - ~~Crear el proyecto en la nube y enlazarlo~~ Hecho el 22/10/2026 (Irlanda, UE, plan Free). La decisión del colegio sobre Supabase sigue pendiente.
-- RPC de exportación CSV con registro de actividad (se hará con las vistas, pasos 5 y 6).
+- ~~RPC de exportación CSV con registro de actividad~~ Hecho el 22/10/2026 (migración 23).
 - `ultimo_acceso` y aviso de 90 días (paso 4).
 - Forma de carga de la ETL: conexión directa a Postgres o RPC de carga solo para `service_role` (paso 3).
 
@@ -171,6 +171,9 @@ Carga real en la nube (22/10/2026, con autorización escrita del colegio): migra
 - Fallos encontrados al preparar la revisión y corregidos en local (migración 21, 251 tests): el informe de 10 profesores daba error (pregunta que no está en todos sus cuestionarios con atribuciones en otro) y la optativa salía también grupo a grupo, contando doble en la media global. Pendiente de subir a la nube.
 
 Panel de Inicio con puntos de mejora (22/10/2026, migración 22): puntos fuertes y de mejora por colectivo, «En qué se diferencian quienes no recomendarían el Colegio» y «Lo menos elegido». 273 tests (22 nuevos en `10_panel_mejora.sql`).
+
+Exportación de cada vista (22/10/2026, migración 23, §7.6): botones «CSV para Excel» y «PDF» en el Panel general, Alumnos, Familias y Personal, con lo que se ve en pantalla y los filtros activos (Familias y Personal, con el detalle de todos los bloques). Los datos salen de las mismas RPC que la pantalla; `registrar_exportacion` deja cada exportación en el registro de actividad (vista, formato y filtros) y rechaza a quien no puede ver la vista. CSV en UTF-8 con BOM, punto y coma y coma decimal, comprobado abriéndolo con Excel en macOS (es_ES). Celdas ocultas con «menos de 5», «oculto» o «sin datos», nunca en blanco. Cabecera con colegio, curso, vista, filtros, fecha y la franja de validación si está activa. Archivos `Encuestas_2526_<Vista>[_<Filtro>].csv|pdf`. 289 tests de base de datos (16 nuevos en `11_exportacion.sql`) y 9 del CSV (`src/exportacion/csv.test.ts`). Pendiente de subir a la nube.
+- Quedaba pendiente desde el paso 2 («RPC de exportación CSV con registro de actividad») y no se hizo al cerrar las vistas.
 
 Paso de encuestas-sfp.niage.eu a encuestas.sfpaula.com (cuando el colegio publique su DNS):
 - DNS del colegio: CNAME `encuestas` → `domain.par.clever-cloud.com.` (lo crea su contacto técnico).

@@ -6,12 +6,16 @@ import { useEffect, useState } from "react";
 import {
   Barra, CabeceraPreguntas, FilaPregunta, Indicador, IndicadorRecomendacion, LeyendaAcuerdo, Ranking, Recomendacion,
 } from "../componentes/Graficos";
+import { Exportar } from "../componentes/Exportar";
 import { Migas } from "../componentes/Marco";
 import {
   bloques as cargarBloques, cuestionarios as cargarCuestionarios, detallePreguntas, opciones, resultados,
   type Bloque, type DetallePregunta, type Fila, type Filtro,
 } from "../data/resultados";
 import type { Perfil } from "../data/sesion";
+import {
+  celdas, notasComunes, tablaDetalle, tablaDistribucion, tablaMedias, tablaRecomendacion, tablaValorado, txt, type Exportacion,
+} from "../exportacion/modelo";
 import * as f from "../formato";
 import { t } from "../i18n";
 
@@ -84,7 +88,40 @@ export function Familias({ perfil }: { perfil: Perfil }) {
     return () => { vigente = false; };
   }, [etapa, bloqueDetalle]);
 
-  const etiquetas = bloqueDetalle === "servicios" ? t.escala_satisfaccion_fam : t.escala_acuerdo_fam;
+  const escalaBloque = (b: string) => (b === "servicios" ? t.escala_satisfaccion_fam : t.escala_acuerdo_fam);
+  const etiquetas = escalaBloque(bloqueDetalle);
+
+  /** Lo que se ve en pantalla, con el detalle de todos los bloques, para el CSV y el PDF. */
+  async function preparar(): Promise<Exportacion> {
+    const d = datos!;
+    const detalles = await Promise.all(d.bloques.map(({ bloque }) => detallePreguntas(filtro, bloque.codigo)));
+    const nombreEtapa = etapa ? t.etapas[etapa] : "";
+    return {
+      vista: "familias", titulo: t.fam_titulo,
+      filtros: etapa ? [[t.exp_etapa, fija ? t.exp_etapa_perfil(nombreEtapa) : nombreEtapa]] : [],
+      archivo: [t.fam_titulo, ...(etapa ? [`${t.exp_etapa}-${nombreEtapa}`] : [])],
+      tablas: [
+        {
+          titulo: t.indicadores, columnas: [t.exp_col_indicador, t.exp_col_valor, t.exp_col_personas],
+          filas: [
+            [txt(t.k_respuestas), ...celdas(d.personas, ["n", "n"])],
+            [txt(`${t.k_general} (de 1 a 6)`), ...celdas(d.general, ["media", "personas"])],
+            [txt(`${t.k_satisfaccion_media} (de 1 a 6)`), ...celdas(d.satisfaccion, ["media", "personas"])],
+          ],
+          notas: [t.tip_k_familias, ...(!etapa && d.sinEtapa ? [notaSinEtapa(d.sinEtapa)] : [])],
+        },
+        tablaRecomendacion(t.recomendacion, t.fam_titulo, "1 a 10", d.recomendacion),
+        tablaDistribucion(d.recomendacion, 1),
+        tablaMedias(t.bloques, t.exp_col_bloque, d.bloques.map(({ bloque, fila }) => ({ etiqueta: bloque.nombre, fila }))),
+        ...(d.porEtapa.length ? [tablaMedias(t.fam_general_etapa, t.exp_col_etapa,
+          d.porEtapa.map((x) => ({ etiqueta: t.etapas[x.clave.etapa as Etapa], fila: x })), [t.fam_aviso_etapas])] : []),
+        ...d.bloques.map(({ bloque }, i) => tablaDetalle(bloque.nombre,
+          detalles[i].map((x) => ({ texto: x.texto, fila: x.resultado.total })), escalaBloque(bloque.codigo))),
+        tablaValorado(t.valorado, d.valorado, textos),
+      ],
+      notas: notasComunes(),
+    };
+  }
 
   return (
     <div className="page">
@@ -105,6 +142,8 @@ export function Familias({ perfil }: { perfil: Perfil }) {
           </button>
         ))}
       </div>
+
+      <Exportar preparar={preparar} disabled={!datos} />
 
       {error && <p className="notice">{error}</p>}
       {!datos && !error && <p className="en-cargando">{t.cargando}</p>}

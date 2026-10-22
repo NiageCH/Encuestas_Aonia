@@ -277,6 +277,12 @@ Funciones del mockup `referencia/mockups/Mockup_Encuestas_5_admin_usuarios.png`;
 - CSV por vista, generado por las RPC y sujeto a todas las reglas del §5.
 - PDF de cada vista.
 - Nunca se exportan respuestas individuales.
+- Vistas con exportación: Panel general, Alumnos, Familias y Personal (Profesores e Informes por persona tienen sus propios PDF). Se exporta lo que se ve con los filtros activos; en Familias y Personal, el detalle por pregunta de todos los bloques.
+- CSV para Excel en español: UTF-8 con BOM, separador punto y coma, coma decimal y sin separador de miles.
+- Celdas ocultas con el mismo texto que en pantalla («menos de 5», «oculto», «sin datos»); nunca en blanco.
+- Cabecera en el CSV y en el PDF: colegio, curso, vista, filtros activos, fecha de exportación y «Resultados en validación» mientras esté activa la franja.
+- Nombre de archivo: `Encuestas_2526_<Vista>[_<Filtro>].csv` o `.pdf` (por ejemplo, `Encuestas_2526_Familias_Etapa-PAI.csv`).
+- Cada exportación queda en el registro de actividad, escrito por el servidor (`registrar_exportacion`), con la vista, el formato y los filtros. La coordinación no puede exportar personal.
 
 ---
 

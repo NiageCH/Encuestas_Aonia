@@ -1,7 +1,7 @@
 // Redondeo y formato de cifras (§3): se calcula con precisión completa y se redondea solo
 // al mostrar, alejándose del cero en el medio punto. Coma decimal.
 
-function redondear(x: number, decimales: number): number {
+export function redondear(x: number, decimales: number): number {
   const f = 10 ** decimales;
   // Corrige el error de coma flotante antes de redondear (4.675 -> 467.49999...).
   const v = Math.abs(x) * f;

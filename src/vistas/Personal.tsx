@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import {
   Barra, CabeceraPreguntas, FilaPregunta, Indicador, IndicadorRecomendacion, LeyendaAcuerdo, Ranking, Recomendacion,
 } from "../componentes/Graficos";
+import { Exportar } from "../componentes/Exportar";
 import { Migas } from "../componentes/Marco";
 import type { Perfil } from "../data/sesion";
 import { aHash, type Nivel } from "../navegacion";
@@ -15,6 +16,9 @@ import {
   bloques as cargarBloques, cuestionarios as cargarCuestionarios, detallePreguntas, opciones, recuentoIdiomas, resultados,
   type Bloque, type Cuestionario, type DetallePregunta, type Fila, type Filtro,
 } from "../data/resultados";
+import {
+  celdas, notasComunes, tablaDetalle, tablaDistribucion, tablaMedias, tablaRecomendacion, tablaValorado, txt, type Exportacion,
+} from "../exportacion/modelo";
 import * as f from "../formato";
 import { t } from "../i18n";
 import { SinResultados, useHayResultados } from "../componentes/SinResultados";
@@ -134,8 +138,50 @@ function EncuestaPersonal() {
     return () => { vigente = false; };
   }, [clave, bloqueDetalle]);
 
-  const etiquetas = bloqueDetalle === "perfil_ib" ? t.escala_frecuencia : t.escala_acuerdo_per;
+  const escalaBloque = (b: string) => (b === "perfil_ib" ? t.escala_frecuencia : t.escala_acuerdo_per);
+  const etiquetas = escalaBloque(bloqueDetalle);
   const nombreBloque = (c: string) => bl.find((b) => b.codigo === c)?.nombre ?? c;
+
+  /** Lo que se ve en pantalla, con el detalle de todos los bloques, para el CSV y el PDF. */
+  async function preparar(): Promise<Exportacion> {
+    const d = datos!;
+    const codigos = DETALLE.filter((c) => bl.some((b) => b.codigo === c));
+    const detalles = await Promise.all(codigos.map((c) => detallePreguntas(filtro, c)));
+    const texto = SEGMENTOS.find((x) => x.clave === clave)!.texto;
+    const superiores = d.superioresPorTipo.length > 1
+      ? d.superioresPorTipo.map((x) => ({ etiqueta: x.clave.docente === "docente" ? t.per_docentes : t.per_no_docentes, fila: x }))
+      : [{ etiqueta: d.superiores.suprimido ? texto : t.per_no_docentes, fila: d.superiores }];
+    return {
+      vista: "personal", titulo: t.per_titulo,
+      filtros: segmento ? [[t.exp_personas_filtro, texto]] : [],
+      archivo: [t.per_titulo, ...(segmento ? [texto] : [])],
+      tablas: [
+        {
+          titulo: t.indicadores, columnas: [t.exp_col_indicador, t.exp_col_valor, t.exp_col_personas],
+          filas: [
+            [txt(t.k_respuestas), ...celdas(d.personas, ["n", "n"])],
+            [txt(`${t.k_satisfaccion_media} (de 1 a 6)`), ...celdas(d.satisfaccion, ["media", "personas"])],
+            [txt(`${t.k_superiores} (de 1 a 6)`), ...celdas(d.superiores, ["media", "personas"])],
+          ],
+          notas: [t.tip_k_personal, ...(segmento === null && cuest ? [notaIdioma(cuest, d.idiomas)] : [])],
+        },
+        tablaRecomendacion(t.per_recomendacion, t.per_titulo, "1 a 10", d.recomendacion),
+        tablaDistribucion(d.recomendacion, 1),
+        tablaMedias(t.per_dimensiones, t.exp_col_bloque, d.dimensiones.map(({ bloque, fila }) => ({ etiqueta: bloque.nombre, fila }))),
+        tablaMedias(t.per_superiores, t.exp_col_quien, superiores, [t.per_superiores_quien, t.per_superiores_nota]),
+        d.departamentos === null
+          ? { titulo: t.per_departamentos, columnas: [], filas: [], notas: [t.per_departamentos_sin_filtro] }
+          : tablaMedias(t.per_departamentos, t.exp_col_departamento,
+              [...d.departamentos].sort((a, b) => a.clave.departamento.localeCompare(b.clave.departamento, "es"))
+                .map((x) => ({ etiqueta: x.clave.departamento, fila: x })), [t.per_departamentos_lead]),
+        tablaMedias(nombreBloque("equipo_individualizacion"), t.exp_col_bloque, [{ etiqueta: t.per_equipo_barra, fila: d.equipo }], [t.per_equipo_lead]),
+        ...codigos.map((c, i) => tablaDetalle(nombreBloque(c),
+          detalles[i].map((x) => ({ texto: x.texto, fila: x.resultado.total })), escalaBloque(c))),
+        tablaValorado(t.valorado, d.valorado, textos),
+      ],
+      notas: [t.per_aviso, ...notasComunes()],
+    };
+  }
 
   return (
     <section>
@@ -151,6 +197,7 @@ function EncuestaPersonal() {
         ))}
       </div>
       <p className="en-hint">{t.per_filtro_nota}</p>
+      <Exportar preparar={preparar} disabled={!datos} />
 
 
       {error && <p className="notice">{error}</p>}

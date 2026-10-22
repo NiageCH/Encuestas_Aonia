@@ -92,6 +92,7 @@ npm install
 npm run db:start     # arranca Supabase (la primera vez descarga las imágenes)
 npm run db:reset     # recrea la base de datos aplicando las migraciones
 npm run db:test      # tests pgTAP
+npm test             # tests del frontend (navegación y CSV de exportación)
 npm run db:stop
 ```
 

@@ -3,12 +3,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Barra, Indicador, IndicadorRecomendacion, ordenar, Recomendacion } from "../componentes/Graficos";
+import { Exportar } from "../componentes/Exportar";
 import { Migas } from "../componentes/Marco";
 import {
   bloques as cargarBloques, cuestionarios as cargarCuestionarios, resultados,
   type Bloque, type Cuestionario, type Fila, type Filtro, type Resultado,
 } from "../data/resultados";
 import type { Perfil } from "../data/sesion";
+import {
+  celdas, notasComunes, tablaDistribucion, tablaMedias, tablaRecomendacion, txt, type Exportacion,
+} from "../exportacion/modelo";
 import * as f from "../formato";
 import { t } from "../i18n";
 
@@ -80,6 +84,37 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
   const actual = useMemo(() => lista.find((c) => c.codigo === cuestionario), [lista, cuestionario]);
   const escalaRec = actual?.etapa === "primaria" ? "1 a 10" : "0 a 10";
 
+  /** Lo que se ve en pantalla, para el CSV y el PDF. */
+  async function preparar(): Promise<Exportacion> {
+    const d = datos!;
+    const titulo = actual?.titulo ?? cuestionario;
+    return {
+      vista: "alumnos", titulo: t.alu_titulo,
+      filtros: [[t.exp_cuestionario, titulo], ...(grupo ? [[t.exp_grupo, grupo] as [string, string]] : [])],
+      archivo: [t.alu_titulo, titulo, ...(grupo ? [`${t.exp_grupo}-${grupo}`] : [])],
+      tablas: [
+        {
+          titulo: t.indicadores, columnas: [t.exp_col_indicador, t.exp_col_valor, t.exp_col_personas],
+          filas: [
+            [txt(t.k_respuestas), ...celdas(d.personas, ["n", "n"])],
+            [txt(`${t.k_satisfaccion} (de 1 a 6)`), ...celdas(d.satisfaccion, ["media", "personas"])],
+            [txt(`${t.k_profesorado} (de 1 a 6)`), ...celdas(d.profesorado, ["media", "personas"])],
+          ],
+          notas: [t.tip_k_satisfaccion, t.tip_k_profesorado],
+        },
+        tablaRecomendacion(t.recomendacion, t.alu_titulo, escalaRec, d.recomendacion),
+        tablaDistribucion(d.recomendacion, actual?.etapa === "primaria" ? 1 : 0),
+        tablaMedias(t.prof_asig, t.exp_col_asignatura, ordenar(d.asignaturas).map((a) => ({ etiqueta: a.clave.asignatura, fila: a })), [t.prof_asig_lead]),
+        tablaMedias(t.bloques, t.exp_col_bloque, d.bloques.map(({ bloque, fila }) => ({ etiqueta: bloque.nombre, fila }))),
+        ...(grupo ? [] : [{
+          titulo: t.exp_respuestas_grupo, columnas: [t.exp_col_grupo, t.exp_col_personas],
+          filas: d.grupos.map((g) => [txt(g.clave.grupo), ...celdas(g, ["n"])]),
+        }]),
+      ],
+      notas: notasComunes(),
+    };
+  }
+
   return (
     <div className="page">
       <Migas actual={t.alu_titulo} />
@@ -108,6 +143,8 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
           </span>
         </label>
       </div>
+
+      <Exportar preparar={preparar} disabled={!datos} />
 
       {error && <p className="notice">{error}</p>}
       {!datos && !error && cuestionario && <p className="en-cargando">{t.cargando}</p>}

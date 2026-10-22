@@ -224,6 +224,10 @@ function describir(e: EntradaRegistro): string {
     }
     case "informe_profesor": return d.lote ? t.reg_informe_lote(e.usuario) : t.reg_informe_profesor(e.usuario);
     case "informe_responsable": return t.reg_informe_responsable(e.usuario, String(d.ambito ?? d.tipo ?? ""));
+    case "exportacion": {
+      const filtros = Object.entries((d.filtros ?? {}) as Record<string, string>).map(([k, v]) => `${k}: ${v}`).join(" · ");
+      return t.reg_exportacion(e.usuario, t.exp_vistas[String(d.vista)] ?? String(d.vista), String(d.formato).toUpperCase(), filtros);
+    }
     default: return `${e.usuario}: ${e.accion}`;
   }
 }
