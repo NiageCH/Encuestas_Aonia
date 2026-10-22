@@ -202,3 +202,9 @@
   .en-comun { grid-template-columns: 1fr; gap: .3rem; }
 }
 @media print { .en-noprint { display: none !important; } .card { break-inside: avoid; box-shadow: none; border: 1px solid var(--line); } }
+
+/* Estado vacío: el curso no tiene resultados cargados (distinto de lo oculto por anonimato). */
+.en-vacio { display: flex; gap: 1rem; align-items: flex-start; margin-top: 1rem; border-left: 4px solid var(--brand); background: var(--soft); }
+.en-vacio h2 { margin: 0 0 .3rem; font-size: 1.15rem; color: var(--ink); }
+.en-vacio p { margin: 0 0 .4rem; }
+.en-vacio-icono { font-size: 1.8rem; line-height: 1; }

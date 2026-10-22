@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { ProveedorAyuda } from "./componentes/Ayuda";
+import { Migas } from "./componentes/Marco";
+import { ProveedorCargados, SinResultados } from "./componentes/SinResultados";
 import { Marco, type Enlace } from "./componentes/Marco";
 import { tipoEnlace } from "./data/cliente";
 import { alCambiarSesion, mfaAdminObligatorio, miPerfil, salir, sesionActual, type Perfil } from "./data/sesion";
+import { colectivosCargados, type Colectivo } from "./data/resultados";
 import { t } from "./i18n";
 import { aHash, leerRuta } from "./navegacion";
 import { Acceso } from "./vistas/Acceso";
@@ -30,6 +33,7 @@ export function App() {
   // Llegada desde el enlace de invitación o de recuperación: primero, la contraseña nueva.
   const [pidiendoClave, setPidiendoClave] = useState(tipoEnlace);
   const [mfaObligatorio, setMfaObligatorio] = useState<boolean | undefined>(undefined);
+  const [cargados, setCargados] = useState<Colectivo[] | undefined>(undefined);
 
   useEffect(() => {
     const alCambiar = () => { setHash(window.location.hash); document.getElementById("app")?.focus(); };
@@ -47,6 +51,12 @@ export function App() {
     miPerfil(sesion.user.id).then(setPerfil).catch(() => setPerfil(null));
     mfaAdminObligatorio().then(setMfaObligatorio);
   }, [sesion]);
+
+  // Colectivos con resultados cargados en el curso (estado vacío de las pantallas).
+  const listo = !!perfil?.activo;
+  useEffect(() => {
+    if (listo) colectivosCargados().then(setCargados).catch(() => setCargados(undefined));
+  }, [listo]);
 
   if (sesion === undefined || (sesion && (perfil === undefined || mfaObligatorio === undefined))) {
     return <Marco ruta="" enlaces={[]}><div className="page"><p className="en-cargando">{t.cargando}</p></div></Marco>;
@@ -79,15 +89,20 @@ export function App() {
   if (aHash(ruta) !== window.location.hash) window.history.replaceState(null, "", aHash(ruta));
   const enlaces = ENLACES.filter((e) => e.ruta !== "/usuarios" || perfil.rol === "administrador");
 
-  const vista = ruta.seccion === "/" ? <Panel perfil={perfil} />
-    : ruta.seccion === "/alumnos" ? <Alumnos perfil={perfil} />
-    : ruta.seccion === "/familias" ? <Familias perfil={perfil} />
+  const visibles: Colectivo[] = perfil.rol === "coordinacion" ? ["alumnos", "familias"] : ["alumnos", "familias", "personal"];
+  const hay = (...c: Colectivo[]) => cargados === undefined || c.some((x) => cargados.includes(x));
+  const vacia = (titulo: string, colectivo?: Colectivo) => (
+    <div className="page"><Migas actual={titulo} /><h1>{titulo}</h1><SinResultados colectivo={colectivo} /></div>
+  );
+  const vista = ruta.seccion === "/" ? (hay(...visibles) ? <Panel perfil={perfil} /> : vacia(t.nav_inicio))
+    : ruta.seccion === "/alumnos" ? (hay("alumnos") ? <Alumnos perfil={perfil} /> : vacia(t.nav_alumnos, "alumnos"))
+    : ruta.seccion === "/familias" ? (hay("familias") ? <Familias perfil={perfil} /> : vacia(t.nav_familias, "familias"))
     : ruta.seccion === "/personal" ? <Personal perfil={perfil} apartado={ruta.apartado ?? "encuesta"} nivel={ruta.nivel ?? "profesores"} />
     : <Usuarios perfil={perfil} />;
   return (
     <Marco ruta={ruta.seccion} enlaces={enlaces} usuario={{ nombre: perfil.nombre, onSalir: salir }}>
       {perfil.rol === "administrador" && mfaObligatorio === false && <p className="en-aviso-entorno" role="note">{t.mfa_desactivado_local}</p>}
-      <ProveedorAyuda>{vista}</ProveedorAyuda>
+      <ProveedorCargados cargados={cargados}><ProveedorAyuda>{vista}</ProveedorAyuda></ProveedorCargados>
     </Marco>
   );
 }

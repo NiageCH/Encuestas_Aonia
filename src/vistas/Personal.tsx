@@ -17,6 +17,7 @@ import {
 } from "../data/resultados";
 import * as f from "../formato";
 import { t } from "../i18n";
+import { SinResultados, useHayResultados } from "../componentes/SinResultados";
 
 type Segmento =
   | null
@@ -51,6 +52,7 @@ interface Datos {
  *  Informes por persona → Profesores (§6). */
 export function Personal({ perfil, apartado, nivel }: { perfil: Perfil; apartado: "encuesta" | "informes"; nivel: Nivel }) {
   const coordinacion = perfil.rol === "coordinacion";
+  const hayPersonal = useHayResultados("personal");
   return (
     <div className="page">
       <Migas actual={t.per_titulo} />
@@ -65,7 +67,9 @@ export function Personal({ perfil, apartado, nivel }: { perfil: Perfil; apartado
              aria-current={apartado === "informes" ? "page" : undefined}>{t.per_sub_informes}</a>
         </nav>
       )}
-      {apartado === "encuesta" && !coordinacion ? <EncuestaPersonal /> : <InformesPorPersona perfil={perfil} nivel={nivel} />}
+      {apartado === "encuesta" && !coordinacion
+        ? (hayPersonal ? <EncuestaPersonal /> : <SinResultados colectivo="personal" />)
+        : <InformesPorPersona perfil={perfil} nivel={nivel} />}
     </div>
   );
 }

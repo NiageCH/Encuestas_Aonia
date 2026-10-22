@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { CabeceraPreguntas, FilaPregunta, LeyendaAcuerdo, lineasOculto } from "../componentes/Graficos";
 import { Oculto } from "../componentes/Oculto";
+import { SinResultados, useHayResultados } from "../componentes/SinResultados";
 import {
   informeEquipo, informeJefe, informeResponsable, listarEquipo, listarJefes,
   type DetallePregunta, type Fila, type GrupoEquipo, type InformeJefe, type InformeResponsable, type Jefe,
@@ -21,6 +22,8 @@ import { InformesProfesor } from "./Profesores";
 
 export function InformesPorPersona({ perfil, nivel }: { perfil: Perfil; nivel: Nivel }) {
   const niveles = nivelesPermitidos(perfil.rol);
+  const hayPersonal = useHayResultados("personal");
+  const hayAlumnos = useHayResultados("alumnos");
   return (
     <section>
       {niveles.length > 1 && (
@@ -33,10 +36,11 @@ export function InformesPorPersona({ perfil, nivel }: { perfil: Perfil; nivel: N
           ))}
         </nav>
       )}
-      {nivel === "direccion" && <NivelDireccion />}
-      {nivel === "equipos" && <NivelEquipos />}
-      {nivel === "departamentos" && <NivelDepartamentos />}
-      {nivel === "profesores" && <InformesProfesor perfil={perfil} />}
+      {nivel !== "profesores" && !hayPersonal && <SinResultados colectivo="personal" />}
+      {nivel === "direccion" && hayPersonal && <NivelDireccion />}
+      {nivel === "equipos" && hayPersonal && <NivelEquipos />}
+      {nivel === "departamentos" && hayPersonal && <NivelDepartamentos />}
+      {nivel === "profesores" && (hayAlumnos ? <InformesProfesor perfil={perfil} /> : <SinResultados colectivo="alumnos" />)}
     </section>
   );
 }
@@ -135,7 +139,8 @@ function NivelDepartamentos() {
       <h2 className="section-title">{t.ipp_nivel.departamentos}</h2>
       <p className="sec-lead">{t.ipp_departamentos_lead}</p>
       {error && <p className="notice">{error}</p>}
-      {jefes && (
+      {jefes && jefes.length === 0 && <p className="notice">{t.jefe_sin_jefes}</p>}
+      {jefes && jefes.length > 0 && (
         <div className="en-prof">
           <div className="card en-noprint">
             <ul className="en-prof-lista" aria-label={t.jefe_lista}>

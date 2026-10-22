@@ -82,6 +82,16 @@ export async function cuestionarios(colectivo: Colectivo): Promise<Cuestionario[
   }));
 }
 
+/** Colectivos con algún cuestionario cargado en el curso (para el estado vacío). */
+export async function colectivosCargados(): Promise<Colectivo[]> {
+  const { data, error } = await supabase
+    .from("cuestionario")
+    .select("colectivo, curso!inner(nombre)")
+    .eq("curso.nombre", CURSO);
+  if (error) throw error;
+  return [...new Set((data ?? []).map((c) => c.colectivo as Colectivo))];
+}
+
 export interface Bloque {
   codigo: string;
   nombre: string;
