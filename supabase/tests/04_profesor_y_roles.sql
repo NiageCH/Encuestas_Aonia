@@ -40,7 +40,7 @@ select is(jsonb_array_length(public.informe_profesor('2000/01', (select uno from
 select is((public.informe_profesor('2000/01', (select uno from ids), true) -> 'global' ->> 'media')::numeric, (select mates_y7b from ids),
   'el informe completo aplica las mismas reglas que la vista');
 set local role postgres;
-select is((select count(*) from public.registro_actividad where accion = 'informe_profesor' and detalle ->> 'lote' = 'true'), 1::bigint,
+select is((select count(*) from public.registro_actividad where accion = 'informe_profesor' and fecha = now() and detalle ->> 'lote' = 'true'), 1::bigint,
   'cada informe generado queda en el registro de actividad, marcando el lote');
 select pg_temp.como('direccion'); set local role authenticated;
 

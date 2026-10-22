@@ -106,7 +106,7 @@ select is((public.informe_responsable('2000/01', 'superiores') -> 'total' ->> 'm
   'Superiores de no docentes con menos de 5 personas se oculta');
 select lives_ok($$ select public.informe_responsable('2000/01', 'departamento', 'Ciencias', true) $$, 'generar el PDF de un informe');
 set local role postgres;
-select is((select count(*) from public.registro_actividad where accion = 'informe_responsable' and detalle ->> 'ambito' = 'Ciencias'), 1::bigint,
+select is((select count(*) from public.registro_actividad where accion = 'informe_responsable' and fecha = now() and detalle ->> 'ambito' = 'Ciencias'), 1::bigint,
   'la generación del informe queda en el registro de actividad');
 select pg_temp.como('coord_pai'); set local role authenticated;
 select throws_ok($$ select public.informe_responsable('2000/01', 'departamento', 'Ciencias') $$,

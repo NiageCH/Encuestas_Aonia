@@ -37,13 +37,14 @@ set local role postgres; select pg_temp.como('admin', 'aal1'); set local role au
 select throws_ok($$ select public.registrar_exportacion('familias', 'csv', '{}') $$, '42501', 'Doble factor obligatorio para administradores',
   'un administrador sin doble factor no exporta');
 
--- Lo que queda en el registro
+-- Lo que queda en el registro: solo las filas de esta transacción (fecha = now()), porque en la nube
+-- el registro ya tiene exportaciones reales.
 set local role postgres;
-select is((select count(*)::int from public.registro_actividad where accion = 'exportacion'), 4,
+select is((select count(*)::int from public.registro_actividad where accion = 'exportacion' and fecha = now()), 4,
   'quedan registradas las cuatro exportaciones válidas, y ninguna rechazada');
-select is((select detalle from public.registro_actividad where accion = 'exportacion' and detalle ->> 'vista' = 'familias'),
+select is((select detalle from public.registro_actividad where accion = 'exportacion' and fecha = now() and detalle ->> 'vista' = 'familias'),
   '{"vista":"familias","formato":"csv","filtros":{"Etapa":"PAI"}}'::jsonb, 'con la vista, el formato y los filtros');
-select is((select usuario_id from public.registro_actividad where accion = 'exportacion' and detalle ->> 'vista' = 'alumnos'),
+select is((select usuario_id from public.registro_actividad where accion = 'exportacion' and fecha = now() and detalle ->> 'vista' = 'alumnos'),
   '00000000-0000-0000-0000-00000000000c'::uuid, 'y con quien exporta');
 
 select * from finish();
