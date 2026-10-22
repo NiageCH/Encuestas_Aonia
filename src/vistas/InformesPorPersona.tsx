@@ -191,7 +191,8 @@ function AlumnosDepartamento({ titulo, m }: { titulo: string; m: MediaDepartamen
   return (
     <div className="card en-kpi">
       <div className="l">{titulo}</div>
-      <div className="v">{m.global.suprimido ? <span className="en-oculto">{m.global.motivo === "sin_asignacion" ? t.dep_alumnos_pendiente_corto : t.prof_sin_visibles}</span>
+      <div className="v">{m.global.suprimido && m.global.motivo === "solo_compartidas" ? <span className="en-sin-media">{t.dep_solo_compartidas_corto}</span>
+        : m.global.suprimido ? <span className="en-oculto">{m.global.motivo === "sin_asignacion" ? t.dep_alumnos_pendiente_corto : t.prof_sin_visibles}</span>
         : <>{f.media(m.global.media!)} <small>/ 6</small></>}</div>
       <div className="d">{m.global.suprimido ? "" : x.detalle}{x.nota && <><br />{x.nota}</>}</div>
     </div>

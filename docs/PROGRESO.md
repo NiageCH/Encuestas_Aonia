@@ -167,6 +167,8 @@ Acceso en la nube (22/10/2026): configuración de Auth en `supabase/config.toml`
 
 Decisión del 22/10/2026: no se cargan datos inventados en la nube; las pruebas con el colegio serán con los datos reales de 2025/26, cuando el colegio lo autorice. Preparado: carga, validación contra la nube (`validar_2526.py --remoto`) y borrado (`borrar_2526.py`), en `docs/DESPLIEGUE.md` §5. Estado vacío en todas las pantallas de resultados y franja «Resultados en validación» en la aplicación y los PDF (se quita con `VITE_AVISO_VALIDACION=no`).
 
+Pendiente de subir junto con la carga real (22/10/2026): migración 20 y aviso «Sin media de departamento» para jefes sin clases propias (Artes Escénicas), en pantalla y en PDF.
+
 Paso de encuestas-sfp.niage.eu a encuestas.sfpaula.com (cuando el colegio publique su DNS):
 - DNS del colegio: CNAME `encuestas` → `domain.par.clever-cloud.com.` (lo crea su contacto técnico).
 - Clever Cloud: añadir `encuestas.sfpaula.com` a la aplicación (certificado automático) y, cuando funcione, quitar el subdominio de Niage.

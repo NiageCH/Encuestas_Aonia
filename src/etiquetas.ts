@@ -49,6 +49,7 @@ export function tituloAlumnosJefe(departamentos: string[]): string {
 
 /** Media de los profesores de un departamento según los alumnos, en texto. */
 export function textoAlumnos(m: MediaDepartamentoAlumnos): { texto: string; detalle?: string; nota?: string } {
+  if (m.global.suprimido && m.global.motivo === "solo_compartidas") return { texto: t.dep_solo_compartidas_corto, nota: t.dep_solo_compartidas };
   if (m.global.suprimido) return { texto: m.global.motivo === "sin_asignacion" ? t.dep_alumnos_pendiente : t.prof_sin_visibles };
   return {
     texto: `${f.media(m.global.media!)} / 6`,

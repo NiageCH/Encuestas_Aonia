@@ -220,3 +220,6 @@ body:has(.en-aviso-validacion)::before { top: 34px; }
   body:has(.en-aviso-validacion)::before { top: 48px; }
 }
 @media print { .en-aviso-validacion { position: static; } }
+
+/* Sin media porque todas las clases son compartidas: no es una supresión por anonimato. */
+.en-kpi .v .en-sin-media { font-size: 1.05rem; color: var(--ink); font-weight: 700; }

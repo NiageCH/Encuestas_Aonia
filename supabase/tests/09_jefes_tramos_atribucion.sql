@@ -3,7 +3,7 @@
 -- y atribuidas por nombre en el informe del profesor.
 begin;
 \ir fixtures/datos_ejemplo.psql
-select plan(47);
+select plan(49);
 
 -- Datos añadidos para este fichero (inventados) ----------------------------------------------
 do $$
@@ -173,6 +173,16 @@ select is(public.informe_jefe_departamento('2000/01', (select cuatro from ids)) 
   'con los docentes de todos sus departamentos (aquí solo Ciencias tiene docentes)');
 select is(public.informe_jefe_departamento('2000/01', (select tres from ids)) -> 'alumnos' -> 'media' -> 'global' ->> 'motivo', 'sin_asignacion',
   'un jefe cuyos departamentos no tienen docentes no tiene media');
+
+-- Departamento con todas sus clases compartidas: sin media, pero no por anonimato
+set local role postgres;
+update public.persona_responsable set departamento_id = (select d.id from public.departamento d join public.curso c on c.id = d.curso_id
+  where c.nombre = '2000/01' and d.nombre = 'Letras') where apellidos = 'Tres';
+select pg_temp.como('direccion'); set local role authenticated;
+select is(public.media_departamento_alumnos('2000/01', 'Letras') -> 'global' ->> 'motivo', 'solo_compartidas',
+  'si todas las clases del departamento son compartidas, el motivo es propio (no es anonimato)');
+select is(public.media_departamento_alumnos('2000/01', 'Ciencias') -> 'global' ->> 'suprimido', 'false',
+  'un departamento con clases propias visibles sigue teniendo media');
 
 -- Clases propias, compartidas y atribuidas ------------------------------------------------------
 select is(pg_temp.celda(public.resultados_profesor('2000/01', (select tres from ids)), 'Y7 D', 'Lengua') ->> 'tipo', 'compartida',
