@@ -27,3 +27,6 @@ __pycache__/
 
 # Sistema
 .DS_Store
+
+# Enlace local con la aplicación de Clever Cloud (clever link)
+.clever.json
