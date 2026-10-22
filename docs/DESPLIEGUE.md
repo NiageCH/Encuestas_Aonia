@@ -169,7 +169,7 @@ de datos por conexión cifrada, sin pasar por el alojamiento web):
 |---|---|---|
 | 1 | `etl/cargar_2526.py --remoto` | 8 cuestionarios, 890 respuestas, unas 132.000 valoraciones, diccionario de 340 preguntas, tramos de tutoría (18) y atribuciones por nombre (388). Sin IP, fechas, identificadores, sexo ni respuestas abiertas; los nombres que escriben los alumnos no se cargan, solo el docente atribuido. |
 | 2 | `etl/cargar_asignaciones.py datos_locales/asignacion_2526_desde_alexia.xlsx --remoto` | 799 asignaciones de 97 docentes: nombre, apellidos, correo del colegio, departamento y situación (alta o baja). **Son datos personales del personal docente**: por eso hace falta la autorización. |
-| 3 | `etl/cargar_responsables.py --remoto` | 9 cargos de jefe de departamento y 4 del Equipo de Individuación (nombre y correo). |
+| 3 | `etl/cargar_responsables.py --remoto` | 7 jefes de departamento (9 cargos: uno por departamento oficial; dos personas tienen dos departamentos) y 4 responsables del Equipo de Individuación (nombre y correo). |
 
 Requisito: `DATABASE_URL` en el `.env` de Rodrigo con la cadena de conexión del proyecto
 (Supabase → Connect → *Session pooler*, IPv4), con su contraseña. Solo en su equipo; nunca en git.

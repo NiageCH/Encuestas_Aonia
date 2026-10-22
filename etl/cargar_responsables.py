@@ -73,7 +73,9 @@ def main() -> None:
             cur.execute("insert into public.cargo (persona_id, curso_id, tipo, ambito) values (%s, %s, 'jefe_equipo', %s)",
                         (persona(e["Persona"], e["Correo"]), curso, TRAMOS[e["Ámbito"]]))
         conn.commit()
-    print(f"Cargados {len(jefes)} cargos de jefe de departamento y {len(equipo)} del Equipo de Individuación.")
+    personas = len({j["Correo"].lower() for j in jefes})
+    print(f"Cargados {len(jefes)} cargos de jefe de departamento ({personas} personas: un cargo por departamento oficial) "
+          f"y {len(equipo)} del Equipo de Individuación.")
 
 
 if __name__ == "__main__":
