@@ -5,11 +5,17 @@ optativa». Con el listado de Alexia, el texto se casa con un docente de ese gru
 asignatura (o con la optativa, si tiene un solo docente). Solo se guarda el docente
 resultante; el texto nunca se carga ni se escribe en ningún informe.
 
+El nombre se busca primero entre los docentes de esa asignatura en el grupo, después entre los
+del grupo y por último en todo el colegio: por las bajas, los alumnos nombran al profesor que
+más tiempo les ha dado clase, que no siempre es el titular de Alexia (respuesta del colegio,
+22/10/2026). Los docentes que no están en Alexia se añaden en
+datos_locales/docentes_adicionales_2526.xlsx (Nombre, Correo, Departamento).
+
 Se aplica solo:
-- en las clases con más de un docente (en las demás no cambia nada);
+- en las clases con más de un docente, o cuando el alumno nombra a alguien que no es el
+  titular de esa asignatura en su grupo (en las demás no cambia nada);
 - en las columnas en las que el nombre casa con un único docente en el 90 % o más de los
-  alumnos que la rellenaron;
-- no en Inglés de Y10 y Y12, hasta que el colegio aclare el posible hueco de Alexia.
+  alumnos que la rellenaron.
 """
 
 from __future__ import annotations
@@ -24,6 +30,7 @@ from convertir_alexia_2526 import CORRESPONDENCIA, grupo as grupo_alexia, k, par
 from encuesta_facil import sin_acentos
 
 ALEXIA = Path(__file__).resolve().parent.parent / "datos_locales" / "fuentes" / "Grupos_asignaturas_docentes_2025-26.xlsx"
+ADICIONALES = Path(__file__).resolve().parent.parent / "datos_locales" / "docentes_adicionales_2526.xlsx"
 UMBRAL = 0.90
 
 # (cuestionario, columna «profesor de …» sin acentos) → asignatura de la encuesta.
@@ -42,10 +49,7 @@ COLUMNAS = {
     ("ALU_Y6Y9", "optativa"): "Optativa",
 }
 
-EXCLUIDAS = {
-    ("ALU_Y10", "ingles"): "posible hueco en Alexia, pendiente del colegio",
-    ("ALU_Y12", "ingles"): "posible hueco en Alexia, pendiente del colegio",
-}
+EXCLUIDAS: Dict[Tuple[str, str], str] = {}
 
 
 def palabras(s: str) -> Set[str]:
@@ -57,6 +61,7 @@ class Alexia:
     nombre: Dict[str, str] = field(default_factory=dict)                         # correo → nombre completo
     por_grupo: Dict[str, Dict[str, Set[str]]] = field(default_factory=lambda: defaultdict(lambda: defaultdict(set)))
     optativas: Dict[str, Set[str]] = field(default_factory=lambda: defaultdict(set))   # optativa → correos
+    departamento: Dict[str, str] = field(default_factory=dict)                   # docentes adicionales → departamento
 
     def tokens(self, correo: str) -> Set[str]:
         return {t for t in palabras(self.nombre[correo]) if len(t) >= 3 and t not in ("del", "las", "los")}
@@ -84,6 +89,16 @@ def leer_alexia(ruta: Path = ALEXIA) -> Alexia:
             correo = str(f[i["Correo"]]).strip().lower()
             a.nombre.setdefault(correo, str(f[i["Docente"]]).strip())
             a.optativas[str(f[i["Asignatura"]]).strip()].add(correo)
+    if ADICIONALES.exists():
+        filas = list(openpyxl.load_workbook(ADICIONALES, read_only=True, data_only=True).active.iter_rows(values_only=True))
+        cab = [str(c or "").strip() for c in filas[0]]
+        for f in filas[1:]:
+            d = dict(zip(cab, f))
+            if d.get("Correo") and d.get("Nombre"):
+                correo = str(d["Correo"]).strip().lower()
+                a.nombre.setdefault(correo, str(d["Nombre"]).strip())
+                if d.get("Departamento"):
+                    a.departamento[correo] = str(d["Departamento"]).strip()
     return a
 
 
@@ -134,11 +149,16 @@ def atribuir(a: Alexia, cuestionario: str, respuestas) -> Tuple[List[Tuple[int, 
                         propuestas.append((n, destino, next(iter(a.optativas[hits[0]]))))
                 continue
             cand = candidatos(a, q, r.grupo, destino)
-            hits = [c for c in cand if a.tokens(c) & pal]
-            if len(hits) == 1:
+            elegido = None
+            for grupo_cand in (cand, sorted(a.por_grupo.get(r.grupo, {})), sorted(a.nombre)):
+                hits = [c for c in grupo_cand if a.tokens(c) & pal]
+                if hits:
+                    elegido = hits[0] if len(hits) == 1 else None
+                    break
+            if elegido:
                 res.casan += 1
-                if len(cand) > 1:
-                    propuestas.append((n, destino, hits[0]))
+                if len(cand) > 1 or elegido not in cand:
+                    propuestas.append((n, destino, elegido))
         tasa = res.casan / res.rellenan if res.rellenan else 0
         if (q, col) in EXCLUIDAS:
             res.motivo = EXCLUIDAS[(q, col)]

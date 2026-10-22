@@ -149,11 +149,16 @@ Hecho (21/10/2026, fases A y B del plan):
 - Vistas y PDF: informe del profesor con «Sus clases» y «Valoraciones compartidas»; Departamentos por jefe (un PDF por persona con sus departamentos); Equipos con todo el equipo y cada tramo (el compartido, con nota); «Individuación» en todos los textos.
 - Tests: 234 SQL (40 nuevos, entre ellos que el tramo no es accesible desde ninguna otra RPC) y 10 de navegación. Las migraciones se aplican desde cero sin errores.
 
+Respuestas del colegio del 22/10/2026:
+- Lengua y Literatura Inglesas y Adquisición de Lenguas van unidos, como Artes Visuales y Tecnología con Educación Física: los 9 docentes dudosos no necesitan revisión.
+- Inglés de Y10 y Y12: sustituciones por bajas. La valoración va al profesor nombrado aunque no sea el titular (migración 17). Inglés de Y12, atribuido; en Y10 D falta un docente que no está en Alexia (plantilla en `datos_locales/docentes_adicionales_2526_plantilla.xlsx`).
+- Inicio de sesión con la nueva intranet: se verá más adelante; la autenticación sigue aislada en `src/data/sesion.ts`.
+- En local: 388 respuestas atribuidas. Tests: 237 SQL.
+
 Orden de carga: `cargar_2526.py` → `convertir_alexia_2526.py` → `cargar_asignaciones.py` → `cargar_responsables.py`.
 
 ## Bloqueos
 
 - Cuestionario de personal en inglés (4 respuestas).
-- Docentes que imparten Lengua y Literatura Inglesas y Adquisición de Lenguas a la vez (9): departamento por confirmar.
-- Inglés de Y10 y Y12: posible hueco en Alexia; sin atribución por nombre hasta que el colegio lo aclare.
+- Inglés de Y10 D: nombre y correo del docente que no está en Alexia (sustitución).
 - Departamento o equipo en el fichero de personal: se verifica en el paso 3.

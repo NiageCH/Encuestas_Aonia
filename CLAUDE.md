@@ -64,5 +64,5 @@ Lleva el avance en `docs/PROGRESO.md`: qué está hecho, qué falta y qué está
 
 Bloqueos actuales (detalle en la especificación §10):
 - Cuestionario de personal en inglés (4 respuestas): falta el fichero.
-- 9 docentes de Inglés y Adquisición de Lenguas por confirmar, e Inglés de Y10 y Y12 sin atribución por nombre (posible hueco en Alexia).
+- Inglés de Y10 D: falta el docente que no está en Alexia (sustitución) para atribuirle sus valoraciones.
 - Departamento o equipo en la encuesta de personal: no viene en 2025/26; se aplica el plan alternativo (§7.3).

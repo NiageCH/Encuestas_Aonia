@@ -192,9 +192,11 @@ def cargar(conn, dic: Diccionario, cuestionarios: List[Cuestionario]) -> list:
                 resumen_atrib += res
                 for n, asignatura, correo in atribuciones:
                     nombre, apellidos = nombre_y_apellidos(alexia, correo)
-                    cur.execute("""insert into public.persona_responsable (nombre, apellidos, correo) values (%s, %s, %s)
-                                   on conflict (correo) do update set correo = excluded.correo returning id""",
-                                (nombre, apellidos, correo))
+                    dep = cache.get(("departamento", alexia.departamento.get(correo, "")))
+                    cur.execute("""insert into public.persona_responsable (nombre, apellidos, correo, departamento_id) values (%s, %s, %s, %s)
+                                   on conflict (correo) do update set departamento_id = coalesce(public.persona_responsable.departamento_id, excluded.departamento_id)
+                                   returning id""",
+                                (nombre, apellidos, correo, dep))
                     docente = cur.fetchone()[0]
                     cur.execute("insert into privado.respuesta_docente (respuesta_id, asignatura_id, docente_id) values (%s, %s, %s)",
                                 (rids[n], id_de("asignatura", asignatura), docente))

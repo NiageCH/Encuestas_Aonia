@@ -3,7 +3,7 @@
 -- y atribuidas por nombre en el informe del profesor.
 begin;
 \ir fixtures/datos_ejemplo.psql
-select plan(40);
+select plan(43);
 
 -- Datos añadidos para este fichero (inventados) ----------------------------------------------
 do $$
@@ -53,6 +53,12 @@ begin
   insert into public.asignacion_docente (curso_id, grupo_id, asignatura_id, docente_id)
     select v_curso, g.id, a_len, d from public.grupo g, unnest(array[v_tres, v_cuatro]) d
     where g.curso_id = v_curso and g.nombre = 'Y7 D';
+
+  -- Profesor nombrado que no es el titular (bajas): en Lengua de Y7 B el titular es Dos, pero
+  -- los 8 alumnos nombran a Cuatro.
+  insert into privado.respuesta_docente (respuesta_id, asignatura_id, docente_id)
+    select r.id, a_len, v_cuatro from privado.respuesta r join public.grupo g on g.id = r.grupo_id
+    where g.curso_id = v_curso and g.nombre = 'Y7 B';
 
   -- Bachillerato con atribución por nombre:
   --   Química Y11 A, 14 alumnos: Cinco 8, Seis 6 (los dos visibles).
@@ -174,6 +180,12 @@ select is(pg_temp.celda(public.resultados_profesor('2000/01', (select siete from
   'optativa atribuida sin asignación por grupo: por cuestionario, sin grupo');
 select ok(exists (select 1 from jsonb_array_elements(public.listar_profesores('2000/01')) p where (p ->> 'id')::int = (select siete from ids)),
   'un docente solo con respuestas atribuidas aparece en la lista de profesores');
+
+select is((pg_temp.celda(public.resultados_profesor('2000/01', (select cuatro from ids)), 'Y7 B', 'Lengua') ->> 'n')::int, 8,
+  'la valoración va al profesor que nombraron los alumnos aunque no sea el titular de Alexia');
+select is(pg_temp.celda(public.resultados_profesor('2000/01', (select cuatro from ids)), 'Y7 B', 'Lengua') ->> 'tipo', 'atribuida', 'como clase atribuida');
+select is(pg_temp.celda(public.resultados_profesor('2000/01', (select dos from ids)), 'Y7 B', 'Lengua'), null,
+  'y el titular al que no nombró nadie no la recibe');
 
 -- Coordinación: sin acceso a los informes de responsables
 reset role; select pg_temp.como('coord_pai'); set local role authenticated;

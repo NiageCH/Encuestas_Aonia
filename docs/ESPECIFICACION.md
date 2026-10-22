@@ -198,7 +198,11 @@ Direcciones: `#/personal/encuesta` y `#/personal/informes/<direccion|equipos|dep
 - **PDF por profesor:** descarga individual y en lote (ZIP, `Informe_2526_Apellido_Nombre.pdf`), con el estilo del colegio. La generación queda en el registro de actividad.
 - **Origen:** el listado de Alexia del colegio (grupos, asignaturas y docentes), convertido con `etl/convertir_alexia_2526.py` al formato de la plantilla (`etl/plantillas/asignacion_docente_2526.xlsx`) y cargado con `etl/cargar_asignaciones.py`. Las materias de Alexia se casan con las de la encuesta mediante una tabla de equivalencias por cuestionario. Las que los alumnos no valoran (tutoría, refuerzos, CICE y similares) no se cargan.
 - **Departamento:** el que confirmó el colegio en la revisión (la columna «Departamento correcto» manda; «Sin dpto.» es «Otros»), con los nombres oficiales. El antiguo «Inglés y Adquisición de Lenguas» se reparte entre Lengua y Literatura Inglesas y Adquisición de Lenguas según lo que imparte cada docente; quien dé de las dos se marca para revisión.
-- **Atribución por el nombre que escribió el alumno** (decisión del 21/10/2026): se aplica en las clases con varios docentes y solo en las columnas en las que el nombre casa con un único docente de Alexia en el 90 % o más (`etl/atribucion_2526.py`). **No se aplica en Inglés de Y10 y Y12** hasta que el colegio aclare el posible hueco de Alexia: esas clases siguen como valoración compartida. El texto nunca se carga: solo la atribución. El informe de la carga recoge, en cifras, cuántos alumnos rellenaron cada columna, cuántos casan y cuántas respuestas se atribuyen. Análisis del 21/10/2026 (cifras agregadas; el texto libre no se carga):
+- **Atribución por el nombre que escribió el alumno** (decisiones del 21 y 22/10/2026): solo en las columnas en las que el nombre casa con un único docente en el 90 % o más (`etl/atribucion_2526.py`).
+  - Por las bajas, los alumnos nombran al profesor que más tiempo les ha dado clase, que no siempre es el titular de Alexia. **La valoración va al informe del profesor nombrado.** El nombre se busca entre los docentes de esa asignatura en el grupo, después entre los del grupo y por último en todo el colegio.
+  - Se atribuye en las clases con varios docentes y cuando el alumno nombra a alguien que no es el titular. En una clase con atribución, cada docente nombrado recibe su subconjunto; un titular al que no nombró nadie no recibe nada de esa clase.
+  - Los docentes que no están en Alexia se añaden en `datos_locales/docentes_adicionales_2526.xlsx` (nombre, correo y departamento).
+  - Inglés de Y12: atribuido (todos los nombres casan, la mayoría con un sustituto). Inglés de Y10: los 16 alumnos de Y10 D nombran a una persona que no está en Alexia; hasta añadirla, la columna casa en el 72 % y la clase sigue como valoración compartida. El texto nunca se carga: solo la atribución. El informe de la carga recoge, en cifras, cuántos alumnos rellenaron cada columna, cuántos casan y cuántas respuestas se atribuyen. Análisis del 21/10/2026 (cifras agregadas; el texto libre no se carga):
   - Solo hay columnas de nombre en Y10 (Lengua Española, Inglés y Francés), Y11 (Inglés, Historia, Matemáticas y Química) y Y12 (Inglés, Matemáticas, Química y Biología). En Primaria solo se pregunta por el profesor de instrumento (Música PIM, que no se atribuye) y en Y6 a Y10 no hay ninguna.
   - La rellenan entre el 84 % y el 92 % de los alumnos en las asignaturas comunes, el 70 % en Francés y entre el 36 % y el 44 % en Química y Biología (optativas: no las cursan todos).
   - El nombre casa con un único docente de Alexia de esa asignatura y ese grupo en el 98 % al 100 % de los casos, salvo Inglés de Y10 (34 %) y de Y12 (38 %). Ahí los alumnos nombran a docentes que Alexia no pone en ese grupo o en esa asignatura, lo que apunta a un hueco en el listado de Alexia.
@@ -208,7 +212,7 @@ Direcciones: `#/personal/encuesta` y `#/personal/informes/<direccion|equipos|dep
 ### 7.3 Informes de responsables (Personal → Informes por persona: Dirección, Equipos y Departamentos)
 - **Nombres oficiales** (21/10/2026): departamentos como en §4 y «Equipo de Individuación» (antes «Individualización» en la interfaz). Jefes de departamento y de equipo en `datos_locales/responsables_2526.xlsx`.
 - **Informe de departamento por jefe:** un PDF por persona con cada uno de sus departamentos dentro. Dos jefes tienen dos departamentos:
-  - uno tiene Lengua y Literatura Inglesas y Adquisición de Lenguas, que en la encuesta de 2025/26 son una sola unidad: una sección de reuniones con nota, y la media de alumnos por cada departamento;
+  - uno tiene Lengua y Literatura Inglesas y Adquisición de Lenguas, que funcionan unidos (todos sus docentes responden a ese jefe) y en la encuesta de 2025/26 son una sola unidad: una sección de reuniones con nota, y la media de alumnos por cada departamento;
   - otro tiene Artes Visuales y Tecnología (4 personas en la matriz) y Educación Física (2): por separado los dos quedan ocultos y se muestran juntos como «sus departamentos», con una nota (decisión del 21/10/2026, §5.15).
 - **Equipo de Individuación por jefe** (análisis del 21/10/2026, con recuentos): de los 18 tutores que contestaron el bloque, por el nivel de tutoría que marcaron, Y6 a Y9 son 7, Y10 a Y12 son 5, Y1 a Y5 son 4 e Infantil 2. Con el mínimo de 5 y la complementaria:
   - el jefe de Y6 a Y9 tendría resultado en las 22 preguntas;
@@ -332,8 +336,8 @@ Commits pequeños. Al cerrar cada paso, actualiza `docs/PROGRESO.md`.
 | 11 | ~~Atribución por nombre y optativa~~ Autorizada (21/10/2026), salvo Inglés de Y10 y Y12 | Colegio | No |
 | 12 | ~~Equipo de Individuación por jefe~~ Autorizado (21/10/2026) | Colegio | No |
 | 13 | ~~Departamentos de un mismo jefe juntos~~ Autorizado (21/10/2026) | Colegio | No |
-| 14 | Inglés de Y10 y Y12: los alumnos nombran a docentes que Alexia no pone en ese grupo. ¿Falta algo en el listado? Hasta saberlo, sin atribución | Colegio | No |
-| 15 | Revisar el departamento de 9 docentes que dan Lengua y Literatura Inglesas y Adquisición de Lenguas (`datos_locales/revisar_ingles_adquisicion_2526.xlsx`) | Colegio | No |
+| 14 | ~~Inglés de Y10 y Y12~~ Son sustituciones por bajas: la valoración va al profesor nombrado (22/10/2026). Falta el nombre y el correo del docente de Inglés de Y10 D, que no está en Alexia | Colegio | No |
+| 15 | ~~Departamento de 9 docentes de Inglés y Adquisición~~ No hace falta: los dos departamentos van unidos y responden al mismo jefe (22/10/2026) | Colegio | No |
 
 ---
 
