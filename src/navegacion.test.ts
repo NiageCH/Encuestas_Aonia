@@ -1,23 +1,35 @@
 import { describe, expect, it } from "vitest";
-import { aHash, leerRuta, nivelesPermitidos, permitida } from "./navegacion";
+import { aHash, leerRuta, menu, nivelesPermitidos, permitida } from "./navegacion";
 
 const ir = (hash: string, rol: "administrador" | "direccion" | "coordinacion") => aHash(leerRuta(hash, rol));
 
+describe("menú de arriba", () => {
+  it("Informes por persona va después de Personal y antes de Usuarios", () => {
+    expect(menu("administrador")).toEqual(["/", "/alumnos", "/familias", "/personal", "/informes", "/usuarios"]);
+    expect(menu("direccion")).toEqual(["/", "/alumnos", "/familias", "/personal", "/informes"]);
+  });
+  it("la coordinación no ve Personal ni Usuarios, sí Informes por persona", () => {
+    expect(menu("coordinacion")).toEqual(["/", "/alumnos", "/familias", "/informes"]);
+  });
+});
+
 describe("navegación de la coordinación de etapa", () => {
-  it("entra en Personal pero solo llega a Informes por persona → Profesores", () => {
-    expect(ir("#/personal", "coordinacion")).toBe("#/personal/informes/profesores");
-    expect(ir("#/personal/encuesta", "coordinacion")).toBe("#/personal/informes/profesores");
-    expect(ir("#/personal/informes", "coordinacion")).toBe("#/personal/informes/profesores");
+  it("Informes por persona la lleva directamente a Profesores", () => {
+    expect(ir("#/informes", "coordinacion")).toBe("#/informes/profesores");
+    expect(ir("#/informes/profesores", "coordinacion")).toBe("#/informes/profesores");
   });
   it("no llega a Dirección, Equipos ni Departamentos", () => {
     for (const nivel of ["direccion", "equipos", "departamentos"]) {
-      expect(ir(`#/personal/informes/${nivel}`, "coordinacion")).toBe("#/personal/informes/profesores");
+      expect(ir(`#/informes/${nivel}`, "coordinacion")).toBe("#/informes/profesores");
     }
     expect(nivelesPermitidos("coordinacion")).toEqual(["profesores"]);
   });
-  it("las direcciones antiguas la llevan a Profesores", () => {
-    expect(ir("#/profesorado", "coordinacion")).toBe("#/personal/informes/profesores");
-    expect(ir("#/responsables", "coordinacion")).toBe("#/personal/informes/profesores");
+  it("Personal (y sus direcciones antiguas) la llevan a Profesores", () => {
+    expect(ir("#/personal", "coordinacion")).toBe("#/informes/profesores");
+    expect(ir("#/personal/encuesta", "coordinacion")).toBe("#/informes/profesores");
+    expect(ir("#/personal/informes/direccion", "coordinacion")).toBe("#/informes/profesores");
+    expect(ir("#/profesorado", "coordinacion")).toBe("#/informes/profesores");
+    expect(ir("#/responsables", "coordinacion")).toBe("#/informes/profesores");
   });
   it("no ve Usuarios", () => {
     expect(ir("#/usuarios", "coordinacion")).toBe("#/");
@@ -30,17 +42,21 @@ describe("navegación de la coordinación de etapa", () => {
 });
 
 describe("navegación de dirección y administración", () => {
-  it("Personal lleva a la encuesta de personal", () => {
-    expect(ir("#/personal", "direccion")).toBe("#/personal/encuesta");
+  it("Personal es la encuesta de personal", () => {
+    expect(ir("#/personal", "direccion")).toBe("#/personal");
+    expect(ir("#/personal/encuesta", "direccion")).toBe("#/personal");
   });
-  it("ve todos los niveles, en orden jerárquico", () => {
+  it("Informes por persona: todos los niveles, en orden jerárquico, empezando por Dirección", () => {
     expect(nivelesPermitidos("direccion")).toEqual(["direccion", "equipos", "departamentos", "profesores"]);
-    expect(ir("#/personal/informes/departamentos", "direccion")).toBe("#/personal/informes/departamentos");
-    expect(ir("#/personal/informes", "direccion")).toBe("#/personal/informes/direccion");
+    expect(ir("#/informes", "direccion")).toBe("#/informes/direccion");
+    expect(ir("#/informes/departamentos", "direccion")).toBe("#/informes/departamentos");
+    expect(ir("#/informes/no-existe", "direccion")).toBe("#/informes/direccion");
   });
   it("las direcciones antiguas llevan a su nuevo sitio", () => {
-    expect(ir("#/profesorado", "direccion")).toBe("#/personal/informes/profesores");
-    expect(ir("#/responsables", "direccion")).toBe("#/personal/informes/direccion");
+    expect(ir("#/personal/informes/equipos", "direccion")).toBe("#/informes/equipos");
+    expect(ir("#/personal/informes", "direccion")).toBe("#/informes/direccion");
+    expect(ir("#/profesorado", "direccion")).toBe("#/informes/profesores");
+    expect(ir("#/responsables", "direccion")).toBe("#/informes/direccion");
   });
   it("Usuarios es solo para administradores", () => {
     expect(ir("#/usuarios", "direccion")).toBe("#/");

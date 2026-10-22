@@ -158,17 +158,19 @@ Profesores y jefes no tienen cuenta en la Fase 1: reciben su informe en PDF.
 ## 7. Funcionalidades
 
 ### 7.0 Navegación
-Menú: **Inicio (panel general) · Alumnos · Familias · Personal**, y **Usuarios** para administradores. Los responsables también son personal, así que no tienen entrada propia: se ordenan por jerarquía dentro de Personal.
+Menú: **Inicio (panel general) · Alumnos · Familias · Personal · Informes por persona**, y **Usuarios** para administradores (decisión del 22/10/2026: «Informes por persona» pasa de un apartado de Personal a una entrada propia del menú, para que se encuentre a la primera).
 
-**Personal** tiene dos apartados:
-1. **Encuesta de personal:** lo que opina el personal como empleado. Filtros de uno en uno: todo el personal, docentes, no docentes, primer año, más de un año (§7.4).
-2. **Informes por persona**, de arriba abajo en la jerarquía del colegio, cada nivel con su PDF:
-   - **Dirección:** Superiores (según el personal no docente) y la valoración del centro por todo el personal.
-   - **Equipos:** Equipo de Individuación (por jefe de equipo si se aprueba el tramo de tutoría, §7.3; si no, un único informe del equipo).
-   - **Departamentos:** **por jefe de departamento**, con cada uno de sus departamentos dentro: reuniones de departamento (con el mínimo de 5) y la media de los profesores del departamento según los alumnos (solo clases propias visibles, como la media global del profesor, §5.12).
-   - **Profesores:** lo que opinan los alumnos de cada profesor (§7.2), con buscador y PDF individual y en lote.
+**Personal:** la encuesta de personal, lo que opina el personal como empleado. Filtros de uno en uno: todo el personal, docentes, no docentes, primer año, más de un año (§7.4). Arriba, un enlace corto a «Informes por persona» para quien los busque ahí. La coordinación no tiene esta entrada.
 
-Direcciones: `#/personal/encuesta` y `#/personal/informes/<direccion|equipos|departamentos|profesores>`. Las antiguas llevan a su nuevo sitio: `#/profesorado` a Profesores y `#/responsables` a Dirección. La lógica está en `src/navegacion.ts`, con sus tests.
+**Informes por persona**, de arriba abajo en la jerarquía del colegio, cada nivel con su PDF:
+- **Dirección:** Superiores (según el personal no docente) y la valoración del centro por todo el personal.
+- **Equipos:** Equipo de Individuación (por jefe de equipo si se aprueba el tramo de tutoría, §7.3; si no, un único informe del equipo).
+- **Departamentos:** **por jefe de departamento**, con cada uno de sus departamentos dentro: reuniones de departamento (con el mínimo de 5) y la media de los profesores del departamento según los alumnos (solo clases propias visibles, como la media global del profesor, §5.12).
+- **Profesores:** lo que opinan los alumnos de cada profesor (§7.2), con buscador y PDF individual y en lote.
+
+La coordinación entra directamente en Profesores (los de su etapa).
+
+Direcciones: `#/personal` y `#/informes/<direccion|equipos|departamentos|profesores>`. Las antiguas llevan a su nuevo sitio: `#/personal/informes/<nivel>` a `#/informes/<nivel>`, `#/profesorado` a Profesores y `#/responsables` a Dirección. La lógica está en `src/navegacion.ts`, con sus tests.
 
 ### 7.1 Panel general (inicio tras el login)
 1. **Recomendación del colegio por colectivo:**

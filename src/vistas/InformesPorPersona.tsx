@@ -1,10 +1,11 @@
-// Personal → Informes por persona (§7.0 y §7.3), de arriba abajo en la jerarquía del colegio:
+// Informes por persona (§7.0 y §7.3), sección propia del menú, de arriba abajo en la jerarquía del colegio:
 // Dirección, Equipos (Equipo de Individuación, todo o por tramo), Departamentos (por jefe, con
 // sus departamentos) y Profesores. Cada nivel con su PDF. La coordinación solo llega a
 // Profesores (los de su etapa); el servidor lo impone.
 
 import { useEffect, useState } from "react";
 import { CabeceraPreguntas, FilaPregunta, LeyendaAcuerdo, lineasOculto } from "../componentes/Graficos";
+import { Migas } from "../componentes/Marco";
 import { Oculto } from "../componentes/Oculto";
 import { SinResultados, useHayResultados } from "../componentes/SinResultados";
 import {
@@ -25,12 +26,16 @@ export function InformesPorPersona({ perfil, nivel }: { perfil: Perfil; nivel: N
   const hayPersonal = useHayResultados("personal");
   const hayAlumnos = useHayResultados("alumnos");
   return (
-    <section>
+    <div className="page">
+      <Migas actual={t.nav_informes} />
+      <p className="eyebrow">{t.alu_eyebrow}</p>
+      <h1>🗂️ {t.nav_informes}</h1>
+      <p className="lead">{perfil.rol === "coordinacion" ? t.per_coord_lead : t.ipp_lead}</p>
       {niveles.length > 1 && (
         <nav className="chips en-noprint en-niveles" aria-label={t.ipp_niveles}>
           {niveles.map((n) => (
             <a key={n} className={`chip${n === nivel ? " on" : ""}`} aria-current={n === nivel ? "page" : undefined}
-               href={aHash({ seccion: "/personal", apartado: "informes", nivel: n })}>
+               href={aHash({ seccion: "/informes", nivel: n })}>
               {t.ipp_nivel[n]}
             </a>
           ))}
@@ -41,7 +46,7 @@ export function InformesPorPersona({ perfil, nivel }: { perfil: Perfil; nivel: N
       {nivel === "equipos" && hayPersonal && <NivelEquipos />}
       {nivel === "departamentos" && hayPersonal && <NivelDepartamentos />}
       {nivel === "profesores" && (hayAlumnos ? <InformesProfesor perfil={perfil} /> : <SinResultados colectivo="alumnos" />)}
-    </section>
+    </div>
   );
 }
 

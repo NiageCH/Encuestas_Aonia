@@ -8,23 +8,21 @@ import { tipoEnlace } from "./data/cliente";
 import { alCambiarSesion, mfaAdminObligatorio, miPerfil, salir, sesionActual, type Perfil } from "./data/sesion";
 import { colectivosCargados, type Colectivo } from "./data/resultados";
 import { t } from "./i18n";
-import { aHash, leerRuta } from "./navegacion";
+import { aHash, leerRuta, menu, type Seccion } from "./navegacion";
 import { Acceso } from "./vistas/Acceso";
 import { Alumnos } from "./vistas/Alumnos";
 import { DobleFactor } from "./vistas/DobleFactor";
 import { Familias } from "./vistas/Familias";
+import { InformesPorPersona } from "./vistas/InformesPorPersona";
 import { NuevaContrasena } from "./vistas/NuevaContrasena";
 import { Panel } from "./vistas/Panel";
 import { Personal } from "./vistas/Personal";
 import { Usuarios } from "./vistas/Usuarios";
 
-const ENLACES: Enlace[] = [
-  { ruta: "/", texto: t.nav_inicio },
-  { ruta: "/alumnos", texto: t.nav_alumnos },
-  { ruta: "/familias", texto: t.nav_familias },
-  { ruta: "/personal", texto: t.nav_personal },
-  { ruta: "/usuarios", texto: t.nav_usuarios },
-];
+const TEXTO_MENU: Record<Seccion, string> = {
+  "/": t.nav_inicio, "/alumnos": t.nav_alumnos, "/familias": t.nav_familias, "/personal": t.nav_personal,
+  "/informes": t.nav_informes, "/usuarios": t.nav_usuarios,
+};
 
 export function App() {
   const [hash, setHash] = useState(window.location.hash);
@@ -87,7 +85,7 @@ export function App() {
   // Ruta y permisos (src/navegacion.ts): direcciones antiguas y lo que ve cada rol.
   const ruta = leerRuta(hash, perfil.rol);
   if (aHash(ruta) !== window.location.hash) window.history.replaceState(null, "", aHash(ruta));
-  const enlaces = ENLACES.filter((e) => e.ruta !== "/usuarios" || perfil.rol === "administrador");
+  const enlaces: Enlace[] = menu(perfil.rol).map((s) => ({ ruta: s, texto: TEXTO_MENU[s] }));
 
   const visibles: Colectivo[] = perfil.rol === "coordinacion" ? ["alumnos", "familias"] : ["alumnos", "familias", "personal"];
   const hay = (...c: Colectivo[]) => cargados === undefined || c.some((x) => cargados.includes(x));
@@ -97,7 +95,8 @@ export function App() {
   const vista = ruta.seccion === "/" ? (hay(...visibles) ? <Panel perfil={perfil} /> : vacia(t.nav_inicio))
     : ruta.seccion === "/alumnos" ? (hay("alumnos") ? <Alumnos perfil={perfil} /> : vacia(t.nav_alumnos, "alumnos"))
     : ruta.seccion === "/familias" ? (hay("familias") ? <Familias perfil={perfil} /> : vacia(t.nav_familias, "familias"))
-    : ruta.seccion === "/personal" ? <Personal perfil={perfil} apartado={ruta.apartado ?? "encuesta"} nivel={ruta.nivel ?? "profesores"} />
+    : ruta.seccion === "/personal" ? <Personal />
+    : ruta.seccion === "/informes" ? <InformesPorPersona perfil={perfil} nivel={ruta.nivel ?? "profesores"} />
     : <Usuarios perfil={perfil} />;
   return (
     <Marco ruta={ruta.seccion} enlaces={enlaces} usuario={{ nombre: perfil.nombre, onSalir: salir }}>

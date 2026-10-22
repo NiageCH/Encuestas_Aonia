@@ -159,12 +159,9 @@
 .en-registro time { color: var(--muted); font-variant-numeric: tabular-nums; }
 .en-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
-/* Apartados de Personal y niveles de Informes por persona */
-.en-pestanas { display: flex; gap: .3rem; border-bottom: 2px solid var(--line); margin: .6rem 0 1rem; flex-wrap: wrap; }
-.en-pestanas a { text-decoration: none; font-weight: 700; color: var(--muted); padding: .55rem .9rem; border-bottom: 3px solid transparent; margin-bottom: -2px; }
-.en-pestanas a:hover { color: var(--brand); }
-.en-pestanas a.on { color: var(--navy); border-bottom-color: var(--brand); }
-.en-pestanas a:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
+/* Niveles de Informes por persona y enlace desde Personal */
+.en-enlace-informes { margin: .4rem 0 .8rem; padding: .6rem .9rem; border-radius: 10px; background: var(--soft); font-size: .92rem; color: var(--navy); }
+.en-enlace-informes a { font-weight: 700; color: var(--brand); }
 .en-niveles { margin: .2rem 0 .4rem; }
 .en-niveles .chip { text-decoration: none; }
 

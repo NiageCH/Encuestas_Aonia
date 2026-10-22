@@ -112,7 +112,7 @@ Pendiente: Excel de asignación del colegio, revisión en móvil e iPad; en el d
 
 ## Navegación de Personal (15/10/2026)
 
-- `src/navegacion.ts`: rutas, direcciones antiguas (`#/profesorado`, `#/responsables`) y permisos por rol; 10 tests con `npm test` (vitest).
+- `src/navegacion.ts`: rutas, direcciones antiguas (`#/profesorado`, `#/responsables`) y permisos por rol; 10 tests (12 desde el 22/10/2026) con `npm test` (vitest).
 - `supabase/tests/08_personal_informes.sql`: lo que cada rol puede pedir al servidor en la nueva navegación (la coordinación, solo Profesores de su etapa) y la media de departamento según los alumnos (solo combinaciones visibles).
 - Total: 194 tests SQL y 10 de navegación.
 
@@ -174,6 +174,8 @@ Panel de Inicio con puntos de mejora (22/10/2026, migración 22): puntos fuertes
 
 Exportación de cada vista (22/10/2026, migración 23, §7.6): botones «CSV para Excel» y «PDF» en el Panel general, Alumnos, Familias y Personal, con lo que se ve en pantalla y los filtros activos (Familias y Personal, con el detalle de todos los bloques). Los datos salen de las mismas RPC que la pantalla; `registrar_exportacion` deja cada exportación en el registro de actividad (vista, formato y filtros) y rechaza a quien no puede ver la vista. CSV en UTF-8 con BOM, punto y coma y coma decimal, comprobado abriéndolo con Excel en macOS (es_ES). Celdas ocultas con «menos de 5», «oculto» o «sin datos», nunca en blanco. Cabecera con colegio, curso, vista, filtros, fecha y la franja de validación si está activa. Archivos `Encuestas_2526_<Vista>[_<Filtro>].csv|pdf`. 289 tests de base de datos (16 nuevos en `11_exportacion.sql`) y 9 del CSV (`src/exportacion/csv.test.ts`). Subida el 22/10/2026: GitHub (ac51a94), migración 23 en la nube con 289 tests en verde y recuento sin cambios, y web desplegada.
 - Quedaba pendiente desde el paso 2 («RPC de exportación CSV con registro de actividad») y no se hizo al cerrar las vistas.
+
+«Informes por persona» en el menú de arriba (22/10/2026): Inicio · Alumnos · Familias · Personal · Informes por persona · Usuarios. Dentro, Dirección, Equipos, Departamentos y Profesores; la coordinación entra directamente en Profesores y ya no ve la entrada Personal. Personal queda como la encuesta, con un enlace corto a la nueva sección. Direcciones nuevas `#/informes/<nivel>`; las antiguas (`#/personal/informes/<nivel>`, `#/profesorado`, `#/responsables`) llevan a su sitio. 12 tests de navegación.
 
 Paso de encuestas-sfp.niage.eu a encuestas.sfpaula.com (cuando el colegio publique su DNS):
 - DNS del colegio: CNAME `encuestas` → `domain.par.clever-cloud.com.` (lo crea su contacto técnico).

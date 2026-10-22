@@ -1,4 +1,5 @@
-// Vista de personal (§7.4 y §7.0): un filtro a la vez (docentes o no docentes, o antigüedad),
+// Vista de personal (§7.4 y §7.0): la encuesta de personal, con un enlace a «Informes por persona»
+// (sección propia del menú). Un filtro a la vez (docentes o no docentes, o antigüedad),
 // indicadores con la recomendación, dimensiones, Superiores agregado, reuniones de departamento por
 // departamento, Equipo de Individuación, detalle por pregunta, recomendación y lo más
 // valorado. Sin sexo.
@@ -9,9 +10,7 @@ import {
 } from "../componentes/Graficos";
 import { Exportar } from "../componentes/Exportar";
 import { Migas } from "../componentes/Marco";
-import type { Perfil } from "../data/sesion";
-import { aHash, type Nivel } from "../navegacion";
-import { InformesPorPersona } from "./InformesPorPersona";
+import { aHash } from "../navegacion";
 import {
   bloques as cargarBloques, cuestionarios as cargarCuestionarios, detallePreguntas, opciones, recuentoIdiomas, resultados,
   type Bloque, type Cuestionario, type DetallePregunta, type Fila, type Filtro,
@@ -52,28 +51,19 @@ interface Datos {
   valorado: Fila;
 }
 
-/** Personal (§7.0): encuesta de personal e informes por persona. La coordinación solo ve
- *  Informes por persona → Profesores (§6). */
-export function Personal({ perfil, apartado, nivel }: { perfil: Perfil; apartado: "encuesta" | "informes"; nivel: Nivel }) {
-  const coordinacion = perfil.rol === "coordinacion";
+/** Personal (§7.0): la encuesta de personal. La coordinación no entra (§6). */
+export function Personal() {
   const hayPersonal = useHayResultados("personal");
   return (
     <div className="page">
       <Migas actual={t.per_titulo} />
       <p className="eyebrow">{t.alu_eyebrow}</p>
       <h1>🧑‍🏫 {t.per_titulo}</h1>
-      <p className="lead">{coordinacion ? t.per_coord_lead : t.per_lead_general}</p>
-      {!coordinacion && (
-        <nav className="en-pestanas en-noprint" aria-label={t.per_apartados}>
-          <a href={aHash({ seccion: "/personal", apartado: "encuesta" })} className={apartado === "encuesta" ? "on" : undefined}
-             aria-current={apartado === "encuesta" ? "page" : undefined}>{t.per_sub_encuesta}</a>
-          <a href={aHash({ seccion: "/personal", apartado: "informes", nivel: "direccion" })} className={apartado === "informes" ? "on" : undefined}
-             aria-current={apartado === "informes" ? "page" : undefined}>{t.per_sub_informes}</a>
-        </nav>
-      )}
-      {apartado === "encuesta" && !coordinacion
-        ? (hayPersonal ? <EncuestaPersonal /> : <SinResultados colectivo="personal" />)
-        : <InformesPorPersona perfil={perfil} nivel={nivel} />}
+      <p className="lead">{t.per_lead_general}</p>
+      <p className="en-enlace-informes en-noprint">
+        {t.per_enlace_informes} <a href={aHash({ seccion: "/informes", nivel: "direccion" })}>{t.nav_informes} →</a>
+      </p>
+      {hayPersonal ? <EncuestaPersonal /> : <SinResultados colectivo="personal" />}
     </div>
   );
 }
