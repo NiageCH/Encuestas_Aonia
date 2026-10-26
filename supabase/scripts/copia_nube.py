@@ -48,7 +48,7 @@ def copiar(destino: Path) -> None:
         ejecutar("npx", "supabase", "db", "dump", "--linked", "-f", str(destino / nombre), *extra)
     env = dict(os.environ, URL_NUBE=url_bd(True))
     ejecutar("docker", "run", "--rm", "-e", "URL_NUBE", "-v", f"{destino}:/out", "postgres:17", "sh", "-c",
-             'pg_dump "$URL_NUBE" --format=custom --no-owner --file=/out/completa.dump', env=env)
+             'timeout 600 pg_dump "$URL_NUBE" --format=custom --no-owner --file=/out/completa.dump', env=env)   # sin colgarse si se corta la conexión
     with open(destino / "SHA256SUMS", "w") as f:
         for p in sorted(destino.iterdir()):
             if p.name != "SHA256SUMS":
