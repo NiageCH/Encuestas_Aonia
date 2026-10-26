@@ -1,6 +1,6 @@
 # Migración al servidor del colegio
 
-Plan para pasar la plataforma de Supabase en la nube y Clever Cloud a un servidor Linux del colegio, en su proveedor (Convive o Cedemon), con el software de Supabase de código abierto instalado con Docker. Estado: **borrador para Rodrigo** (26/10/2026).
+Plan para pasar la plataforma de Supabase en la nube y Clever Cloud a un servidor Linux del colegio, en su proveedor (Convive o Cedemon), con el software de Supabase de código abierto instalado con Docker. Estado: **decisiones tomadas el 26/10/2026** (§8); pendiente de elegir proveedor.
 
 Lo que no cambia: el código de la aplicación, las migraciones, las reglas de anonimato (mínimo de 5, supresión complementaria, sin datos identificativos), el doble factor de los administradores y la forma de trabajar (todo probado en local antes de tocar el servidor).
 
@@ -88,7 +88,8 @@ En el servidor somos responsables de los registros. Para cumplir la regla de no 
 
 ## 5. Copias de seguridad
 
-- **Diaria:** volcado completo de la base (`pg_dump`, el mismo procedimiento que la copia del 26/10), cifrado y enviado fuera del servidor (espacio que indique el proveedor o el colegio). Retención: 30 diarias y 12 mensuales.
+- **Diaria:** volcado completo de la base (`pg_dump`, el mismo procedimiento que la copia del 26/10), cifrado y enviado al espacio de copias del proveedor, en otra ubicación distinta del servidor y dentro de la UE. Retención: 30 diarias y 12 mensuales.
+- **Semanal en Niage:** una copia cifrada descargada a `datos_locales/`, en un equipo con el disco cifrado.
 - **Instantánea de la máquina** por el proveedor.
 - **Prueba de restauración mensual** en una base aparte, comparando recuento y validación, como se hizo el 26/10/2026 con la copia de la nube.
 
@@ -120,12 +121,12 @@ Mientras no se haga el corte, la nube actual sigue siendo el entorno de revisió
 
 ## 8. Decisiones para Rodrigo
 
-1. **Proveedor:** Convive o Cedemon, según quién garantice IP fija, salida por el 25, instantáneas y soporte.
+1. **Proveedor:** Convive o Cedemon. **Decidido (26/10/2026):** el que garantice por escrito IP pública fija, salida por el puerto 25 hacia Microsoft 365, instantáneas diarias y soporte en horario escolar; el puerto 25 se confirma antes de contratar.
 2. **Correo:** ~~directo a Microsoft 365 por el 25 o con relay local~~ **Decidido (26/10/2026): relay local con Postfix hacia Microsoft 365**, por la cola, los reintentos y el registro de envíos. La regla 5 de `CLAUDE.md` queda precisada: sin inicio de sesión con Microsoft; el correo puede salir por el servidor de correo del colegio.
-3. **Quién administra el sistema operativo:** el proveedor (actualizaciones, parches) o Niage. Recomendado: el proveedor el sistema, Niage la aplicación.
-4. **Destino de las copias externas.**
+3. **Quién administra el sistema operativo:** **Decidido (26/10/2026):** el proveedor, el sistema (parches, actualizaciones, cortafuegos de su red, instantáneas); Niage, la aplicación (Docker, Supabase, web, copias de la base).
+4. **Destino de las copias externas.** **Decidido (26/10/2026):** espacio de copias del proveedor en otra ubicación distinta del servidor, con las copias cifradas antes de salir, y nunca fuera de la UE. Además, una copia semanal descargada a `datos_locales/` de Niage, **también cifrada**; el equipo donde se guarde debe tener **el disco cifrado**.
 5. **Qué hacemos con la nube actual hasta el corte:** **Decidido (26/10/2026):** se suben los cambios de `fase1-coordinacion` y las pruebas con el colegio se hacen en la nube actual hasta que llegue su servidor.
-6. **Fase 2 en el servidor:** el formulario público también saldrá por `encuestas.sfpaula.com`; confirmar que el colegio acepta que el servidor reciba las respuestas de familias desde fuera (es una web pública con protección contra envíos automáticos).
+6. **Fase 2 en el servidor:** el formulario público también saldrá por `encuestas.sfpaula.com`. **Decidido (26/10/2026):** el colegio debe aceptarlo por escrito, sabiendo que entran respuestas anónimas desde internet con las protecciones ya hechas (sin IP, prueba en el navegador, tope por enlace, límite por minuto) y que la plataforma de resultados no abre nada nuevo.
 
 ## Fuentes
 - Supabase, autoalojamiento con Docker: requisitos, servicios, pasarela, HTTPS con proxy y SMTP (https://supabase.com/docs/guides/self-hosting/docker).
