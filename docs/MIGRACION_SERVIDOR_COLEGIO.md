@@ -121,10 +121,10 @@ Mientras no se haga el corte, la nube actual sigue siendo el entorno de revisió
 ## 8. Decisiones para Rodrigo
 
 1. **Proveedor:** Convive o Cedemon, según quién garantice IP fija, salida por el 25, instantáneas y soporte.
-2. **Correo:** directo a Microsoft 365 por el 25 o con relay local (recomendado: relay local, por la cola, los reintentos y el registro de envíos).
+2. **Correo:** ~~directo a Microsoft 365 por el 25 o con relay local~~ **Decidido (26/10/2026): relay local con Postfix hacia Microsoft 365**, por la cola, los reintentos y el registro de envíos. La regla 5 de `CLAUDE.md` queda precisada: sin inicio de sesión con Microsoft; el correo puede salir por el servidor de correo del colegio.
 3. **Quién administra el sistema operativo:** el proveedor (actualizaciones, parches) o Niage. Recomendado: el proveedor el sistema, Niage la aplicación.
 4. **Destino de las copias externas.**
-5. **Qué hacemos con la nube actual hasta el corte:** subir allí los cambios pendientes de `fase1-coordinacion` para la revisión interna, o congelarla y revisar directamente en el servidor.
+5. **Qué hacemos con la nube actual hasta el corte:** **Decidido (26/10/2026):** se suben los cambios de `fase1-coordinacion` y las pruebas con el colegio se hacen en la nube actual hasta que llegue su servidor.
 6. **Fase 2 en el servidor:** el formulario público también saldrá por `encuestas.sfpaula.com`; confirmar que el colegio acepta que el servidor reciba las respuestas de familias desde fuera (es una web pública con protección contra envíos automáticos).
 
 ## Fuentes

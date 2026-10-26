@@ -12,7 +12,7 @@ La especificación completa está en `docs/ESPECIFICACION.md`. Léela antes de e
 2. **Sin datos identificativos:** no se cargan IPs, identificadores de Encuesta Fácil, fechas de respuesta, respuestas abiertas ni **sexo**.
 3. **Las respuestas individuales nunca se leen desde el cliente.** Solo RPC agregadas (`security definer`), que aplican permisos, el mínimo de 5 y la supresión complementaria. Las exportaciones CSV y los PDF salen de esas mismas RPC.
 4. **Nada de datos del colegio ni secretos en git.** Ni ficheros de encuestas, ni resultados agregados reales, ni claves. Todo eso vive en `datos_locales/` (ignorado) y en variables de entorno.
-5. **Sin integración con Microsoft.** Acceso con correo y contraseña. De SharePoint solo se leen ficheros.
+5. **Sin inicio de sesión con Microsoft.** Acceso con correo y contraseña. El correo puede salir por el servidor de correo del colegio (Microsoft 365). De SharePoint solo se leen ficheros.
 6. **Estilo de la intranet CIS-SFP** (`referencia/plantilla-intranet-cis-sfp.html`): bloques A y B copiados tal cual, estilos propios con prefijo `en-`, solo los colores de `:root`, sin peticiones externas.
 7. **Español por defecto**, con todos los textos visibles en un diccionario `I18N.es`.
 8. **Textos sin guiones largos como puntuación.** Rangos con "a" ("de 1 a 6").
