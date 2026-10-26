@@ -156,6 +156,9 @@ Profesores y jefes no tienen cuenta en la Fase 1: reciben su informe en PDF.
 
 ---
 
+### Estado vacío (corrección del 26/10/2026)
+«Todavía no hay resultados cargados» solo aparece cuando el servidor confirma que no hay encuestas del curso. Si deniega el acceso (sesión sin doble factor, usuario desactivado) la pantalla dice «No tienes acceso a estos datos», con un botón para volver a entrar; si falla la conexión, «No se han podido cargar los resultados». Un administrador sin el doble factor no pide ningún dato ni ve ninguna pantalla de resultados.
+
 ### Identificadores de las respuestas (decisión del 26/10/2026)
 Las respuestas y sus valoraciones tienen un identificador aleatorio, no correlativo, para que nadie con acceso a la base de datos pueda deducir el orden en que llegaron. Las de 2025/26 se renumeraron y reescribieron en orden aleatorio (migración 24).
 

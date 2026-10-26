@@ -84,14 +84,12 @@ export async function cuestionarios(colectivo: Colectivo): Promise<Cuestionario[
   }));
 }
 
-/** Colectivos con algún cuestionario cargado en el curso (para el estado vacío). */
+/** Colectivos con algún cuestionario cargado en el curso (para el estado vacío). Lo responde el servidor exigiendo un
+ *  perfil activo y el doble factor del administrador: si no los hay, da error en lugar de una lista vacía. */
 export async function colectivosCargados(): Promise<Colectivo[]> {
-  const { data, error } = await supabase
-    .from("cuestionario")
-    .select("colectivo, curso!inner(nombre)")
-    .eq("curso.nombre", CURSO);
+  const { data, error } = await supabase.rpc("colectivos_cargados", { p_curso: CURSO });
   if (error) throw error;
-  return [...new Set((data ?? []).map((c) => c.colectivo as Colectivo))];
+  return (data ?? []) as Colectivo[];
 }
 
 export interface Bloque {

@@ -3,6 +3,7 @@ import type { Session } from "@supabase/supabase-js";
 import { ProveedorAyuda } from "./componentes/Ayuda";
 import { Migas } from "./componentes/Marco";
 import { ProveedorCargados, SinResultados } from "./componentes/SinResultados";
+import { estadoDeError, hayResultados, nivelAcceso, puedeVerResultados, type EstadoCarga } from "./acceso";
 import { Marco, type Enlace } from "./componentes/Marco";
 import { tipoEnlace } from "./data/cliente";
 import { alCambiarSesion, mfaAdminObligatorio, miPerfil, salir, sesionActual, type Perfil } from "./data/sesion";
@@ -31,7 +32,7 @@ export function App() {
   // Llegada desde el enlace de invitación o de recuperación: primero, la contraseña nueva.
   const [pidiendoClave, setPidiendoClave] = useState(tipoEnlace);
   const [mfaObligatorio, setMfaObligatorio] = useState<boolean | undefined>(undefined);
-  const [cargados, setCargados] = useState<Colectivo[] | undefined>(undefined);
+  const [cargados, setCargados] = useState<EstadoCarga>({ estado: "cargando" });
 
   useEffect(() => {
     const alCambiar = () => { setHash(window.location.hash); document.getElementById("app")?.focus(); };
@@ -50,11 +51,18 @@ export function App() {
     mfaAdminObligatorio().then(setMfaObligatorio);
   }, [sesion]);
 
-  // Colectivos con resultados cargados en el curso (estado vacío de las pantallas).
-  const listo = !!perfil?.activo;
+  // Colectivos con resultados cargados en el curso (estado vacío de las pantallas). Solo cuando la sesión puede ver
+  // resultados: un administrador, después del doble factor. Se vuelve a preguntar cuando eso cambia (al pasar el código);
+  // antes se preguntaba con la sesión todavía sin verificar y la respuesta vacía se quedaba como «no hay resultados».
+  const listo = puedeVerResultados(perfil?.rol, perfil?.activo, mfaObligatorio, nivelAcceso(sesion?.access_token));
   useEffect(() => {
-    if (listo) colectivosCargados().then(setCargados).catch(() => setCargados(undefined));
-  }, [listo]);
+    if (!listo) { setCargados({ estado: "cargando" }); return; }
+    let vigente = true;
+    colectivosCargados()
+      .then((c) => vigente && setCargados({ estado: "listo", colectivos: c }))
+      .catch((e) => vigente && setCargados(estadoDeError(e)));
+    return () => { vigente = false; };
+  }, [listo, sesion?.user.id]);
 
   if (sesion === undefined || (sesion && (perfil === undefined || mfaObligatorio === undefined))) {
     return <Marco ruta="" enlaces={[]}><div className="page"><p className="en-cargando">{t.cargando}</p></div></Marco>;
@@ -88,7 +96,7 @@ export function App() {
   const enlaces: Enlace[] = menu(perfil.rol).map((s) => ({ ruta: s, texto: TEXTO_MENU[s] }));
 
   const visibles: Colectivo[] = perfil.rol === "coordinacion" ? ["alumnos", "familias"] : ["alumnos", "familias", "personal"];
-  const hay = (...c: Colectivo[]) => cargados === undefined || c.some((x) => cargados.includes(x));
+  const hay = (...c: Colectivo[]) => hayResultados(cargados, c);
   const vacia = (titulo: string, colectivo?: Colectivo) => (
     <div className="page"><Migas actual={titulo} /><h1>{titulo}</h1><SinResultados colectivo={colectivo} /></div>
   );
@@ -104,14 +112,4 @@ export function App() {
       <ProveedorCargados cargados={cargados}><ProveedorAyuda>{vista}</ProveedorAyuda></ProveedorCargados>
     </Marco>
   );
-}
-
-/** Nivel de autenticación del token (aal1 o aal2). El payload va en base64url. */
-function nivelAcceso(token: string): string | null {
-  try {
-    const b64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-    return JSON.parse(atob(b64.padEnd(Math.ceil(b64.length / 4) * 4, "="))).aal ?? null;
-  } catch {
-    return null;
-  }
 }

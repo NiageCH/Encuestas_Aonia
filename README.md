@@ -276,6 +276,7 @@ npm test                                # frontend: navegación y CSV de exporta
 | `10_panel_mejora.sql` | Puntos fuertes y de mejora, comparación por recomendación aislada de cualquier otro filtro, mínimo de 5 y complementaria |
 | `11_exportacion.sql` | Registro de cada exportación (vista, formato y filtros) y quién puede exportar qué |
 | `12_coordinacion_e_ids.sql` | Identificador aleatorio de las respuestas; referencia del colegio en Familias para la coordinación sin poder repartirla ni pedir otra etapa |
+| `13_estado_vacio.sql` | «¿Hay resultados cargados?»: lista vacía solo si de verdad no hay; error (no «sin datos») para un administrador sin doble factor, un usuario desactivado o sin perfil |
 
 Los datos de `supabase/tests/fixtures/datos_ejemplo.psql` son **inventados** y están diseñados para provocar cada caso.
 
