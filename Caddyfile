@@ -25,8 +25,10 @@
 	# Los ficheros de assets llevan huella en el nombre: se pueden guardar en caché.
 	@assets path /assets/*
 	header @assets Cache-Control "public, max-age=31536000, immutable"
-	@pagina path / /index.html
-	header @pagina Cache-Control "no-cache"
+	# Todo lo demás (index.html y los ficheros sin huella) se comprueba en cada visita: tras un
+	# despliegue, el navegador carga la versión nueva sin tener que borrar nada.
+	@sin_huella not path /assets/*
+	header @sin_huella Cache-Control "no-cache"
 
 	file_server
 }

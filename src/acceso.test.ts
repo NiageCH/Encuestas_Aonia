@@ -36,3 +36,17 @@ describe("acceso a los resultados", () => {
     expect(hayResultados({ estado: "listo", colectivos: ["alumnos"] }, ["personal"])).toBe(false);
   });
 });
+
+import { sesionRechazada } from "./acceso";
+
+describe("sesionRechazada", () => {
+  it("cierra la sesión si el servidor la rechaza", () => {
+    expect(sesionRechazada({ status: 401 })).toBe(true);
+    expect(sesionRechazada({ status: 403 })).toBe(true);
+    expect(sesionRechazada({ name: "AuthSessionMissingError" })).toBe(true);
+  });
+  it("no la cierra por un fallo de red o del servidor", () => {
+    expect(sesionRechazada({ name: "AuthRetryableFetchError" })).toBe(false);
+    expect(sesionRechazada({ status: 500 })).toBe(false);
+  });
+});

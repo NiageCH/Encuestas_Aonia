@@ -40,3 +40,8 @@ export function hayResultados(e: EstadoCarga, colectivos: Colectivo[]): boolean 
   if (e.estado === "listo") return colectivos.some((c) => e.colectivos.includes(c));
   return false;
 }
+
+/** El servidor ha respondido y no da la sesión por buena (no es un fallo de red). */
+export function sesionRechazada(error: { status?: number; name?: string }): boolean {
+  return error.name === "AuthSessionMissingError" || (error.status !== undefined && error.status >= 400 && error.status < 500);
+}

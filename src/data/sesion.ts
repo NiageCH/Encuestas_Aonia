@@ -2,6 +2,7 @@
 
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./cliente";
+import { sesionRechazada } from "../acceso";
 
 export type Rol = "administrador" | "direccion" | "coordinacion";
 
@@ -22,8 +23,19 @@ export async function salir(): Promise<void> {
   await supabase.auth.signOut();
 }
 
+/**
+ * Sesión guardada en el navegador, validada con el servidor antes de pedir datos. Si el servidor no la reconoce
+ * (caducada, revocada, usuario desactivado o de otro proyecto), se borra y se vuelve a la pantalla de acceso.
+ * Un fallo de red no cierra la sesión: la pantalla mostrará el error y se podrá reintentar.
+ */
 export async function sesionActual(): Promise<Session | null> {
   const { data } = await supabase.auth.getSession();
+  if (!data.session) return null;
+  const { error } = await supabase.auth.getUser();
+  if (error && sesionRechazada(error)) {
+    await supabase.auth.signOut({ scope: "local" });
+    return null;
+  }
   return data.session;
 }
 
