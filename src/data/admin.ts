@@ -22,6 +22,8 @@ export interface EntradaRegistro {
   fecha: string;
   accion: string;
   usuario: string;
+  /** Quien actuó ya no existe: se muestra con el nombre que tenía al eliminarlo. */
+  usuario_eliminado?: boolean;
   detalle: Record<string, unknown>;
 }
 
@@ -33,6 +35,13 @@ export async function usuarios(): Promise<Usuario[]> {
 
 export async function actualizarUsuario(id: string, rol: Rol, etapa: string | null, activo: boolean): Promise<void> {
   const { error } = await supabase.rpc("admin_actualizar_usuario", { p_id: id, p_rol: rol, p_etapa: etapa, p_activo: activo });
+  if (error) throw new Error(error.message);
+}
+
+/** Elimina la cuenta (perfil, doble factor, sesiones e invitación pendiente). El servidor exige el correo exacto y
+ *  no deja eliminarse a uno mismo ni al último administrador; el registro de actividad conserva su historial. */
+export async function eliminarUsuario(id: string, correo: string): Promise<void> {
+  const { error } = await supabase.rpc("admin_eliminar_usuario", { p_id: id, p_correo: correo });
   if (error) throw new Error(error.message);
 }
 

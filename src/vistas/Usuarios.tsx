@@ -1,10 +1,10 @@
 // Usuarios y registro de actividad (§7.5, mockup 5; estilo de la intranet). Solo
 // administradores: el servidor lo comprueba en cada RPC y en la Edge Function.
 
-import { useEffect, useState, type FormEvent } from "react";
+import { Fragment, useEffect, useState, type FormEvent } from "react";
 import { Migas } from "../componentes/Marco";
 import {
-  actualizarUsuario, invitar, reenviarInvitacion, registro as cargarRegistro, usuarios as cargarUsuarios,
+  actualizarUsuario, eliminarUsuario, invitar, reenviarInvitacion, registro as cargarRegistro, usuarios as cargarUsuarios,
   type EntradaRegistro, type Usuario,
 } from "../data/admin";
 import type { Perfil, Rol } from "../data/sesion";
@@ -104,11 +104,15 @@ function FilaUsuario({ u, yo, accion }: { u: Usuario; yo: boolean; accion: (fn: 
   const [rol, setRol] = useState<Rol>(u.rol);
   const [etapa, setEtapa] = useState<string | null>(u.etapa);
   const [confirmar, setConfirmar] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
+  const [correoEscrito, setCorreoEscrito] = useState("");
+  const coincide = correoEscrito.trim().toLowerCase() === u.correo.toLowerCase();
 
   return (
+    <Fragment>
     <tr className={u.aviso_90_dias ? "en-aviso-fila" : undefined}>
-      <td><strong>{u.nombre}</strong>{yo && <small> · {t.usr_tu}</small>}<br /><small className="en-hint">{u.correo}</small></td>
-      <td>
+      <td data-etiqueta={t.usr_persona}><strong>{u.nombre}</strong>{yo && <small> · {t.usr_tu}</small>}<br /><small className="en-hint">{u.correo}</small></td>
+      <td data-etiqueta={t.usr_rol}>
         {editando ? (
           <span className="en-edicion">
             <span className="en-select"><select aria-label={t.usr_rol} value={rol} onChange={(e) => { const r = e.target.value as Rol; setRol(r); setEtapa(r === "coordinacion" ? etapa ?? "primaria" : null); }}>
@@ -124,10 +128,10 @@ function FilaUsuario({ u, yo, accion }: { u: Usuario; yo: boolean; accion: (fn: 
           <><span className={`en-rol en-rol-${u.rol}`}>{t.roles[u.rol]}</span>{u.etapa && <small> · {t.etapas[u.etapa as keyof typeof t.etapas]}</small>}</>
         )}
       </td>
-      <td><span className={`en-estado en-estado-${u.estado}`}>{u.aviso_90_dias ? t.usr_sin_acceso_90 : t.usr_estados[u.estado]}</span></td>
-      <td>{u.ultimo_acceso ? fechaCorta(u.ultimo_acceso) : <small className="en-hint">{t.usr_invitado(fechaCorta(u.invitado))}</small>}</td>
-      <td>{u.rol === "administrador" ? (u.doble_factor ? t.usr_mfa_si : t.usr_mfa_no) : "·"}</td>
-      <td className="en-acciones">
+      <td data-etiqueta={t.usr_estado}><span className={`en-estado en-estado-${u.estado}`}>{u.aviso_90_dias ? t.usr_sin_acceso_90 : t.usr_estados[u.estado]}</span></td>
+      <td data-etiqueta={t.usr_ultimo}>{u.ultimo_acceso ? fechaCorta(u.ultimo_acceso) : <small className="en-hint">{t.usr_invitado(fechaCorta(u.invitado))}</small>}</td>
+      <td data-etiqueta={t.usr_mfa}>{u.rol === "administrador" ? (u.doble_factor ? t.usr_mfa_si : t.usr_mfa_no) : "·"}</td>
+      <td className="en-acciones"><div className="en-acciones-fila">
         {editando ? (
           <>
             <button type="button" className="btn primary" onClick={async () => {
@@ -152,10 +156,34 @@ function FilaUsuario({ u, yo, accion }: { u: Usuario; yo: boolean; accion: (fn: 
               <button type="button" className="btn" onClick={() => accion(() => reenviarInvitacion(u.id), t.usr_ok_reenviada)}>{t.usr_reenviar}</button>
             )}
             {!yo && <button type="button" className="btn" onClick={() => setConfirmar(true)}>{u.estado === "desactivado" ? t.usr_reactivar : t.usr_desactivar}</button>}
+            {!yo && <button type="button" className="btn en-btn-peligro" onClick={() => { setEliminando(true); setCorreoEscrito(""); }}>{t.usr_eliminar}</button>}
           </>
         )}
-      </td>
+      </div></td>
     </tr>
+    {eliminando && (
+      <tr className="en-eliminar-fila">
+        <td colSpan={6}>
+          <form className="en-eliminar" onSubmit={async (e) => {
+            e.preventDefault();
+            if (!coincide) return;
+            await accion(() => eliminarUsuario(u.id, correoEscrito), t.usr_ok_eliminado(u.nombre));
+            setEliminando(false);
+          }}>
+            <strong>{t.usr_eliminar_titulo(u.nombre)}</strong>
+            <p>{t.usr_eliminar_texto}</p>
+            <label>{t.usr_eliminar_escribe(u.correo)}
+              <input type="email" value={correoEscrito} onChange={(e) => setCorreoEscrito(e.target.value)} autoComplete="off" spellCheck={false} />
+            </label>
+            <div className="en-acciones-fila">
+              <button type="submit" className="btn en-btn-peligro-lleno" disabled={!coincide}>{t.usr_eliminar_confirmar}</button>
+              <button type="button" className="btn" onClick={() => setEliminando(false)}>{t.usr_cancelar}</button>
+            </div>
+          </form>
+        </td>
+      </tr>
+    )}
+    </Fragment>
   );
 }
 
@@ -213,11 +241,14 @@ function fechaHora(iso: string) {
 function describir(e: EntradaRegistro): string {
   const d = e.detalle as Record<string, string | boolean | null | Record<string, string>>;
   const quien = String(d.nombre ?? "");
+  const autor = e.usuario_eliminado ? `${e.usuario} (${t.usr_eliminado_marca})` : e.usuario;
+  e = { ...e, usuario: autor };
   switch (e.accion) {
     case "invitacion": return t.reg_invitacion(e.usuario, quien, t.roles[d.rol as Rol] ?? String(d.rol));
     case "reenvio_invitacion": return t.reg_reenvio(e.usuario, quien);
     case "desactivacion": return t.reg_desactivacion(e.usuario, quien);
     case "reactivacion": return t.reg_reactivacion(e.usuario, quien);
+    case "eliminacion": return t.reg_eliminacion(e.usuario, quien, String(d.correo ?? ""));
     case "cambio_rol": {
       const despues = d.despues as Record<string, string>;
       return t.reg_cambio_rol(e.usuario, quien, t.roles[despues.rol as Rol] ?? despues.rol);

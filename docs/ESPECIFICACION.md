@@ -157,7 +157,7 @@ Profesores y jefes no tienen cuenta en la Fase 1: reciben su informe en PDF.
 ---
 
 ### Estado vacío (corrección del 26/10/2026)
-«Todavía no hay resultados cargados» solo aparece cuando el servidor confirma que no hay encuestas del curso. Si deniega el acceso (sesión sin doble factor, usuario desactivado) la pantalla dice «No tienes acceso a estos datos», con un botón para volver a entrar; si falla la conexión, «No se han podido cargar los resultados». Un administrador sin el doble factor no pide ningún dato ni ve ninguna pantalla de resultados.
+«Todavía no hay resultados cargados» solo aparece cuando el servidor confirma que no hay encuestas del curso. Si deniega el acceso (sesión sin doble factor, usuario desactivado) la pantalla dice «No tienes acceso a estos datos», con un botón para volver a entrar; si falla la conexión, «No se han podido cargar los resultados». Un administrador sin el doble factor no pide ningún dato ni ve ninguna pantalla de resultados. Al abrir la web, la sesión guardada se valida con el servidor antes de pedir datos (y se renueva si se guardó con otra versión de la web); si el servidor no la reconoce, se vuelve a la pantalla de acceso.
 
 ### Identificadores de las respuestas (decisión del 26/10/2026)
 Las respuestas y sus valoraciones tienen un identificador aleatorio, no correlativo, para que nadie con acceso a la base de datos pueda deducir el orden en que llegaron. Las de 2025/26 se renumeraron y reescribieron en orden aleatorio (migración 24).
@@ -271,7 +271,8 @@ Funciones del mockup `referencia/mockups/Mockup_Encuestas_5_admin_usuarios.png`;
 - **Inicio de sesión con Microsoft (futuro, no en la Fase 1):** el colegio propone entrar con su cuenta de Microsoft (Entra ID) desde la intranet. Para no cerrarlo, toda la autenticación del frontend vive en `src/data/sesion.ts`, los perfiles se enlazan por el identificador de usuario de Supabase Auth y el correo, y los permisos no dependen de cómo se entra. Añadirlo será activar el proveedor de Microsoft en Supabase Auth y un botón en la pantalla de acceso, manteniendo la invitación previa.
 - **Caducidad del enlace:** Supabase limita la validez de los enlaces de correo (como máximo 24 horas, compruébalo en la versión actual). Se usa el máximo permitido y el botón "Reenviar invitación". El texto de la interfaz dirá la caducidad real, no 72 horas.
 - Desactivar, reactivar y reenviar invitación. Último acceso y aviso a los 90 días sin entrar.
-- Registro de actividad, escrito por el servidor: invitaciones, cambios de rol, desactivaciones, exportaciones e informes generados.
+- Eliminar (26/10/2026): borra la cuenta, el perfil, el doble factor, las sesiones y la invitación pendiente; se confirma escribiendo el correo del usuario. El registro de actividad conserva sus acciones pasadas con el nombre y el correo que tenía y anota quién lo eliminó. Solo administración; nadie se elimina a sí mismo ni al último administrador activo. Para dejar de entrar durante un tiempo, «Desactivar».
+- Registro de actividad, escrito por el servidor: invitaciones, cambios de rol, desactivaciones, eliminaciones, exportaciones e informes generados.
 - Doble factor (TOTP) obligatorio para administradores. Solo en la base de datos local de desarrollo puede desactivarse (`app.mfa_admin_obligatorio = 'off'`, ver README); en producción no existe ese ajuste.
 - Un usuario desactivado puede autenticarse, pero no obtiene ningún resultado (todas las RPC lo rechazan) y la aplicación le muestra que no tiene acceso.
 - Reglas: un administrador no puede desactivarse ni quitarse el rol a sí mismo, y siempre queda al menos un administrador activo.

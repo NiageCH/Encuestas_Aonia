@@ -17,6 +17,7 @@ export interface Perfil {
 export async function entrar(correo: string, contrasena: string): Promise<void> {
   const { error } = await supabase.auth.signInWithPassword({ email: correo, password: contrasena });
   if (error) throw error;
+  guardarVersion();
 }
 
 export async function salir(): Promise<void> {
@@ -28,19 +29,55 @@ export async function salir(): Promise<void> {
  * (caducada, revocada, usuario desactivado o de otro proyecto), se borra y se vuelve a la pantalla de acceso.
  * Un fallo de red no cierra la sesión: la pantalla mostrará el error y se podrá reintentar.
  */
-export async function sesionActual(): Promise<Session | null> {
+export function sesionActual(): Promise<Session | null> {
+  validacion ??= validarSesionGuardada().finally(() => { validada = true; });
+  return validacion;
+}
+
+// Mientras se valida la sesión guardada, los avisos de Supabase se ignoran: al recuperarla emite la sesión guardada
+// (como inicial y como «iniciada») y, si se usara, se pedirían datos antes de comprobarla con el servidor.
+const CLAVE_VERSION = "encuestas.version_web";
+let validacion: Promise<Session | null> | null = null;
+let validada = false;
+const VERSION_AL_ABRIR = versionGuardada();
+
+async function validarSesionGuardada(): Promise<Session | null> {
   const { data } = await supabase.auth.getSession();
   if (!data.session) return null;
-  const { error } = await supabase.auth.getUser();
-  if (error && sesionRechazada(error)) {
-    await supabase.auth.signOut({ scope: "local" });
-    return null;
+  let sesion = data.session;
+  // Sesión guardada con otra versión de la web: se renueva con el servidor (token y nivel de acceso nuevos) antes de
+  // pedir datos. Si el servidor la rechaza, se borra.
+  if (VERSION_AL_ABRIR !== __VERSION_WEB__) {
+    const { data: renovada, error } = await supabase.auth.refreshSession();
+    if (error && sesionRechazada(error)) return cerrarLocal();
+    if (renovada.session) sesion = renovada.session;
   }
-  return data.session;
+  const { error } = await supabase.auth.getUser();
+  if (error && sesionRechazada(error)) return cerrarLocal();
+  guardarVersion();
+  return sesion;
+}
+
+async function cerrarLocal(): Promise<null> {
+  await supabase.auth.signOut({ scope: "local" });
+  return null;
+}
+
+// Versión de la web con la que se guardó la sesión. Si el navegador no deja guardar, se valida siempre.
+function versionGuardada(): string | null {
+  if (typeof localStorage === "undefined") return null;
+  try { return localStorage.getItem(CLAVE_VERSION); } catch { return null; }
+}
+function guardarVersion(): void {
+  try { localStorage.setItem(CLAVE_VERSION, __VERSION_WEB__); } catch { /* sin almacenamiento: se valida en cada apertura */ }
 }
 
 export function alCambiarSesion(fn: (s: Session | null) => void): () => void {
-  const { data } = supabase.auth.onAuthStateChange((_evento, s) => fn(s));
+  // La sesión inicial la da sesionActual(), ya validada.
+  const { data } = supabase.auth.onAuthStateChange((evento, s) => {
+    if (!validada || evento === "INITIAL_SESSION") return;
+    fn(s);
+  });
   return () => data.subscription.unsubscribe();
 }
 
