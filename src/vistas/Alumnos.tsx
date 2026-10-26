@@ -156,12 +156,12 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
 
       <Exportar preparar={preparar} disabled={!datos} />
 
-      {error && <p className="notice">{error}</p>}
+      {error && <p className="notice en-alerta en-alerta-neg" role="alert">{error}</p>}
       {!datos && !error && cuestionario && <p className="en-cargando">{t.cargando}</p>}
       {datos && (
         <>
           {grupo && datos.personas.suprimido && (
-            <p className="notice">
+            <p className="notice en-alerta">
               {textoParteOculta(datos.personas.motivo, CURSO, "alumnos", grupo)} {t.alu_ver_referencia}
             </p>
           )}
@@ -213,7 +213,7 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
           <p className="sec-lead">{t.recomendacion_lead(escalaRec)}</p>
           <Recomendacion fila={datos.recomendacion} desde={actual?.etapa === "primaria" ? 1 : 0} />
 
-          <p className="notice" style={{ marginTop: "1.4rem" }}>{t.leyenda_oculto} {t.aviso_cierre}</p>
+          <p className="notice en-alerta" style={{ marginTop: "1.4rem" }}>{t.leyenda_oculto} {t.aviso_cierre}</p>
         </>
       )}
     </div>

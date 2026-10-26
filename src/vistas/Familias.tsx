@@ -168,17 +168,17 @@ export function Familias({ perfil }: { perfil: Perfil }) {
 
       <Exportar preparar={preparar} disabled={!datos} />
 
-      {error && <p className="notice">{error}</p>}
+      {error && <p className="notice en-alerta en-alerta-neg" role="alert">{error}</p>}
       {!datos && !error && <p className="en-cargando">{t.cargando}</p>}
       {datos && (
         <>
           {datos.personas.suprimido && etapa && (
-            <p className="notice">
+            <p className="notice en-alerta">
               {textoParteOculta(datos.personas.motivo, CURSO, "familias", t.etapas[etapa])}
               {datos.referencia ? ` ${t.fam_ver_referencia}` : ""}
             </p>
           )}
-          {datos.personas.suprimido && !etapa && <p className="notice">{t.fam_etapa_oculta}</p>}
+          {datos.personas.suprimido && !etapa && <p className="notice en-alerta">{t.fam_etapa_oculta}</p>}
           {datos.referencia && fija && (
             <section className="card en-referencia">
               <h3>{t.fam_referencia}</h3>
@@ -264,7 +264,7 @@ export function Familias({ perfil }: { perfil: Perfil }) {
             </>
           )}
 
-          <p className="notice" style={{ marginTop: "1.4rem" }}>{t.fam_aviso_etapas} {t.leyenda_oculto}</p>
+          <p className="notice en-alerta" style={{ marginTop: "1.4rem" }}>{t.fam_aviso_etapas} {t.leyenda_oculto}</p>
         </>
       )}
     </div>

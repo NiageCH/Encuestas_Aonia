@@ -84,7 +84,7 @@ function NivelEquipos() {
     <>
       <h2 className="section-title">{t.ipp_nivel.equipos}</h2>
       <p className="sec-lead">{t.ipp_equipos_lead}</p>
-      {error && <p className="notice">{error}</p>}
+      {error && <p className="notice en-alerta en-alerta-neg" role="alert">{error}</p>}
       {grupos && (
         <div className="en-prof">
           <div className="card en-noprint">
@@ -143,8 +143,8 @@ function NivelDepartamentos() {
     <>
       <h2 className="section-title">{t.ipp_nivel.departamentos}</h2>
       <p className="sec-lead">{t.ipp_departamentos_lead}</p>
-      {error && <p className="notice">{error}</p>}
-      {jefes && jefes.length === 0 && <p className="notice">{t.jefe_sin_jefes}</p>}
+      {error && <p className="notice en-alerta en-alerta-neg" role="alert">{error}</p>}
+      {jefes && jefes.length === 0 && <p className="notice en-alerta">{t.jefe_sin_jefes}</p>}
       {jefes && jefes.length > 0 && (
         <div className="en-prof">
           <div className="card en-noprint">
@@ -169,7 +169,7 @@ function InformeDeJefe({ jefe }: { jefe: Jefe }) {
   const [inf, setInf] = useState<InformeJefe | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => { informeJefe(jefe.id).then(setInf).catch(() => setError(t.error_datos)); }, [jefe.id]);
-  if (error) return <p className="notice">{error}</p>;
+  if (error) return <p className="notice en-alerta en-alerta-neg" role="alert">{error}</p>;
   if (!inf) return <p className="en-cargando">{t.cargando}</p>;
   return (
     <>
@@ -182,7 +182,7 @@ function InformeDeJefe({ jefe }: { jefe: Jefe }) {
           <AlumnosDepartamento titulo={tituloAlumnosJefe(inf.alumnos.departamentos)} m={inf.alumnos.media} />
         </div>
       </div>
-      {inf.reuniones.length === 0 && <p className="notice" style={{ marginTop: ".9rem" }}>{t.jefe_sin_reuniones}</p>}
+      {inf.reuniones.length === 0 && <p className="notice en-alerta" style={{ marginTop: ".9rem" }}>{t.jefe_sin_reuniones}</p>}
       {inf.reuniones.map((r) => (
         <DatosSeccion key={r.unidades.join("-")} titulo={tituloReuniones(r)} subtitulo={t.resp_departamento_sub} etiquetas={t.escala_acuerdo_dep}
                       nota={notaReuniones(r, inf.departamentos, inf.reuniones.length)} datos={r} />
@@ -262,7 +262,7 @@ function DatosSeccion({ titulo, subtitulo, nota, etiquetas, datos }: {
           <div className="d">{tot.suprimido ? lineasOculto(tot) : t.tip_personas(f.recuento(tot.n!))}</div>
         </div>
       </div>
-      {nota && <p className="notice" style={{ marginTop: ".9rem" }}>{nota}</p>}
+      {nota && <p className="notice en-alerta" style={{ marginTop: ".9rem" }}>{nota}</p>}
       {!tot.suprimido && (
         <div style={{ marginTop: ".9rem" }}>
           <LeyendaAcuerdo etiquetas={etiquetas} />

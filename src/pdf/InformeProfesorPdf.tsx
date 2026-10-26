@@ -22,7 +22,7 @@ const s = StyleSheet.create({
   fila: { flexDirection: "row", alignItems: "center", paddingVertical: 4, borderBottomWidth: 0.5, borderBottomColor: C.line },
   colEtiqueta: { flex: 1.6, paddingRight: 6 },
   colBarra: { flex: 1, height: 7, backgroundColor: C.bg, borderRadius: 4 },
-  relleno: { height: 7, backgroundColor: C.brand, borderRadius: 4 },
+  relleno: { height: 7, backgroundColor: C.grafico1, borderRadius: 4 },
   colValor: { width: 46, textAlign: "right", fontWeight: 700 },
   colN: { width: 40, textAlign: "right", color: C.muted, fontSize: 8 },
   thFila: { flexDirection: "row", paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: C.navy },

@@ -65,9 +65,9 @@ export function Barra({ etiqueta, fila, referencia }: { etiqueta: string; fila: 
 /** Reparto de la recomendación en tres tramos, en el orden del texto: sí, neutral y no. */
 export function tramosRecomendacion(fila: Fila) {
   return [
-    { clase: "en-p2", corto: t.rec_si, rango: t.rango_promotores, pct: fila.promotores_pct ?? 0 },
-    { clase: "en-neu", corto: t.rec_neutral, rango: t.rango_neutros, pct: fila.neutros_pct ?? 0 },
-    { clase: "en-n3", corto: t.rec_no, rango: t.rango_detractores, pct: fila.detractores_pct ?? 0 },
+    { clase: "en-rec-si", corto: t.rec_si, rango: t.rango_promotores, pct: fila.promotores_pct ?? 0 },
+    { clase: "en-rec-neutral", corto: t.rec_neutral, rango: t.rango_neutros, pct: fila.neutros_pct ?? 0 },
+    { clase: "en-rec-no", corto: t.rec_no, rango: t.rango_detractores, pct: fila.detractores_pct ?? 0 },
   ];
 }
 
@@ -82,8 +82,10 @@ export function BarraReparto({ fila, fina }: { fila: Fila; fina?: boolean }) {
   return (
     <div className={`en-apilada${fina ? " fina" : ""}`}>
       {tramosRecomendacion(fila).map((x) => (
-        <span key={x.clase} className={`${x.clase} en-con-ayuda`} style={{ width: `${x.pct}%` }}
-              {...ayuda([`${f.porcentaje(x.pct)} ${x.corto}`, t.tip_de_respuestas(f.recuento(Math.round((x.pct * fila.n!) / 100)), f.recuento(fila.n!)), x.rango])} />
+        <span key={x.clase} className={`${x.clase} en-cifra en-con-ayuda`} style={{ width: `${x.pct}%` }}
+              {...ayuda([`${f.porcentaje(x.pct)} ${x.corto}`, t.tip_de_respuestas(f.recuento(Math.round((x.pct * fila.n!) / 100)), f.recuento(fila.n!)), x.rango])}>
+          {!fina && x.pct >= 8 ? f.porcentaje(x.pct) : null}
+        </span>
       ))}
     </div>
   );
@@ -121,7 +123,7 @@ export function Recomendacion({ fila, desde }: { fila: Fila; desde: number }) {
     .filter((d) => d.v >= desde)
     .sort((a, b) => a.v - b.v);
   const max = Math.max(1, ...dist.map((d) => d.n));
-  const clase = (v: number) => (v <= 6 ? "en-n3" : v <= 8 ? "en-neu" : "en-p2");
+  const clase = (v: number) => (v <= 6 ? "en-rec-no" : v <= 8 ? "en-rec-neutral" : "en-rec-si");
   const tramo = (v: number) => (v <= 6 ? t.rec_no : v <= 8 ? t.rec_neutral : t.rec_si);
   return (
     <div className="en-two">
@@ -160,8 +162,9 @@ export function Recomendacion({ fila, desde }: { fila: Fila; desde: number }) {
   );
 }
 
-const TRAMOS_DESACUERDO = ["en-n3", "en-n2", "en-n1"];   // 1, 2, 3
-const TRAMOS_ACUERDO = ["en-p1", "en-p2", "en-p3"];       // 4, 5, 6
+// Tonos de la paleta (src/paleta.ts): 1 a 3 en negativo, más intenso en el 1; 4 a 6 en positivo, más intenso en el 6.
+const TRAMOS_DESACUERDO = ["en-esc-1", "en-esc-2", "en-esc-3"];   // 1, 2, 3
+const TRAMOS_ACUERDO = ["en-esc-4", "en-esc-5", "en-esc-6"];       // 4, 5, 6
 
 /** Una pregunta de 1 a 6 con su distribución divergente: desacuerdo a la izquierda (1 a 3) y
  *  acuerdo a la derecha (4 a 6). */
@@ -180,7 +183,9 @@ export function FilaPregunta({ texto, fila, etiquetas }: { texto: string; fila: 
     const c = dist[v - 1];
     if (!c) return null;
     return (
-      <span key={v} className={`s ${clase}`} style={{ width: `${(100 * c) / n}%` }} />
+      <span key={v} className={`s ${clase} en-cifra`} style={{ width: `${(100 * c) / n}%` }}>
+        {(100 * c) / n >= 9 ? Math.round((100 * c) / n) : null}
+      </span>
     );
   };
   const lineas = [
@@ -193,7 +198,7 @@ export function FilaPregunta({ texto, fila, etiquetas }: { texto: string; fila: 
     <div className="en-item en-con-ayuda" {...ayuda(lineas)}>
       <span>{texto}</span>
       <span className="en-div" aria-hidden="true">
-        <span className="h l">{[3, 2, 1].map((v) => tramo(v, TRAMOS_DESACUERDO[v - 1]))}</span>
+        <span className="h l">{[1, 2, 3].map((v) => tramo(v, TRAMOS_DESACUERDO[v - 1]))}</span>
         <span className="m" />
         <span className="h r">{[4, 5, 6].map((v) => tramo(v, TRAMOS_ACUERDO[v - 4]))}</span>
       </span>
@@ -218,6 +223,7 @@ export function LeyendaAcuerdo({ etiquetas }: { etiquetas: string[] }) {
   return (
     <div className="en-legend">
       {etiquetas.map((e, i) => <span key={i}><i className={clases[i]} />{i + 1} · {e}</span>)}
+      <span className="en-hint-cifras">{t.leyenda_cifras}</span>
     </div>
   );
 }

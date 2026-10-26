@@ -53,8 +53,8 @@ export function Usuarios({ perfil }: { perfil: Perfil }) {
       <p className="eyebrow">{t.usr_eyebrow}</p>
       <h1>👥 {t.usr_titulo}</h1>
       <p className="lead">{t.usr_lead}</p>
-      {aviso && <p className="notice" role="status">{aviso}</p>}
-      {error && <p className="notice en-error" role="alert">{error}</p>}
+      {aviso && <p className="notice en-alerta en-alerta-pos" role="status">{aviso}</p>}
+      {error && <p className="notice en-alerta en-alerta-neg" role="alert">{error}</p>}
       {!lista && !error && <p className="en-cargando">{t.cargando}</p>}
       {lista && (
         <>
@@ -226,7 +226,7 @@ function Invitar({ accion }: { accion: (fn: () => Promise<void>, ok: string) => 
         </label>
       )}
       <button className="btn primary" type="submit" disabled={enviando}>{t.usr_enviar}</button>
-      <p className="notice" style={{ margin: 0 }}>{t.usr_caducidad}</p>
+      <p className="notice en-alerta" style={{ margin: 0 }}>{t.usr_caducidad}</p>
     </form>
   );
 }

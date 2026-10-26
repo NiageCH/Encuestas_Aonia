@@ -19,7 +19,8 @@ import {
 import * as f from "../formato";
 import { t } from "../i18n";
 
-const CLASE: Record<Colectivo, string> = { alumnos: "en-p1", familias: "en-p2", personal: "en-p3" };
+// Series de la paleta (src/paleta.ts), en orden: alumnos, familias y personal.
+const CLASE: Record<Colectivo, string> = { alumnos: "en-serie-1", familias: "en-serie-2", personal: "en-serie-3" };
 
 interface Indicadores { personas: Fila; principal: Fila; etiquetaPrincipal: string }
 interface FilaRec { etiqueta: string; fila: Fila; escala: string }
@@ -164,7 +165,7 @@ export function Panel({ perfil }: { perfil: Perfil }) {
 
       <Exportar preparar={preparar} disabled={!rec || !comunes} />
 
-      {error && <p className="notice">{error}</p>}
+      {error && <p className="notice en-alerta en-alerta-neg" role="alert">{error}</p>}
       {!rec && !error && <p className="en-cargando">{t.cargando}</p>}
       {rec && comunes && (
         <>
@@ -226,7 +227,7 @@ export function Panel({ perfil }: { perfil: Perfil }) {
                     {dif[c]!.map((b) => <BloqueDif key={b.bloque} b={b} />)}
                   </div>
                 ))}
-                <p className="notice" style={{ marginTop: ".8rem" }}>{t.panel_dif_nota}</p>
+                <p className="notice en-alerta" style={{ marginTop: ".8rem" }}>{t.panel_dif_nota}</p>
               </div>
             </>
           )}
@@ -264,9 +265,9 @@ export function Panel({ perfil }: { perfil: Perfil }) {
               </div>
             ))}
           </div>
-          <p className="notice">{t.panel_menos_nota}</p>
+          <p className="notice en-alerta">{t.panel_menos_nota}</p>
 
-          <p className="notice" style={{ marginTop: "1.4rem" }}>{t.leyenda_oculto} {t.aviso_cierre}</p>
+          <p className="notice en-alerta" style={{ marginTop: "1.4rem" }}>{t.leyenda_oculto} {t.aviso_cierre}</p>
         </>
       )}
     </div>
@@ -305,6 +306,7 @@ function PreguntaComparada({ comun, colectivos }: { comun: Comun; colectivos: Co
             <div key={c} className="en-comun-fila en-con-ayuda"
                  {...ayuda(v.suprimido ? [comun.pregunta.texto, t.panel_colectivo[c], lineasOculto(v)]
                    : [comun.pregunta.texto, t.panel_colectivo[c], t.tip_media(f.media(v.media!)), t.tip_valoraciones(f.recuento(v.n!))])}>
+              <span className="en-serie-etq">{t.panel_colectivo[c]}</span>
               <span className="en-track" aria-hidden="true"><span className={`en-fill ${CLASE[c]}`} style={{ width: `${ancho}%` }} /></span>
               <span className="en-val">{v.suprimido ? <Oculto fila={v} /> : f.media(v.media!)}</span>
             </div>
@@ -340,7 +342,8 @@ function ValoradoComparado({ valorado, textos, colectivos }: {
               return (
                 <div key={c} className="en-comun-fila en-con-ayuda"
                      {...ayuda([textos[codigo] ?? codigo, t.panel_colectivo[c], f.porcentaje(p), t.tip_eligen(f.recuento(o?.n ?? 0), f.recuento(valorado[c]!.n!))])}>
-                  <span className="en-track" aria-hidden="true"><span className={`en-fill ${CLASE[c]}`} style={{ width: `${p}%` }} /></span>
+                  <span className="en-serie-etq">{t.panel_colectivo[c]}</span>
+              <span className="en-track" aria-hidden="true"><span className={`en-fill ${CLASE[c]}`} style={{ width: `${p}%` }} /></span>
                   <span className="en-val">{f.porcentaje(p)}</span>
                 </div>
               );
@@ -380,6 +383,7 @@ function BloqueDif({ b }: { b: BloqueComparado }) {
       <div className="en-comun-barras">
         {([["no_recomienda", "en-dif-no"], ["recomienda", "en-dif-si"]] as const).map(([k, clase]) => (
           <div key={k} className="en-comun-fila">
+            <span className="en-serie-etq">{k === "recomienda" ? t.panel_dif_si_corto : t.panel_dif_no_corto}</span>
             <span className="en-track" aria-hidden="true"><span className={`en-fill ${clase}`} style={{ width: `${ancho(b[k])}%` }} /></span>
             <span className="en-val">{b[k].suprimido ? <Oculto fila={b[k]} /> : f.media(b[k].media!)}</span>
           </div>

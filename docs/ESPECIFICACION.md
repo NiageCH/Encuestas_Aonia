@@ -310,11 +310,13 @@ Referencia: `referencia/plantilla-intranet-cis-sfp.html`. Ábrela en el navegado
   5. secciones (`h2.section-title` + `.sec-lead`);
   6. `.notice`.
 - **Componentes:** `.card`, `.btn`, `.btn.primary`, `.chips`, `.chip.on`, `.notice`, `.tbl-wrap` con `table.doc-table` y `.tiles`.
-- **Colores de los gráficos:**
-  - desacuerdo en tonos de `--warn` mezclados con blanco;
-  - acuerdo en `--sky`, `--brand` y `--navy`;
-  - neutros en `--muted` mezclado con blanco.
-  Ya están resueltos en el prototipo con las clases `en-n1..3`, `en-p1..3` y `en-c1..7`.
+- **Paleta de gráficos, indicadores y alertas** (decisión del 26/10/2026; el resto del estilo sigue siendo el de la intranet). Se define en un único sitio, `src/paleta.ts`: la web la recibe como variables `--en-*` en `:root` y los PDF la importan de ahí.
+  - Gráficos (series y categorías), en este orden: azul petróleo `#376878` (principal), verde salvia `#8DA9A5`, lavanda grisáceo `#9997B8` y azul acero `#597D9A`. Medias y barras simples, en petróleo. Comparaciones entre colectivos o series: los cuatro colores en ese orden (alumnos, familias, personal; «no recomendarían» y «recomendarían»).
+  - Indicadores: positivo `#397F78`, negativo `#B66579`, neutro `#71869A`.
+  - Escalas: de 1 a 6, el 1, 2 y 3 en tonos de negativo (más intenso en el 1) y el 4, 5 y 6 en tonos de positivo (más intenso en el 6); NS/NC en gris. Las demás escalas, en proporción (con número impar de valores, el central en neutro). La barra divergente va del 1 (a la izquierda) al 6 (a la derecha).
+  - Recomendación: no en negativo, neutral en neutro y sí en positivo.
+  - Contraste: solo petróleo y positivo se usan como color de texto sobre blanco. Las alertas llevan el color en el borde, el icono o un fondo suave, con el texto en oscuro (`.notice.en-alerta`: neutro para avisos, `en-alerta-neg` para errores, `en-alerta-pos` para confirmaciones). Sobre cada tono, el texto es blanco u oscuro según el contraste. Salvia y lavanda nunca van como único elemento sin etiqueta.
+  - Cifras o etiquetas visibles en todos los gráficos, para no depender solo del color: medias en las barras, porcentajes dentro de los tramos que caben, número de respuestas sobre las columnas y leyendas.
 - **Responsive:** móvil, iPad y escritorio, con los puntos de corte de la plantilla (1260, 900, 620 y 600 px).
 - **Accesibilidad:** botones y enlaces reales, foco visible, `alt` en las imágenes y etiquetas visibles en los formularios.
 - **PDF:** mismo estilo (logo del colegio, colores y tipografía) y generación en lote. La librería es libre.

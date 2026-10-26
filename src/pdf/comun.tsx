@@ -9,6 +9,7 @@ import r400 from "../recursos/pdf/Raleway-400.ttf";
 import r600 from "../recursos/pdf/Raleway-600.ttf";
 import r700 from "../recursos/pdf/Raleway-700.ttf";
 import r800 from "../recursos/pdf/Raleway-800.ttf";
+import { ESCALA_1_6, PALETA, aclarar, textoSobre } from "../paleta";
 
 Font.register({
   family: "Raleway",
@@ -19,12 +20,14 @@ Font.register({
 });
 Font.registerHyphenationCallback((palabra) => [palabra]);
 
-// Copia literal de las variables de :root de la intranet (el PDF no lee CSS), y las mezclas
-// con blanco de las clases en-n1..3 y en-p1 (color-mix calculado).
+// Copia literal de las variables de :root de la intranet (el PDF no lee CSS) y, para gráficos, indicadores y alertas,
+// la paleta de src/paleta.ts (el mismo sitio del que la toma la web).
 export const C = {
   navy: "#1a2c4a", brand: "#0063a3", sky: "#4495ce", muted: "#5b6573", line: "#dde3ea", soft: "#eaf0f6", bg: "#f2f4f7",
-  ink: "#1a2c4a", warn: "#b26a00",
-  n3: "#b26a00", n2: "#d1a666", n1: "#e8d2b3", p1: "#a2cae6", p2: "#0063a3", p3: "#1a2c4a",
+  ink: "#1a2c4a",
+  grafico1: PALETA.grafico1, neutro: PALETA.neutro, neutroSuave: aclarar(PALETA.neutro, 10),
+  escala: ESCALA_1_6,                                 // 1 a 6
+  escalaTexto: ESCALA_1_6.map(textoSobre),
 };
 
 export const base = StyleSheet.create({
@@ -35,13 +38,13 @@ export const base = StyleSheet.create({
   cabTitulo: { fontSize: 11, fontWeight: 700, color: "#ffffff" },
   cabSub: { fontSize: 8.5, color: "#b9c6d8", marginTop: 2 },
   cuerpo: { paddingHorizontal: 36, paddingTop: 18 },
-  validacion: { backgroundColor: "#fff3d6", color: C.warn, fontSize: 8.5, fontWeight: 700, textAlign: "center", paddingVertical: 5, paddingHorizontal: 36 },
+  validacion: { backgroundColor: C.neutroSuave, borderBottomWidth: 2, borderBottomColor: C.neutro, color: C.ink, fontSize: 8.5, fontWeight: 700, textAlign: "center", paddingVertical: 5, paddingHorizontal: 36 },
   eyebrow: { fontSize: 8, fontWeight: 800, color: C.brand, textTransform: "uppercase", letterSpacing: 0.6 },
   titulo: { fontSize: 20, fontWeight: 800, color: C.navy, marginTop: 3 },
   muted: { color: C.muted },
   h2: { fontSize: 12, fontWeight: 700, color: C.navy, marginTop: 18, marginBottom: 2 },
   lead: { fontSize: 8.5, color: C.muted, marginBottom: 6 },
-  aviso: { marginTop: 10, padding: 8, borderRadius: 6, backgroundColor: C.bg, fontSize: 8.5, color: C.muted },
+  aviso: { marginTop: 10, padding: 8, borderRadius: 6, backgroundColor: C.neutroSuave, borderLeftWidth: 3, borderLeftColor: C.neutro, fontSize: 8.5, color: C.ink },
   nota: { fontSize: 7.5, color: C.muted, marginTop: 4, lineHeight: 1.4 },
   oculto: { color: C.muted, fontWeight: 600, fontSize: 8 },
   pie: { position: "absolute", bottom: 18, left: 36, right: 36, flexDirection: "row", justifyContent: "space-between", fontSize: 7, color: C.muted, borderTopWidth: 0.5, borderTopColor: C.line, paddingTop: 6 },

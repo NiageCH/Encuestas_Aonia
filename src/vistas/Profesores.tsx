@@ -33,8 +33,8 @@ export function InformesProfesor({ perfil }: { perfil: Perfil }) {
     <section>
       <h2 className="section-title">{t.prof_titulo}</h2>
       <p className="sec-lead">{perfil.rol === "coordinacion" ? t.prof_lead_coord : t.prof_lead}</p>
-      {error && <p className="notice">{error}</p>}
-      {lista && lista.length === 0 && <p className="notice">{t.prof_sin_profesores}</p>}
+      {error && <p className="notice en-alerta en-alerta-neg" role="alert">{error}</p>}
+      {lista && lista.length === 0 && <p className="notice en-alerta">{t.prof_sin_profesores}</p>}
       {lista && lista.length > 0 && (
         <div className="en-prof">
           <div className="card en-prof-buscador en-noprint">
@@ -89,7 +89,7 @@ function Informe({ profesor }: { profesor: Profesor }) {
     return () => { vigente = false; };
   }, [profesor.id]);
 
-  if (error) return <p className="notice">{error}</p>;
+  if (error) return <p className="notice en-alerta en-alerta-neg" role="alert">{error}</p>;
   if (!datos) return <p className="en-cargando">{t.cargando}</p>;
 
   const etapas = Object.keys(datos.comparacion).filter((k) => k !== "colegio");
@@ -124,7 +124,7 @@ function Informe({ profesor }: { profesor: Profesor }) {
             </div>
           )}
         </div>
-        {datos.combinaciones_excluidas > 0 && <p className="notice" style={{ marginTop: ".9rem" }}>{t.prof_excluidas(datos.combinaciones_excluidas)}</p>}
+        {datos.combinaciones_excluidas > 0 && <p className="notice en-alerta" style={{ marginTop: ".9rem" }}>{t.prof_excluidas(datos.combinaciones_excluidas)}</p>}
       </div>
 
       <div className="card" style={{ marginTop: ".9rem" }}>
@@ -137,7 +137,7 @@ function Informe({ profesor }: { profesor: Profesor }) {
       {compartidas.length > 0 && (
         <div className="card" style={{ marginTop: ".9rem" }}>
           <h3>{t.prof_compartidas}</h3>
-          <p className="notice">{t.prof_compartidas_nota}</p>
+          <p className="notice en-alerta">{t.prof_compartidas_nota}</p>
           {compartidas.map((c) => <Barra key={`${c.clave.cuestionario}-${c.clave.grupo}-${c.clave.asignatura}`} etiqueta={etiquetaClase(c)} fila={c} />)}
         </div>
       )}
@@ -172,7 +172,7 @@ function Informe({ profesor }: { profesor: Profesor }) {
           </div>
         )}
       </div>
-      <p className="notice" style={{ marginTop: ".9rem" }}>{t.leyenda_oculto}</p>
+      <p className="notice en-alerta" style={{ marginTop: ".9rem" }}>{t.leyenda_oculto}</p>
     </div>
   );
 

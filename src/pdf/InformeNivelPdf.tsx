@@ -23,7 +23,7 @@ const s = StyleSheet.create({
   cuadro: { width: 7, height: 7, borderRadius: 2, marginRight: 3 },
   fila: { flexDirection: "row", alignItems: "center", paddingVertical: 4, borderBottomWidth: 0.5, borderBottomColor: C.line },
   pregunta: { flex: 1.5, paddingRight: 6 },
-  div: { flex: 1, flexDirection: "row", height: 8 },
+  div: { flex: 1, flexDirection: "row", height: 9 },
   mitad: { flex: 1, flexDirection: "row" },
   izq: { justifyContent: "flex-end" },
   centro: { width: 1, backgroundColor: C.line },
@@ -31,15 +31,22 @@ const s = StyleSheet.create({
   n: { width: 32, textAlign: "right", color: C.muted, fontSize: 8 },
 });
 
-const COLORES = [C.n3, C.n2, C.n1, C.p1, C.p2, C.p3];   // 1 a 6
 
 function Divergente({ fila }: { fila: Fila }) {
   const n = fila.n ?? 0;
   const d = [1, 2, 3, 4, 5, 6].map((v) => fila.distribucion?.[String(v)] ?? 0);
-  const tramo = (v: number) => d[v - 1] ? <View key={v} style={{ width: `${(100 * d[v - 1]) / n}%`, backgroundColor: COLORES[v - 1] }} /> : null;
+  // Tonos de la paleta y la cifra (% de respuestas) dentro del tramo cuando cabe, para no depender solo del color.
+  const tramo = (v: number) => {
+    const pct = (100 * d[v - 1]) / n;
+    return d[v - 1] ? (
+      <View key={v} style={{ width: `${pct}%`, backgroundColor: C.escala[v - 1], justifyContent: "center", alignItems: "center" }}>
+        {pct >= 9 ? <Text style={{ fontSize: 5.5, fontWeight: 700, color: C.escalaTexto[v - 1] }}>{Math.round(pct)}</Text> : null}
+      </View>
+    ) : null;
+  };
   return (
     <View style={s.div}>
-      <View style={[s.mitad, s.izq]}>{[3, 2, 1].map(tramo)}</View>
+      <View style={[s.mitad, s.izq]}>{[1, 2, 3].map(tramo)}</View>
       <View style={s.centro} />
       <View style={s.mitad}>{[4, 5, 6].map(tramo)}</View>
     </View>
@@ -91,7 +98,7 @@ function Seccion({ seccion, primera }: { seccion: SeccionPdf; primera: boolean }
         <>
           <View style={[s.leyenda, { marginTop: 10 }]}>
             {seccion.etiquetas.map((e, i) => (
-              <View key={i} style={s.leyendaItem}><View style={[s.cuadro, { backgroundColor: COLORES[i] }]} /><Text>{i + 1} · {e}</Text></View>
+              <View key={i} style={s.leyendaItem}><View style={[s.cuadro, { backgroundColor: C.escala[i] }]} /><Text>{i + 1} · {e}</Text></View>
             ))}
           </View>
           {seccion.informe.preguntas.map((p) => {

@@ -36,7 +36,7 @@ export function Acceso({ mensaje }: { mensaje?: string | null }) {
       <p className="eyebrow">{t.acceso_eyebrow}</p>
       <h1>🔐 {t.acceso_titulo}</h1>
       <p className="lead">{t.acceso_lead}</p>
-      {mensaje && <p className="notice">{mensaje}</p>}
+      {mensaje && <p className="notice en-alerta">{mensaje}</p>}
       <form className="card en-form" onSubmit={enviar}>
         {recuperar && <p className="en-hint" style={{ margin: 0 }}>{t.recuperar_lead}</p>}
         <label>{t.correo}
@@ -48,7 +48,7 @@ export function Acceso({ mensaje }: { mensaje?: string | null }) {
           </label>
         )}
         {error && <p className="en-error" role="alert">{error}</p>}
-        {enviado && <p className="notice" role="status" style={{ margin: 0 }}>{t.recuperar_enviado}</p>}
+        {enviado && <p className="notice en-alerta en-alerta-pos" role="status" style={{ margin: 0 }}>{t.recuperar_enviado}</p>}
         <button className="btn primary" type="submit" disabled={enviando || enviado}>
           {recuperar ? t.recuperar_boton : enviando ? t.entrando : t.entrar}
         </button>

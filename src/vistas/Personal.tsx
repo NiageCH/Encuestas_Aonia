@@ -190,11 +190,11 @@ function EncuestaPersonal() {
       <Exportar preparar={preparar} disabled={!datos} />
 
 
-      {error && <p className="notice">{error}</p>}
+      {error && <p className="notice en-alerta en-alerta-neg" role="alert">{error}</p>}
       {!datos && !error && <p className="en-cargando">{t.cargando}</p>}
       {datos && cuest && (
         <>
-          {datos.personas.suprimido && <p className="notice">{t.per_segmento_oculto}</p>}
+          {datos.personas.suprimido && <p className="notice en-alerta">{t.per_segmento_oculto}</p>}
 
           <h2 className="section-title">{t.indicadores}</h2>
           <p className="sec-lead">{t.per_indicadores_lead}</p>
@@ -228,7 +228,7 @@ function EncuestaPersonal() {
                     <Barra key={p.clave.docente} etiqueta={p.clave.docente === "docente" ? t.per_docentes : t.per_no_docentes} fila={p} />))
                 : <Barra etiqueta={datos.superiores.suprimido ? SEGMENTOS.find((s) => s.clave === clave)!.texto : t.per_no_docentes} fila={datos.superiores} />}
               <p className="en-hint" style={{ marginTop: ".6rem" }}>{t.per_superiores_quien}</p>
-              <p className="notice" style={{ marginTop: ".8rem" }}>{t.per_superiores_nota}</p>
+              <p className="notice en-alerta" style={{ marginTop: ".8rem" }}>{t.per_superiores_nota}</p>
             </section>
           </div>
 
@@ -274,7 +274,7 @@ function EncuestaPersonal() {
           <p className="sec-lead">{t.per_valorado_lead}</p>
           <div className="card"><Ranking fila={datos.valorado} textos={textos} /></div>
 
-          <p className="notice" style={{ marginTop: "1.4rem" }}>{t.per_aviso} {t.leyenda_oculto}</p>
+          <p className="notice en-alerta" style={{ marginTop: "1.4rem" }}>{t.per_aviso} {t.leyenda_oculto}</p>
         </>
       )}
     </section>

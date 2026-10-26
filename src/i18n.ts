@@ -118,6 +118,7 @@ export const I18N = {
 
     pregunta: "Pregunta",
     distribucion_corta: "Distribución",
+    leyenda_cifras: "Cifras: % de respuestas de cada valor (sin NS/NC).",
     tip_eligen: (n: string, total: string) => `Lo eligen ${n} de ${total} personas`,
 
     fam_titulo: "Familias",
@@ -230,6 +231,8 @@ export const I18N = {
     panel_dif_nota: "Es una comparación, no una causa: muestra en qué valoran peor el Colegio quienes no lo recomendarían, no por qué no lo recomiendan. Cada grupo necesita 5 personas o más, y no se combina con ningún otro filtro.",
     panel_dif_no: "No lo recomendarían",
     panel_dif_si: "Sí lo recomendarían",
+    panel_dif_no_corto: "No",
+    panel_dif_si_corto: "Sí",
     panel_dif_valor: (d: string) => `${d} puntos de diferencia`,
     panel_dif_sin: "Sin comparación (algún grupo tiene menos de 5 personas)",
     panel_menos: "Lo menos elegido",
