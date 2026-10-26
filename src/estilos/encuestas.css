@@ -244,3 +244,10 @@ body:has(.en-aviso-validacion)::before { top: 34px; }
 .en-exportar .btn { padding: .35rem .85rem; font-size: .85rem; }
 .en-exportar .btn:disabled { opacity: .55; cursor: default; }
 @media (max-width: 900px) { .en-exportar { justify-content: flex-start; } }
+/* Referencia del colegio (coordinación en Familias) */
+.en-track { position: relative; }
+.en-ref { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--navy); border-radius: 1px; }
+.en-ref-txt { display: block; color: var(--muted); }
+.en-ref-muestra { display: inline-block; width: 2px; height: .9em; background: var(--navy); vertical-align: middle; margin-right: .3rem; }
+.en-referencia { margin: 1rem 0; background: var(--bg); }
+.en-referencia h3 { margin-top: 0; }

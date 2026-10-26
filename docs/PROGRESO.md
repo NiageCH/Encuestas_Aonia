@@ -189,6 +189,14 @@ Paso de encuestas-sfp.niage.eu a encuestas.sfpaula.com (cuando el colegio publiq
 
 Orden de carga: `cargar_2526.py` → `convertir_alexia_2526.py` → `cargar_asignaciones.py` → `cargar_responsables.py`.
 
+## Ajustes de coordinación e identificadores (rama `fase1-coordinacion`, 26/10/2026)
+
+- Migración 24: identificador aleatorio en `privado.respuesta` y `respuesta_item`; las respuestas existentes se renumeran y se reescriben en orden aleatorio en la misma transacción (probado sobre los datos reales: recuento y validación idénticos, ningún identificador consecutivo).
+- Migración 25: referencia del colegio en Familias para la coordinación (`"referencia": true` en el filtro, solo el total, sin filtros ni repartos).
+- Familias, coordinación: mensaje con curso y etapa cuando su etapa no llega a 5, bloque «Referencia: familias de todo el Colegio» y marca de la media del colegio en cada bloque; también en el CSV y el PDF.
+- `supabase/scripts/preparar_local.sh`: recrea la base local con los datos reales y los usuarios de prueba (contraseñas en `datos_locales/usuarios_locales.txt`).
+- 301 tests pgTAP (12 nuevos en `12_coordinacion_e_ids.sql`). Pendiente de subir a la nube.
+
 ## Bloqueos
 
 - Cuestionario de personal en inglés (4 respuestas).

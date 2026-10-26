@@ -41,6 +41,8 @@ export interface Filtro {
   docente?: boolean;
   antiguedad?: "primer_ano" | "mas_de_un_ano";
   idioma?: "es" | "en";
+  /** Coordinación en Familias: total del colegio como referencia (sin filtros ni repartos). */
+  referencia?: true;
 }
 
 export type Metrica =

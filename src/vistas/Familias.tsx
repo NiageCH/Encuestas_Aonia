@@ -8,6 +8,7 @@ import {
 } from "../componentes/Graficos";
 import { Exportar } from "../componentes/Exportar";
 import { Migas } from "../componentes/Marco";
+import { CURSO } from "../data/cliente";
 import {
   bloques as cargarBloques, cuestionarios as cargarCuestionarios, detallePreguntas, opciones, resultados,
   type Bloque, type DetallePregunta, type Fila, type Filtro,
@@ -31,6 +32,8 @@ interface Datos {
   sinEtapa: Fila | null;
   bloques: { bloque: Bloque; fila: Fila }[];
   valorado: Fila;
+  /** Coordinación: las familias de todo el colegio como referencia. */
+  referencia: { personas: Fila; general: Fila; satisfaccion: Fila; recomendacion: Fila; bloques: Record<string, Fila> } | null;
 }
 
 export function Familias({ perfil }: { perfil: Perfil }) {
@@ -69,6 +72,14 @@ export function Familias({ perfil }: { perfil: Perfil }) {
       const personasEtapa = fija ? null : await resultados({ colectivo: "familias" }, { tipo: "personas" }, ["etapa"]);
       const deMedia = bl.filter((b) => b.entra_en_media);
       const porBloque = await Promise.all(deMedia.map((b) => resultados(filtro, { tipo: "bloque", codigo: b.codigo })));
+      // Coordinación: el total de familias del colegio como referencia (sin filtros ni repartos).
+      const ref: Filtro = { colectivo: "familias", referencia: true };
+      const referencia = fija ? await Promise.all([
+        resultados(ref, { tipo: "personas" }), resultados(ref, { tipo: "bloque", codigo: "general" }),
+        resultados(ref, { tipo: "satisfaccion" }), resultados(ref, { tipo: "recomendacion" }),
+        Promise.all(deMedia.map((b) => resultados(ref, { tipo: "bloque", codigo: b.codigo }))),
+      ]).then(([p, g, s2, r, bs]) => ({ personas: p.total, general: g.total, satisfaccion: s2.total, recomendacion: r.total,
+                                        bloques: Object.fromEntries(deMedia.map((b, i) => [b.codigo, bs[i].total])) })) : null;
       if (!vigente) return;
       setDatos({
         personas: personas.total, general: general.total, satisfaccion: sat.total, recomendacion: rec.total,
@@ -76,6 +87,7 @@ export function Familias({ perfil }: { perfil: Perfil }) {
         porEtapa: ETAPAS.map((e) => porEtapa?.partes.find((p) => p.clave.etapa === e)).filter((p): p is Fila => !!p),
         sinEtapa: personasEtapa?.partes.find((p) => p.clave.etapa === "(sin dato)") ?? null,
         bloques: deMedia.map((b, i) => ({ bloque: b, fila: porBloque[i].total })),
+        referencia,
       });
     })().catch(() => vigente && setError(t.error_datos));
     return () => { vigente = false; };
@@ -118,6 +130,16 @@ export function Familias({ perfil }: { perfil: Perfil }) {
         ...d.bloques.map(({ bloque }, i) => tablaDetalle(bloque.nombre,
           detalles[i].map((x) => ({ texto: x.texto, fila: x.resultado.total })), escalaBloque(bloque.codigo))),
         tablaValorado(t.valorado, d.valorado, textos),
+        ...(d.referencia ? [{
+          titulo: t.fam_referencia, columnas: [t.exp_col_indicador, t.exp_col_valor, t.exp_col_personas],
+          filas: [
+            [txt(t.k_respuestas), ...celdas(d.referencia.personas, ["n", "n"])],
+            [txt(`${t.k_general} (de 1 a 6)`), ...celdas(d.referencia.general, ["media", "personas"])],
+            [txt(`${t.k_satisfaccion_media} (de 1 a 6)`), ...celdas(d.referencia.satisfaccion, ["media", "personas"])],
+            ...d.bloques.map(({ bloque }) => [txt(`${bloque.nombre} (de 1 a 6)`), ...celdas(d.referencia!.bloques[bloque.codigo], ["media", "personas"])]),
+          ],
+          notas: [t.fam_referencia_lead],
+        }, tablaRecomendacion(`${t.recomendacion}: ${t.fam_referencia.toLowerCase()}`, t.fam_titulo, "1 a 10", d.referencia.recomendacion)] : []),
       ],
       notas: notasComunes(),
     };
@@ -149,7 +171,25 @@ export function Familias({ perfil }: { perfil: Perfil }) {
       {!datos && !error && <p className="en-cargando">{t.cargando}</p>}
       {datos && (
         <>
-          {datos.personas.suprimido && <p className="notice">{t.fam_etapa_oculta}</p>}
+          {datos.personas.suprimido && (fija
+            ? <p className="notice">{datos.personas.motivo === "menos_de_5"
+                ? t.fam_etapa_menos5(CURSO, t.etapas[fija]) : t.fam_etapa_compl(t.etapas[fija])} {t.fam_ver_referencia}</p>
+            : <p className="notice">{t.fam_etapa_oculta}</p>)}
+          {datos.referencia && (
+            <section className="card en-referencia">
+              <h3>{t.fam_referencia}</h3>
+              <p className="en-hint">{t.fam_referencia_lead}</p>
+              <div className="en-kpis">
+                <Indicador etiqueta={t.k_respuestas} fila={datos.referencia.personas} explicacion={t.tip_k_familias}
+                  valor={(x) => f.recuento(x.n!)} detalle={() => t.k_familias_d} />
+                <Indicador etiqueta={t.k_general} fila={datos.referencia.general} explicacion={t.tip_k_general}
+                  valor={(x) => <>{f.media(x.media!)} <small>/ 6</small></>} detalle={(x) => t.tip_personas(f.recuento(x.n!))} />
+                <Indicador etiqueta={t.k_satisfaccion_media} fila={datos.referencia.satisfaccion} explicacion={t.tip_k_satisfaccion_media}
+                  valor={(x) => <>{f.media(x.media!)} <small>/ 6</small></>} detalle={() => t.k_satisfaccion_media_d} />
+                <IndicadorRecomendacion etiqueta={t.k_recomendacion} fila={datos.referencia.recomendacion} />
+              </div>
+            </section>
+          )}
 
           <h2 className="section-title">{t.indicadores}</h2>
           <p className="sec-lead">{t.fam_indicadores_lead}</p>
@@ -171,7 +211,8 @@ export function Familias({ perfil }: { perfil: Perfil }) {
             <section className="card">
               <h3>{t.bloques}</h3>
               <p className="en-hint">{t.fam_bloques_lead}</p>
-              {datos.bloques.map(({ bloque, fila }) => <Barra key={bloque.codigo} etiqueta={bloque.nombre} fila={fila} />)}
+              {datos.bloques.map(({ bloque, fila }) => <Barra key={bloque.codigo} etiqueta={bloque.nombre} fila={fila} referencia={datos.referencia?.bloques[bloque.codigo]} />)}
+              {datos.referencia && <p className="en-hint en-leyenda-ref"><i className="en-ref-muestra" aria-hidden="true" /> {t.fam_marca_colegio}</p>}
             </section>
             {datos.porEtapa.length > 0 ? (
               <section className="card">

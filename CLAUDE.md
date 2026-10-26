@@ -42,6 +42,7 @@ datos_locales/  NO va a git: fuentes, validación y prototipo con datos reales
 npm install          # dependencias (incluye la CLI de Supabase)
 npm run db:start     # Supabase local (Docker), puertos 554xx
 npm run db:reset     # recrea la base de datos con las migraciones
+bash supabase/scripts/preparar_local.sh   # base local desde cero con los datos reales de 2025/26 y usuarios de prueba
 npm run db:test      # tests pgTAP (supabase/tests); en la nube: npx supabase test db --linked
 npm test             # tests del frontend (vitest)
 python3 supabase/scripts/probar_mfa_local.py   # prueba el doble factor del administrador

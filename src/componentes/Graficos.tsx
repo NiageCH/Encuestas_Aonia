@@ -34,9 +34,11 @@ export function lineasOculto(fila: Fila): string {
   return fila.motivo === "menos_de_5" ? t.oculto_tip_menos5 : fila.motivo === "sin_datos" ? t.sin_datos : t.oculto_tip;
 }
 
-export function Barra({ etiqueta, fila }: { etiqueta: string; fila: Fila }) {
+/** Barra de 1 a 6. Con referencia (coordinación en Familias), una marca con la media de todo el colegio. */
+export function Barra({ etiqueta, fila, referencia }: { etiqueta: string; fila: Fila; referencia?: Fila }) {
   const ayuda = useAyuda();
   const ancho = fila.suprimido || fila.media == null ? 0 : ((fila.media - 1) / 5) * 100;
+  const ref = referencia && !referencia.suprimido && referencia.media != null ? referencia.media : null;
   const lineas = fila.suprimido ? [etiqueta, lineasOculto(fila)] : [
     etiqueta,
     t.tip_media(f.media(fila.media!)),
@@ -44,12 +46,17 @@ export function Barra({ etiqueta, fila }: { etiqueta: string; fila: Fila }) {
     t.tip_valoraciones(f.recuento(fila.n_valoraciones ?? 0)),
     ...(fila.ns_nc ? [t.tip_nsnc(f.recuento(fila.ns_nc))] : []),
   ];
+  if (ref != null) lineas.push(t.tip_referencia_colegio(f.media(ref)));
   return (
     <div className="en-bar en-con-ayuda" {...ayuda(lineas)}>
       <span>{etiqueta}</span>
-      <span className="en-track" aria-hidden="true"><span className="en-fill" style={{ width: `${ancho}%` }} /></span>
+      <span className="en-track" aria-hidden="true">
+        <span className="en-fill" style={{ width: `${ancho}%` }} />
+        {ref != null && <span className="en-ref" style={{ left: `${((ref - 1) / 5) * 100}%` }} />}
+      </span>
       <span className="en-val">
         {fila.suprimido ? <Oculto fila={fila} /> : <>{f.media(fila.media!)}<small>n {f.recuento(fila.n!)}</small></>}
+        {ref != null && <small className="en-ref-txt">{t.colegio_corto} {f.media(ref)}</small>}
       </span>
     </div>
   );

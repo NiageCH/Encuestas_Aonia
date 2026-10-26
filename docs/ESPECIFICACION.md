@@ -150,10 +150,14 @@ Correspondencia de cuestionarios con etapas:
 - Los tres de PAI → PAI.
 - Los dos de Bachillerato → Bachillerato.
 - La coordinación de Infantil solo ve familias de Infantil, porque no hay encuesta de alumnos de Infantil.
+- **Familias, referencia del colegio (decisión del 26/10/2026):** la coordinación ve, junto a los de su etapa, los resultados de las familias de todo el colegio (respuestas, valoración general, satisfacción media, recomendación y media de cada bloque), como referencia y sin poder repartirlos ni filtrarlos. Cuando su etapa no llega a 5, el mensaje lo dice con el curso y la etapa («En 2025/26 respondieron menos de 5 familias de Bachillerato…»), sin dar la cifra exacta (regla del mínimo de 5), y remite a la referencia.
 
 Profesores y jefes no tienen cuenta en la Fase 1: reciben su informe en PDF.
 
 ---
+
+### Identificadores de las respuestas (decisión del 26/10/2026)
+Las respuestas y sus valoraciones tienen un identificador aleatorio, no correlativo, para que nadie con acceso a la base de datos pueda deducir el orden en que llegaron. Las de 2025/26 se renumeraron y reescribieron en orden aleatorio (migración 24).
 
 ## 7. Funcionalidades
 

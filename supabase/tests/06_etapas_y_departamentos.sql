@@ -73,16 +73,15 @@ select is((public.resultados('{"curso":"2000/01","colectivo":"personal"}', '{"ti
 
 -- n de personas y alumnos sin grupo
 set local role postgres;
-insert into privado.respuesta (cuestionario_id, grupo_id)
-  select id, null from public.cuestionario where codigo = 'PAI_T';
+-- (Los identificadores son aleatorios: cada valoración va a la respuesta que devuelve su inserción.)
+with r as (insert into privado.respuesta (cuestionario_id, grupo_id)
+           select id, null from public.cuestionario where codigo = 'PAI_T' returning id)
 insert into privado.respuesta_item (respuesta_id, pregunta_id, valor, ns_nc)
-  select max(r.id), (select id from public.pregunta where codigo_diccionario = 'sat_general'), null, true
-  from privado.respuesta r join public.cuestionario c on c.id = r.cuestionario_id where c.codigo = 'PAI_T';
-insert into privado.respuesta (cuestionario_id, grupo_id)
-  select id, null from public.cuestionario where codigo = 'PAI_T';
+  select r.id, (select id from public.pregunta where codigo_diccionario = 'sat_general'), null, true from r;
+with r as (insert into privado.respuesta (cuestionario_id, grupo_id)
+           select id, null from public.cuestionario where codigo = 'PAI_T' returning id)
 insert into privado.respuesta_item (respuesta_id, pregunta_id, valor, ns_nc)
-  select max(r.id), (select id from public.pregunta where codigo_diccionario = 'sat_general'), 4, false
-  from privado.respuesta r join public.cuestionario c on c.id = r.cuestionario_id where c.codigo = 'PAI_T';
+  select r.id, (select id from public.pregunta where codigo_diccionario = 'sat_general'), 4, false from r;
 select pg_temp.como('direccion'); set local role authenticated;
 
 create temp table r_sin_grupo as
