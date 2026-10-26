@@ -323,6 +323,12 @@ docker restart supabase_rest_encuestas-cis-sfp supabase_edge_runtime_encuestas-c
 python3 supabase/scripts/probar_invitacion_local.py
 ```
 
+Copia completa de la nube y prueba de restauración en una base local aparte (antes de cualquier cambio que toque datos de la nube):
+
+```sh
+.venv/bin/python supabase/scripts/copia_nube.py
+```
+
 ---
 
 ## Datos y secretos
