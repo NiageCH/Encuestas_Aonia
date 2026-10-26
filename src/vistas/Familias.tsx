@@ -9,6 +9,7 @@ import {
 import { Exportar } from "../componentes/Exportar";
 import { Migas } from "../componentes/Marco";
 import { CURSO } from "../data/cliente";
+import { textoParteOculta } from "../etiquetas";
 import {
   bloques as cargarBloques, cuestionarios as cargarCuestionarios, detallePreguntas, opciones, resultados,
   type Bloque, type DetallePregunta, type Fila, type Filtro,
@@ -131,7 +132,7 @@ export function Familias({ perfil }: { perfil: Perfil }) {
           detalles[i].map((x) => ({ texto: x.texto, fila: x.resultado.total })), escalaBloque(bloque.codigo))),
         tablaValorado(t.valorado, d.valorado, textos),
         ...(d.referencia ? [{
-          titulo: t.fam_referencia, columnas: [t.exp_col_indicador, t.exp_col_valor, t.exp_col_personas],
+          titulo: `${t.fam_referencia} (${t.fam_no_es_tu_etapa(t.etapas[fija!])})`, columnas: [t.exp_col_indicador, t.exp_col_valor, t.exp_col_personas],
           filas: [
             [txt(t.k_respuestas), ...celdas(d.referencia.personas, ["n", "n"])],
             [txt(`${t.k_general} (de 1 a 6)`), ...celdas(d.referencia.general, ["media", "personas"])],
@@ -171,14 +172,17 @@ export function Familias({ perfil }: { perfil: Perfil }) {
       {!datos && !error && <p className="en-cargando">{t.cargando}</p>}
       {datos && (
         <>
-          {datos.personas.suprimido && (fija
-            ? <p className="notice">{datos.personas.motivo === "menos_de_5"
-                ? t.fam_etapa_menos5(CURSO, t.etapas[fija]) : t.fam_etapa_compl(t.etapas[fija])} {t.fam_ver_referencia}</p>
-            : <p className="notice">{t.fam_etapa_oculta}</p>)}
-          {datos.referencia && (
+          {datos.personas.suprimido && etapa && (
+            <p className="notice">
+              {textoParteOculta(datos.personas.motivo, CURSO, "familias", t.etapas[etapa])}
+              {datos.referencia ? ` ${t.fam_ver_referencia}` : ""}
+            </p>
+          )}
+          {datos.personas.suprimido && !etapa && <p className="notice">{t.fam_etapa_oculta}</p>}
+          {datos.referencia && fija && (
             <section className="card en-referencia">
               <h3>{t.fam_referencia}</h3>
-              <p className="en-hint">{t.fam_referencia_lead}</p>
+              <p className="en-hint"><strong>{t.fam_no_es_tu_etapa(t.etapas[fija])}</strong> {t.fam_referencia_lead}</p>
               <div className="en-kpis">
                 <Indicador etiqueta={t.k_respuestas} fila={datos.referencia.personas} explicacion={t.tip_k_familias}
                   valor={(x) => f.recuento(x.n!)} detalle={() => t.k_familias_d} />

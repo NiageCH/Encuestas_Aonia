@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Barra, Indicador, IndicadorRecomendacion, ordenar, Recomendacion } from "../componentes/Graficos";
 import { Exportar } from "../componentes/Exportar";
 import { Migas } from "../componentes/Marco";
+import { CURSO } from "../data/cliente";
+import { textoParteOculta } from "../etiquetas";
 import {
   bloques as cargarBloques, cuestionarios as cargarCuestionarios, resultados,
   type Bloque, type Cuestionario, type Fila, type Filtro, type Resultado,
@@ -24,6 +26,8 @@ interface Datos {
   recomendacion: Fila;
   asignaturas: Fila[];
   bloques: { bloque: Bloque; fila: Fila }[];
+  /** Grupo oculto: el total del cuestionario (todos los grupos) como referencia. */
+  referencia: { personas: Fila; satisfaccion: Fila; profesorado: Fila; recomendacion: Fila } | null;
 }
 
 const BLOQUES_APARTE = new Set(["profesorado", "satisfaccion_general", "recomendacion"]);
@@ -65,6 +69,11 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
         cargarBloques(cuestionario),
       ]);
       const deMedia = bl.filter((b) => b.entra_en_media && !BLOQUES_APARTE.has(b.codigo));
+      // Si el grupo elegido está oculto, el total del cuestionario como referencia (lo ve todo el que ve el grupo).
+      const referencia = grupo && personas.total.suprimido ? await Promise.all([
+        resultados(base, { tipo: "personas" }), resultados(base, { tipo: "bloque", codigo: "satisfaccion_general" }),
+        resultados(base, { tipo: "bloque", codigo: "profesorado" }), resultados(base, { tipo: "recomendacion" }),
+      ]).then(([pe, sa, pr, re]) => ({ personas: pe.total, satisfaccion: sa.total, profesorado: pr.total, recomendacion: re.total })) : null;
       const porBloque: Resultado[] = await Promise.all(
         deMedia.map((b) => resultados(filtro, { tipo: "bloque", codigo: b.codigo })));
       if (!vigente) return;
@@ -76,6 +85,7 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
         recomendacion: rec.total,
         asignaturas: asig.partes,
         bloques: deMedia.map((b, i) => ({ bloque: b, fila: porBloque[i].total })),
+        referencia,
       });
     })().catch(() => vigente && setError(t.error_datos));
     return () => { vigente = false; };
@@ -150,6 +160,26 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
       {!datos && !error && cuestionario && <p className="en-cargando">{t.cargando}</p>}
       {datos && (
         <>
+          {grupo && datos.personas.suprimido && (
+            <p className="notice">
+              {textoParteOculta(datos.personas.motivo, CURSO, "alumnos", grupo)} {t.alu_ver_referencia}
+            </p>
+          )}
+          {datos.referencia && (
+            <section className="card en-referencia">
+              <h3>{t.alu_referencia(actual?.titulo ?? cuestionario)}</h3>
+              <p className="en-hint"><strong>{t.alu_no_es_tu_grupo(grupo)}</strong></p>
+              <div className="en-kpis">
+                <Indicador etiqueta={t.k_respuestas} fila={datos.referencia.personas} explicacion={t.tip_k_respuestas}
+                  valor={(x) => f.recuento(x.n!)} detalle={() => t.k_respuestas_d} />
+                <Indicador etiqueta={t.k_satisfaccion} fila={datos.referencia.satisfaccion} explicacion={t.tip_k_satisfaccion}
+                  valor={(x) => <>{f.media(x.media!)} <small>/ 6</small></>} detalle={(x) => t.k_satisfaccion_d(f.recuento(x.n_personas!))} />
+                <Indicador etiqueta={t.k_profesorado} fila={datos.referencia.profesorado} explicacion={t.tip_k_profesorado}
+                  valor={(x) => <>{f.media(x.media!)} <small>/ 6</small></>} detalle={() => t.k_profesorado_d} />
+                <IndicadorRecomendacion etiqueta={t.k_recomendacion} fila={datos.referencia.recomendacion} />
+              </div>
+            </section>
+          )}
           <h2 className="section-title">{t.indicadores}</h2>
           <p className="sec-lead">{t.indicadores_lead}</p>
           <div className="en-kpis">

@@ -57,3 +57,10 @@ export function textoAlumnos(m: MediaDepartamentoAlumnos): { texto: string; deta
     nota: m.combinaciones_excluidas > 0 ? t.prof_excluidas(m.combinaciones_excluidas) : undefined,
   };
 }
+
+/** Por qué no se ven los resultados de una etapa (familias) o un grupo (alumnos): con menos de 5 respuestas, el curso
+ *  y el nombre (sin la cifra exacta, que el servidor no da por debajo de 5); por supresión complementaria, la resta. */
+export function textoParteOculta(motivo: string | undefined, curso: string, colectivo: "familias" | "alumnos", nombre: string): string {
+  if (colectivo === "familias") return motivo === "menos_de_5" ? t.fam_etapa_menos5(curso, nombre) : t.fam_etapa_compl(nombre);
+  return motivo === "menos_de_5" ? t.alu_grupo_menos5(curso, nombre) : t.alu_grupo_compl(nombre);
+}
