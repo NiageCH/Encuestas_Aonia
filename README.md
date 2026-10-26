@@ -19,9 +19,13 @@ Desarrolla Niage Technology para Aonia. Repositorio privado.
 | Paso | Estado |
 |---|---|
 | 1. Repositorio y estructura | Hecho |
-| 2. Supabase: modelo, RLS, RPC con anonimato, tests | Hecho en local; proyecto en la nube creado (Irlanda, UE) |
-| 3. ETL de Encuesta Fácil y validación | Hecho (falta el cuestionario de personal en inglés) |
-| 4 a 10. Auth, vistas, panel, informes PDF, administración, despliegue | Pendiente |
+| 2. Supabase: modelo, RLS, RPC con anonimato, tests | Hecho; en la nube (Irlanda, UE) con las migraciones 1 a 23 y 289 tests en verde |
+| 3. ETL de Encuesta Fácil y validación | Hecho; datos reales 2025/26 cargados en la nube y validados (falta el cuestionario de personal en inglés) |
+| 4. Acceso, invitaciones y doble factor | Hecho |
+| 5 y 6. Vistas y panel general, con exportación CSV y PDF de cada vista | Hecho |
+| 7 y 8. Informes por persona: dirección, equipos, departamentos y profesores (PDF y ZIP) | Hecho |
+| 9. Usuarios y registro de actividad | Hecho |
+| 10. Despliegue | Entorno de pruebas en `encuestas-sfp.niage.eu`, en revisión interna. Pendiente: aceptación de Supabase por el colegio, dominio `encuestas.sfpaula.com`, plan Pro e invitaciones |
 
 El detalle está en [`docs/PROGRESO.md`](docs/PROGRESO.md).
 
@@ -40,7 +44,7 @@ El detalle está en [`docs/PROGRESO.md`](docs/PROGRESO.md).
 ## Arquitectura
 
 ```
-Navegador (Vite + React + TypeScript)        ← pendiente (paso 5)
+Navegador (Vite + React + TypeScript), servido por Clever Cloud (París) con Caddy
    │  src/data/: única capa que habla con el backend
    ▼
 Supabase (Irlanda, UE)
@@ -49,21 +53,23 @@ Supabase (Irlanda, UE)
    ├─ permisos: funciones de rol usadas por las políticas RLS (no expuesto)
    └─ privado:  respuestas anónimas y motor de anonimato (no expuesto, RLS sin políticas)
    ▲
-ETL en Python (etl/), ejecutada en local por Niage con la clave de servicio   ← paso 3
+ETL en Python (etl/), ejecutada en local por Niage (conexión directa con DATABASE_URL)
    ▲
 Exportaciones de Encuesta Fácil (SharePoint del colegio → datos_locales/fuentes/)
 ```
 
-Correo de Auth por SMTP de Brevo. Dirección prevista: `encuestas.sfpaula.com`.
+Correo de Auth por SMTP de Brevo, configurado solo en el panel de Supabase (la clave nunca va al repositorio). Remitente provisional `encuestas@niage.eu`; previsto `encuestas@sfpaula.com`.
+
+Entorno de pruebas: `https://encuestas-sfp.niage.eu`. Dirección prevista: `encuestas.sfpaula.com`. Detalle en [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md).
 
 ---
 
 ## Estructura del repositorio
 
 ```
-src/                frontend; acceso a datos en src/data/
+src/                frontend; acceso a datos en src/data/, PDF en src/pdf/, exportación en src/exportacion/
 supabase/
-  config.toml       configuración local (Auth, puertos 554xx)
+  config.toml       configuración local (Auth, puertos 554xx) y de la nube ([remotes.pruebas])
   migrations/       modelo, RLS, motor de anonimato y RPC
   tests/            tests pgTAP y datos de ejemplo inventados (fixtures/)
   scripts/          utilidades locales (prueba del doble factor)
@@ -71,6 +77,7 @@ etl/                carga de Encuesta Fácil; plantillas Excel en etl/plantillas
 docs/               especificación, progreso y manuales
 referencia/         plantilla de la intranet y mockups (sin datos reales)
 datos_locales/      FUERA DE GIT: fuentes, valores de validación y prototipo
+Caddyfile           servidor web del alojamiento: sirve dist/ con cabeceras de seguridad
 ```
 
 ---
@@ -111,8 +118,10 @@ Copia `.env.example` a `.env` y rellénalo. `.env` no va a git.
 | Variable | Uso |
 |---|---|
 | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Frontend |
-| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | ETL, solo en local; nunca en el frontend |
-| `BREVO_SMTP_USER`, `BREVO_SMTP_PASSWORD` | SMTP de Supabase Auth |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Scripts locales; nunca en el frontend |
+| `DATABASE_URL` | ETL con `--remoto` (base de datos de la nube); sin `--remoto`, la ETL se niega a usar una dirección que no sea local |
+
+En el alojamiento: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` y, cuando el colegio dé los resultados por buenos, `VITE_AVISO_VALIDACION=no` (quita la franja «Resultados en validación»). El SMTP de Brevo no va en ningún `.env`: solo en el panel de Supabase.
 
 ---
 
@@ -136,7 +145,8 @@ Triggers de integridad: cada respuesta lleva lo que corresponde a su colectivo, 
 |---|---|---|---|
 | Alumnos y familias | Todo | Todo | Solo su etapa |
 | Personal | Todo | Todo | Sin acceso |
-| Profesores | Todos | Todos | Los que dan clase en su etapa, con los resultados de esa etapa |
+| Informes por persona | Todos los niveles | Todos los niveles | Solo Profesores: los que dan clase en su etapa, con los resultados de esa etapa |
+| Exportar CSV y PDF | Inicio, Alumnos, Familias y Personal | Igual | Inicio, Alumnos y Familias (su etapa) |
 | Usuarios y registro | Sí | No | No |
 
 El administrador solo accede con una sesión verificada con doble factor (`aal2`).
@@ -152,6 +162,13 @@ Todas exigen un usuario con perfil activo, aplican los permisos de su rol y el a
 | `detalle_preguntas(p_filtro, p_bloque, p_dimensiones)` | Cada pregunta de un bloque, con distribución |
 | `listar_profesores(p_curso)` | Profesores con docencia visibles para el usuario |
 | `resultados_profesor(p_curso, p_docente, p_metrica)` | Combinaciones asignatura y grupo, media global con las visibles y comparación con la etapa |
+| `informe_profesor(p_curso, p_docente, p_lote)` | Informe completo de un profesor para el PDF (queda en el registro) |
+| `informe_responsable`, `informe_jefe_departamento`, `informe_equipo` | Informes por persona: dirección, jefes de departamento y Equipo de Individuación |
+| `listar_jefes`, `listar_equipo`, `media_departamento_alumnos` | Listas de responsables y media de los profesores de un departamento según los alumnos |
+| `puntos_colectivo(p_filtro, p_cuantos)` | Puntos fuertes y de mejora de un colectivo |
+| `comparacion_recomendacion(p_curso, p_colectivo)` | Media de cada bloque entre quienes no recomendarían el colegio y quienes sí |
+| `registrar_exportacion(p_vista, p_formato, p_filtros)` | Deja una exportación CSV o PDF en el registro de actividad |
+| `admin_usuarios`, `admin_actualizar_usuario`, `admin_registro` | Administración de usuarios y registro de actividad (solo administradores) |
 
 **Filtro:** `curso` y `colectivo` obligatorios. Alumnos admite `cuestionario`, `etapa`, `grupo` y `asignatura`; familias, `etapa`; personal, **uno solo** de `docente`, `antiguedad` o `departamento_equipo`.
 
@@ -205,7 +222,8 @@ npm run dev          # http://127.0.0.1:5173
 - Estilos: `src/estilos/intranet.css` son los bloques A y B de la plantilla, generados con `python3 scripts/extraer_plantilla.py` (no se editan a mano); los propios van en `src/estilos/encuestas.css` con el prefijo `en-`.
 - Textos visibles: `src/i18n.ts` (`I18N.es`). Acceso a datos: solo `src/data/`.
 - Supabase Studio en local: `http://127.0.0.1:55423`.
-- PDF (informes de profesor): se generan en el navegador con `@react-pdf/renderer` (individual o en ZIP con `jszip`), cargados bajo demanda. Logos PNG y Raleway estática (con cifras de caja alta, como la web) salen de la plantilla con `.venv/bin/python scripts/generar_recursos_pdf.py`.
+- Exportación de cada vista (`src/exportacion/`): un mismo modelo de tablas da el CSV (UTF-8 con BOM, punto y coma, coma decimal, para Excel en español) y el PDF. Celdas ocultas con «menos de 5» u «oculto», nunca en blanco. Archivos `Encuestas_2526_<Vista>[_<Filtro>].csv|pdf`.
+- PDF (informes de profesor y de responsables): se generan en el navegador con `@react-pdf/renderer` (individual o en ZIP con `jszip`), cargados bajo demanda. Logos PNG y Raleway estática (con cifras de caja alta, como la web) salen de la plantilla con `.venv/bin/python scripts/generar_recursos_pdf.py`.
 
 ## Carga de datos (ETL)
 
@@ -215,7 +233,8 @@ Los ficheros de Encuesta Fácil van en `datos_locales/fuentes/` (fuera de git).
 python3 -m venv .venv && .venv/bin/pip install -r etl/requirements.txt
 .venv/bin/python etl/cargar_2526.py --ensayo   # convierte y resume, sin tocar la base de datos
 .venv/bin/python etl/cargar_2526.py            # carga en la base de datos local (repetible)
-.venv/bin/python etl/validar_2526.py           # compara con los agregados del prototipo
+.venv/bin/python etl/validar_2526.py           # compara con los agregados del prototipo (--remoto: la nube)
+.venv/bin/python etl/borrar_2526.py            # recuento del curso; con --confirmar, lo borra (--remoto: la nube)
 ```
 
 - Cada columna de cada fichero se carga o se descarta con un motivo; una columna sin regla detiene la carga.
@@ -233,12 +252,14 @@ Asignación de profesores y responsables (orden de carga: encuestas, conversión
 .venv/bin/python etl/cargar_asignaciones.py RUTA.xlsx                  # carga (sustituye las del curso)
 .venv/bin/python etl/ejemplo_asignaciones.py                          # docentes inventados para probar (datos_locales/)
 ```
-- Para cargar en otra base de datos: `DATABASE_URL` en `.env` y `--remoto`.
+- Para cargar en otra base de datos: `DATABASE_URL` en `.env` y `--remoto`. Una `DATABASE_URL` en el entorno tiene prioridad sobre `.env` (por ejemplo, la local: `DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:55422/postgres`).
 
 ## Tests
 
 ```sh
-npm run db:test
+npm run db:test                         # base de datos local
+npx supabase test db --linked           # la nube (los tests usan su propio curso inventado y no dejan nada)
+npm test                                # frontend: navegación y CSV de exportación (vitest)
 ```
 
 | Fichero | Qué comprueba |
@@ -250,9 +271,10 @@ npm run db:test
 | `05_integridad.sql` | Reglas de carga que la ETL no puede saltarse |
 | `06_etapas_y_departamentos.sql` | Familias con varias etapas, reuniones de departamento aisladas, alumnos sin grupo |
 | `07_administracion.sql` | Usuarios, roles, desactivación y registro de actividad |
-| `08_personal_informes.sql` | Lo que cada rol puede pedir en Personal → Informes por persona |
+| `08_personal_informes.sql` | Lo que cada rol puede pedir en Informes por persona |
 | `09_jefes_tramos_atribucion.sql` | Jefes de departamento, tramo de tutoría aislado de todo lo demás, partes ocultas juntas, clases propias, compartidas y atribuidas |
 | `10_panel_mejora.sql` | Puntos fuertes y de mejora, comparación por recomendación aislada de cualquier otro filtro, mínimo de 5 y complementaria |
+| `11_exportacion.sql` | Registro de cada exportación (vista, formato y filtros) y quién puede exportar qué |
 
 Los datos de `supabase/tests/fixtures/datos_ejemplo.psql` son **inventados** y están diseñados para provocar cada caso.
 
@@ -292,7 +314,7 @@ docker restart supabase_rest_encuestas-cis-sfp supabase_edge_runtime_encuestas-c
 ### Invitaciones y usuarios en local
 
 - Las invitaciones las envía la Edge Function `supabase/functions/admin-usuarios` (necesita la clave de servicio, que nunca llega al navegador). Supabase local la sirve sola al arrancar.
-- Los correos (invitación y recuperación de contraseña, en español: `supabase/templates/`) llegan al buzón de pruebas: `http://127.0.0.1:55424`. Brevo se configura en el despliegue.
+- Los correos (invitación y recuperación de contraseña, en español: `supabase/templates/`) llegan al buzón de pruebas: `http://127.0.0.1:55424`. En la nube, Brevo (configurado en el panel de Supabase).
 - Prueba completa del circuito (invitación, correo, aceptar, contraseña, recuperar, permisos):
 
 ```sh
@@ -314,6 +336,15 @@ git ls-files | grep -iE '^datos_locales/|(^|/)\.env($|\.)|\.csv$|\.xlsx$' | grep
 
 ---
 
+## Despliegue
+
+Detalle en [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md). Orden de cada subida:
+
+1. GitHub, tras la comprobación de datos de arriba.
+2. Migraciones en la nube: `npx supabase db push --dry-run` para ver qué se aplica y después `npx supabase db push`.
+3. Tests en la nube (`npx supabase test db --linked`) con el recuento antes y después (`etl/borrar_2526.py --remoto`, sin `--confirmar`): debe ser idéntico.
+4. Web: `npx clever-tools deploy` (sube el último commit; Clever compila y sirve con el `Caddyfile`).
+
 ## Forma de trabajo
 
 - Commits pequeños, en español.
@@ -322,7 +353,9 @@ git ls-files | grep -iE '^datos_locales/|(^|/)\.env($|\.)|\.csv$|\.xlsx$' | grep
 
 ## Pendientes principales
 
-- Exportaciones 2025/26 en `datos_locales/fuentes/` (paso 3).
-- Excel de profesores por asignatura y grupo, con departamento (vista de profesor con datos reales).
-- Saber si el fichero de personal trae departamento o equipo (informes de responsables).
-- Decisión del colegio sobre Supabase y registros DNS del dominio y del remitente.
+- Revisión interna en la nube; después, invitar a los usuarios del colegio.
+- Decisión del colegio sobre Supabase; plan Pro antes de las pruebas con el colegio.
+- Dominio `encuestas.sfpaula.com` y remitente `encuestas@sfpaula.com` (registros DNS del colegio).
+- Cuestionario de personal en inglés (4 respuestas) y docente de Inglés de Y10 D.
+- Confirmar las preguntas comunes del panel.
+- Despliegue automático desde GitHub.

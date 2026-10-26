@@ -160,7 +160,7 @@ Supabase: proyecto `osxjfmnhcyybgffanlqo` (Irlanda, UE, plan Free), sin datos re
 5. Authentication → Rate Limits: subir el límite de correos por hora (por ejemplo, 60) cuando
    el SMTP propio esté activo.
 
-## 5. Carga de los datos reales en la nube (preparada, pendiente de autorización del colegio)
+## 5. Carga de los datos reales en la nube (hecha el 22/10/2026, con autorización escrita del colegio)
 
 **Qué se sube** (todo sale de `datos_locales/`, que no va a git; la carga va directa a la base
 de datos por conexión cifrada, sin pasar por el alojamiento web):

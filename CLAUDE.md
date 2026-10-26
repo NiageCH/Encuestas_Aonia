@@ -19,9 +19,9 @@ La especificación completa está en `docs/ESPECIFICACION.md`. Léela antes de e
 
 ## Arquitectura
 
-- GitHub privado (organización Niage) · Vite + React + TypeScript · alojamiento web en la UE con despliegue desde GitHub.
+- GitHub privado (organización Niage) · Vite + React + TypeScript · alojamiento web en Clever Cloud (París), entorno de pruebas en `encuestas-sfp.niage.eu`, desplegado con `npx clever-tools deploy` (despliegue automático desde GitHub, pendiente).
 - Supabase (Irlanda, UE; proyecto `osxjfmnhcyybgffanlqo`, plan Free hasta las pruebas con el colegio): Auth (correo y contraseña, alta por invitación, doble factor obligatorio para administradores), Postgres con RLS, RPC de agregación.
-- Brevo como SMTP de Supabase Auth (remitente previsto `encuestas@sfpaula.com`).
+- Brevo como SMTP de Supabase Auth, configurado solo en el panel de Supabase (remitente provisional `encuestas@niage.eu`; previsto `encuestas@sfpaula.com`).
 - ETL en Python (`etl/`), ejecutado en local por Niage con la clave de servicio de `.env`.
 - Toda la lógica de datos del frontend en `src/data/`: el colegio aún no ha confirmado si acepta Supabase o pone su backend.
 
@@ -42,7 +42,8 @@ datos_locales/  NO va a git: fuentes, validación y prototipo con datos reales
 npm install          # dependencias (incluye la CLI de Supabase)
 npm run db:start     # Supabase local (Docker), puertos 554xx
 npm run db:reset     # recrea la base de datos con las migraciones
-npm run db:test      # tests pgTAP (supabase/tests)
+npm run db:test      # tests pgTAP (supabase/tests); en la nube: npx supabase test db --linked
+npm test             # tests del frontend (vitest)
 python3 supabase/scripts/probar_mfa_local.py   # prueba el doble factor del administrador
 python3 supabase/scripts/probar_invitacion_local.py   # prueba invitaciones, contraseñas y permisos
 .venv/bin/python etl/cargar_2526.py            # carga 2025/26 (--ensayo: sin tocar la base de datos)
@@ -57,7 +58,7 @@ python3 scripts/extraer_plantilla.py           # regenera los bloques A y B de l
 .venv/bin/python scripts/generar_recursos_pdf.py   # logos PNG y Raleway TTF para los PDF
 ```
 
-Pendiente de añadir: despliegue.
+Despliegue: orden y comandos en README («Despliegue») y `docs/DESPLIEGUE.md`.
 
 ## Estado
 
