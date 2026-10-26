@@ -1,7 +1,8 @@
 -- Eliminar usuarios (decisión del 26/10/2026). Hasta ahora solo se podían desactivar.
 -- Eliminar borra la cuenta de acceso y, en cascada, su perfil, su doble factor, sus sesiones abiertas y el código de una
 -- invitación pendiente (que deja de servir). El registro de actividad es la trazabilidad del colegio y no se borra: sus
--- acciones pasadas conservan el nombre y el correo que tenía, y la eliminación queda anotada con quién la hizo y cuándo.
+-- acciones pasadas conservan el nombre y el correo que tenía, tanto si las hizo como si iban dirigidas a él, y la
+-- eliminación queda anotada con quién la hizo y cuándo. La relación del registro con el usuario es «a nulo» (migración 3).
 -- Todo en una sola operación: o se elimina y se anota, o no cambia nada.
 
 alter table public.registro_actividad
@@ -36,7 +37,11 @@ begin
     raise exception 'No se puede eliminar al último administrador activo';
   end if;
 
+  -- Como autor: nombre y correo en sus columnas (usuario_id pasará a nulo, la relación no es en cascada).
   update public.registro_actividad set usuario_nombre = v_perfil.nombre, usuario_correo = v_correo where usuario_id = p_id;
+  -- Como destinatario («X invitó a Y»): el detalle ya lleva el nombre que tenía; se le añade el correo.
+  update public.registro_actividad set detalle = detalle || jsonb_build_object('correo', v_correo)
+  where detalle ->> 'usuario' = p_id::text and not detalle ? 'correo';
   delete from auth.users where id = p_id;
   perform privado.registrar('eliminacion', jsonb_build_object('usuario', p_id, 'nombre', v_perfil.nombre, 'correo', v_correo,
                                                               'rol', v_perfil.rol, 'etapa', v_perfil.etapa));

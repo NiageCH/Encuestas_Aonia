@@ -2,7 +2,7 @@
 -- administrador, y el registro de actividad conserva las acciones pasadas con el nombre y el correo.
 begin;
 \ir fixtures/datos_ejemplo.psql
-select plan(19);
+select plan(24);
 
 -- Historial previo de Dirección y una invitación pendiente de Coord PAI
 insert into public.registro_actividad (usuario_id, accion, detalle, fecha) values
@@ -40,6 +40,17 @@ select throws_ok($$ select public.admin_eliminar_usuario('00000000-0000-0000-000
 select throws_ok($$ select public.admin_eliminar_usuario(gen_random_uuid(), 'x@ejemplo.test') $$,
   'P0002', 'Usuario no encontrado', 'usuario que no existe');
 
+set local role postgres;
+-- La relación del registro con el usuario no es en cascada
+select is((select confdeltype::text from pg_constraint where conrelid = 'public.registro_actividad'::regclass and contype = 'f'), 'n',
+  'la relación del registro de actividad con el usuario pasa a nulo al borrarlo (no en cascada)');
+-- Dirección también es destinataria: Admin la desactivó y la reactivó
+insert into public.registro_actividad (usuario_id, accion, detalle, fecha) values
+  ('00000000-0000-0000-0000-00000000000a', 'desactivacion', '{"usuario":"00000000-0000-0000-0000-00000000000b","nombre":"Dirección"}', now() - interval '4 days');
+create temp table antes as select id, accion, usuario_id from public.registro_actividad;
+grant select on antes to authenticated;
+set local role authenticated;
+
 -- Eliminar a Dirección (correo con mayúsculas y espacios)
 select lives_ok($$ select public.admin_eliminar_usuario('00000000-0000-0000-0000-00000000000b', '  Direccion@Ejemplo.TEST ') $$,
   'un administrador elimina a otro usuario escribiendo su correo');
@@ -51,6 +62,11 @@ select is((select count(*)::int from auth.sessions where user_id = '00000000-000
   'y sus sesiones abiertas y su doble factor');
 select is((select count(*)::int from public.registro_actividad where usuario_nombre = 'Dirección' and usuario_correo = 'direccion@ejemplo.test'), 2,
   'sus acciones pasadas siguen en el registro, con su nombre y correo');
+select is((select count(*)::int from antes where not exists (select 1 from public.registro_actividad r where r.id = antes.id)), 0,
+  'no desaparece ninguna entrada del registro al eliminar');
+select is((select count(*)::int from public.registro_actividad) - (select count(*)::int from antes), 1, 'solo se añade la entrada de la eliminación');
+select is((select detalle ->> 'nombre' || ' ' || (detalle ->> 'correo') from public.registro_actividad where accion = 'desactivacion' and fecha < now()),
+  'Dirección direccion@ejemplo.test', 'como destinataria, la entrada conserva su nombre y gana su correo');
 select pg_temp.como('admin', 'aal2'); set local role authenticated;
 select is((select string_agg(e ->> 'usuario' || ':' || (e ->> 'usuario_eliminado'), ',' order by e ->> 'accion')
            from jsonb_array_elements(public.admin_registro()) e where e ->> 'accion' in ('exportacion', 'informe_profesor')),
@@ -66,6 +82,8 @@ select is((select count(*)::int from auth.one_time_tokens where user_id = '00000
   'el código de su invitación deja de existir');
 select is((select detalle ->> 'nombre' from public.registro_actividad where accion = 'invitacion' and fecha < now()), 'Coord PAI',
   'la invitación que se le envió sigue en el registro');
+select is((select (detalle ->> 'correo') || ' por ' || coalesce(usuario_id::text, '?') from public.registro_actividad where accion = 'invitacion' and fecha < now()),
+  'coord.pai@ejemplo.test por 00000000-0000-0000-0000-00000000000a', '«Admin invitó a Coord PAI»: tras eliminar a Coord PAI, conserva su nombre y correo, y el autor sigue siendo Admin');
 
 -- Último administrador activo: con otro administrador, se puede eliminar; la regla protege al que queda
 insert into auth.users (id, email, aud, role) values ('00000000-0000-0000-0000-0000000000aa', 'admin2@ejemplo.test', 'authenticated', 'authenticated');
