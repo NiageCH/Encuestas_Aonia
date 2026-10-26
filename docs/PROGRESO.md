@@ -206,6 +206,14 @@ Orden de carga: `cargar_2526.py` → `convertir_alexia_2526.py` → `cargar_asig
 - **Eliminar usuario** (migración 27, `admin_eliminar_usuario`): solo administración con doble factor; confirmación escribiendo el correo, también comprobada en el servidor; nadie se elimina a sí mismo ni al último administrador activo. Borra la cuenta y, en cascada, perfil, doble factor, sesiones y el código de una invitación pendiente. El registro de actividad conserva sus acciones pasadas con el nombre y el correo que tenía (columnas `usuario_nombre` y `usuario_correo`), y las que iban dirigidas a él ganan su correo en el detalle; la relación del registro con el usuario es «a nulo», nunca en cascada, y anota quién lo eliminó y cuándo. «Desactivar» se mantiene.
 - 333 tests pgTAP (24 nuevos en `14_eliminar_usuario.sql`, incluido que no desaparece ninguna entrada y que el destinatario eliminado conserva nombre y correo) y 33 del frontend. Prueba de punta a punta en local con un navegador sin ventana: eliminar desde la pantalla, sesión revocada, versión distinta y doble factor al abrir.
 
+## Paleta y retoques de textos (rama `paleta`, 26/10/2026)
+
+- Paleta de gráficos, indicadores y alertas en `src/paleta.ts` (variables `--en-*` y PDF): escalas en tonos de positivo y negativo, del 1 a la izquierda al 6 a la derecha; recomendación; series; alertas con borde y fondo suave; cifras y etiquetas en todos los gráficos (especificación, «Paleta»).
+- Pie de los PDF: «Colegio Internacional de Sevilla, San Francisco de Paula · Confidencial»; sin guiones como puntuación en la web ni en los PDF.
+- Leyenda de los PDF: «menos de 5» y «oculto» en líneas separadas.
+- Preguntas con la primera letra en mayúscula en la web, los PDF y los CSV (se aplica al recibir los datos; el texto guardado no cambia).
+- Puntos fuertes y de mejora: número de orden junto a la pregunta. Tarjetas de Inicio: cifra y escala en una sola línea.
+
 ## Bloqueos
 
 - Cuestionario de personal en inglés (4 respuestas).

@@ -16,3 +16,20 @@ describe("mensaje de una etapa o un grupo oculto", () => {
       "En 2025/26 respondieron menos de 5 alumnos de Y7 C. Con menos de 5 no se muestran resultados, para proteger el anonimato.");
   });
 });
+
+import { mayusculaInicial, textosConMayuscula } from "./formato";
+
+describe("mayúscula inicial de las preguntas", () => {
+  it("pone la primera letra en mayúscula sin tocar el resto", () => {
+    expect(mayusculaInicial("se comprenden bien las explicaciones del Profesor")).toBe("Se comprenden bien las explicaciones del Profesor");
+    expect(mayusculaInicial("¿te gusta?")).toBe("¿Te gusta?");
+    expect(mayusculaInicial("«mi» tutor")).toBe("«Mi» tutor");
+    expect(mayusculaInicial("Ya empieza bien")).toBe("Ya empieza bien");
+    expect(mayusculaInicial("él")).toBe("Él");
+    expect(mayusculaInicial("")).toBe("");
+  });
+  it("se aplica a todos los campos «texto» de una respuesta, y solo a esos", () => {
+    const r = textosConMayuscula({ nombre: "x", preguntas: [{ codigo: "a", texto: "las clases", resultado: { texto: "otra" } }] });
+    expect(r).toEqual({ nombre: "x", preguntas: [{ codigo: "a", texto: "Las clases", resultado: { texto: "Otra" } }] });
+  });
+});

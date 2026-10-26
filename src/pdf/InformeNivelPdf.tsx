@@ -122,7 +122,7 @@ export function InformeNivelPdf({ eyebrow, titulo, subtitulo, secciones, alumnos
   const hayComplementaria = secciones.some((x) => x.informe.preguntas.some((p) => p.resultado.total.motivo === "complementaria")
     || x.informe.total.motivo === "complementaria");
   return (
-    <Document title={`${eyebrow} · ${titulo}`} author="Colegio Internacional de Sevilla – San Francisco de Paula" language="es">
+    <Document title={`${eyebrow} · ${titulo}`} author="Colegio Internacional de Sevilla, San Francisco de Paula" language="es">
       <Page size="A4" style={base.pagina}>
         <Cabecera subtitulo={t.pdf_cab_resp} />
         <View style={base.cuerpo}>
@@ -149,7 +149,8 @@ export function InformeNivelPdf({ eyebrow, titulo, subtitulo, secciones, alumnos
           ))}
 
           <Text style={[base.nota, { marginTop: 14 }]}>{t.pdf_nota_escala}</Text>
-          <Text style={base.nota}>{t.pdf_nota_oculto}{hayComplementaria ? ` ${t.pdf_nota_asterisco}` : ""}</Text>
+          <Text style={base.nota}>{t.pdf_nota_oculto}</Text>
+          {hayComplementaria && <Text style={base.nota}>{t.pdf_nota_asterisco}</Text>}
           <Text style={base.nota}>{t.aviso_cierre}</Text>
         </View>
         <Pie generado={generado} />

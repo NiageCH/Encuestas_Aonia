@@ -29,7 +29,7 @@ export function Marco({ ruta, enlaces, usuario, aviso, children }: Props) {
       <a className="skip" href="#app">{t.skip}</a>
       <header className="topbar">
         <a className="brand" href="#/">
-          <img className="brand-logo" src={logo} alt="Colegio Internacional de Sevilla – San Francisco de Paula" width={126} height={44} />
+          <img className="brand-logo" src={logo} alt="Colegio Internacional de Sevilla, San Francisco de Paula" width={126} height={44} />
           <span className="brand-text"><strong>{t.brand_title}</strong><small>{t.brand_sub}</small></span>
         </a>
         {enlaces.length > 0 && (
@@ -61,7 +61,7 @@ export function Marco({ ruta, enlaces, usuario, aviso, children }: Props) {
       <footer className="footer">
         <div className="f-main">
           <a className="f-logo" href="https://colegiosfpaula.com/" target="_blank" rel="noopener">
-            <img src={logoBlanco} alt="Colegio Internacional de Sevilla – San Francisco de Paula" width={200} height={70} />
+            <img src={logoBlanco} alt="Colegio Internacional de Sevilla, San Francisco de Paula" width={200} height={70} />
           </a>
           <div className="f-course"><strong>{t.brand_title}</strong><span>{t.f_sub}</span></div>
           <div className="f-links">

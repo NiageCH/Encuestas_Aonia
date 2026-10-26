@@ -30,3 +30,20 @@ export function nps(x: number): string {
 
 /** Recuento con separador de miles. */
 export const recuento = (n: number) => n.toLocaleString("es-ES");
+
+/** Primera letra en mayúscula (algunas preguntas de Encuesta Fácil empiezan en minúscula). No cambia el texto guardado. */
+export function mayusculaInicial(texto: string): string {
+  // La primera letra, aunque vaya detrás de «¿», «¡», comillas o espacios.
+  return texto.replace(/^([\s¿¡«"“(]*)(\p{L})/u, (_, signos: string, letra: string) => signos + letra.toLocaleUpperCase("es"));
+}
+
+/** Aplica mayusculaInicial a todos los campos «texto» de una respuesta del servidor (preguntas de informes, detalle,
+ *  puntos fuertes...). Así llega igual a la web, los PDF y los CSV, que salen de los mismos datos. */
+export function textosConMayuscula<T>(x: T): T {
+  if (Array.isArray(x)) return x.map(textosConMayuscula) as T;
+  if (x && typeof x === "object") {
+    return Object.fromEntries(Object.entries(x as Record<string, unknown>).map(([k, v]) =>
+      [k, k === "texto" && typeof v === "string" ? mayusculaInicial(v) : textosConMayuscula(v)])) as T;
+  }
+  return x;
+}

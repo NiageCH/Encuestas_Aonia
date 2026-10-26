@@ -65,7 +65,7 @@ export function InformeProfesorPdf({ profesor, informe, generado }: DatosInforme
   const hayComplementaria = celdas.some((c) => c.motivo === "complementaria");
 
   return (
-    <Document title={`${t.prof_informe} · ${profesor.nombre} ${profesor.apellidos}`} author="Colegio Internacional de Sevilla – San Francisco de Paula" language="es">
+    <Document title={`${t.prof_informe} · ${profesor.nombre} ${profesor.apellidos}`} author="Colegio Internacional de Sevilla, San Francisco de Paula" language="es">
       <Page size="A4" style={base.pagina}>
         <Cabecera subtitulo={t.pdf_cab_sub} />
 
@@ -128,7 +128,8 @@ export function InformeProfesorPdf({ profesor, informe, generado }: DatosInforme
           ))}
 
           <Text style={[base.nota, { marginTop: 14 }]}>{t.pdf_nota_escala}</Text>
-          <Text style={base.nota}>{t.pdf_nota_oculto}{hayComplementaria ? ` ${t.pdf_nota_asterisco}` : ""}</Text>
+          <Text style={base.nota}>{t.pdf_nota_oculto}</Text>
+          {hayComplementaria && <Text style={base.nota}>{t.pdf_nota_asterisco}</Text>}
           <Text style={base.nota}>{t.aviso_cierre}</Text>
         </View>
 

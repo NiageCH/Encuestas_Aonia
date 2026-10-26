@@ -3,6 +3,7 @@
 // complementaria.
 
 import { CURSO, supabase } from "./cliente";
+import { mayusculaInicial, textosConMayuscula } from "../formato";
 
 export type Motivo = "menos_de_5" | "complementaria" | "sin_datos";
 
@@ -124,7 +125,7 @@ export async function detallePreguntas(filtro: Filtro, bloque: string, dimension
     p_dimensiones: dimensiones,
   });
   if (error) throw error;
-  return data as DetallePregunta[];
+  return textosConMayuscula(data as DetallePregunta[]);
 }
 
 /** Texto de cada opción de una pregunta de selección múltiple (código -> texto). */
@@ -134,7 +135,7 @@ export async function opciones(pregunta: string): Promise<Record<string, string>
     .select("codigo, texto_es, pregunta!inner(codigo_diccionario)")
     .eq("pregunta.codigo_diccionario", pregunta);
   if (error) throw error;
-  return Object.fromEntries((data ?? []).map((o) => [o.codigo, o.texto_es]));
+  return Object.fromEntries((data ?? []).map((o) => [o.codigo, mayusculaInicial(o.texto_es)]));
 }
 
 /** Recuento informativo de personas por idioma en personal (cifras exactas, §5): no existe
@@ -160,7 +161,7 @@ export async function preguntasComunes(): Promise<PreguntaComun[]> {
   if (error) throw error;
   const porCodigo = new Map<string, PreguntaComun>();
   for (const fila of (data ?? []) as unknown as { codigo_comun: string; texto_es: string; colectivo: Colectivo; pregunta: { codigo_diccionario: string } }[]) {
-    const c = porCodigo.get(fila.codigo_comun) ?? { codigo: fila.codigo_comun, texto: fila.texto_es, preguntas: {} };
+    const c = porCodigo.get(fila.codigo_comun) ?? { codigo: fila.codigo_comun, texto: mayusculaInicial(fila.texto_es), preguntas: {} };
     c.preguntas[fila.colectivo] = fila.pregunta.codigo_diccionario;
     porCodigo.set(fila.codigo_comun, c);
   }
@@ -220,7 +221,7 @@ export async function preguntasProfesorado(cuestionarios: string[]): Promise<Pre
   const vistos = new Map<string, PreguntaBloque>();
   for (const f of (data ?? []) as unknown as { orden: number; pregunta: { codigo_diccionario: string; texto_es: string } }[]) {
     if (!vistos.has(f.pregunta.codigo_diccionario)) {
-      vistos.set(f.pregunta.codigo_diccionario, { codigo: f.pregunta.codigo_diccionario, texto: f.pregunta.texto_es, orden: f.orden });
+      vistos.set(f.pregunta.codigo_diccionario, { codigo: f.pregunta.codigo_diccionario, texto: mayusculaInicial(f.pregunta.texto_es), orden: f.orden });
     }
   }
   return [...vistos.values()];
@@ -233,7 +234,7 @@ export type InformeProfesor = ResultadoProfesor & { preguntas: { codigo: string;
 export async function informeProfesor(docente: number, lote = false): Promise<InformeProfesor> {
   const { data, error } = await supabase.rpc("informe_profesor", { p_curso: CURSO, p_docente: docente, p_lote: lote });
   if (error) throw error;
-  return data as InformeProfesor;
+  return textosConMayuscula(data as InformeProfesor);
 }
 
 export type TipoResponsable = "equipo_individualizacion" | "departamento" | "superiores" | "centro";
@@ -251,7 +252,7 @@ export interface InformeResponsable {
 export async function informeResponsable(tipo: TipoResponsable, ambito: string | null = null, registrar = false): Promise<InformeResponsable> {
   const { data, error } = await supabase.rpc("informe_responsable", { p_curso: CURSO, p_tipo: tipo, p_ambito: ambito, p_registrar: registrar });
   if (error) throw error;
-  return data as InformeResponsable;
+  return textosConMayuscula(data as InformeResponsable);
 }
 
 export interface MediaDepartamentoAlumnos {
@@ -297,7 +298,7 @@ export interface InformeJefe {
 export async function informeJefe(persona: number, registrar = false): Promise<InformeJefe> {
   const { data, error } = await supabase.rpc("informe_jefe_departamento", { p_curso: CURSO, p_persona: persona, p_registrar: registrar });
   if (error) throw error;
-  return data as InformeJefe;
+  return textosConMayuscula(data as InformeJefe);
 }
 
 export interface GrupoEquipo {
@@ -317,7 +318,7 @@ export interface InformeEquipo { tramos: string[]; total: Fila; preguntas: Detal
 export async function informeEquipo(tramos: string[], registrar = false): Promise<InformeEquipo> {
   const { data, error } = await supabase.rpc("informe_equipo", { p_curso: CURSO, p_tramos: tramos, p_registrar: registrar });
   if (error) throw error;
-  return data as InformeEquipo;
+  return textosConMayuscula(data as InformeEquipo);
 }
 
 export interface Punto { codigo: string; texto: string; n: number; media: number; pct_bajo: number }
@@ -326,7 +327,7 @@ export interface Punto { codigo: string; texto: string; n: number; media: number
 export async function puntosColectivo(colectivo: Colectivo): Promise<{ mejora: Punto[]; fuertes: Punto[] }> {
   const { data, error } = await supabase.rpc("puntos_colectivo", { p_filtro: { curso: CURSO, colectivo } });
   if (error) throw error;
-  return data as { mejora: Punto[]; fuertes: Punto[] };
+  return textosConMayuscula(data as { mejora: Punto[]; fuertes: Punto[] });
 }
 
 export interface BloqueComparado { bloque: string; nombre: string; no_recomienda: Fila; recomienda: Fila; diferencia: number | null }

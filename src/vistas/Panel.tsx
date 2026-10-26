@@ -180,7 +180,7 @@ export function Panel({ perfil }: { perfil: Perfil }) {
                   <small>
                     {indicadores[c]!.personas.suprimido ? <Oculto fila={indicadores[c]!.personas} /> : `${f.recuento(indicadores[c]!.personas.n!)} ${t.respuestas}`}
                     {" · "}{indicadores[c]!.etiquetaPrincipal}{" "}
-                    {indicadores[c]!.principal.suprimido ? <Oculto fila={indicadores[c]!.principal} /> : <b>{f.media(indicadores[c]!.principal.media!)} / 6</b>}
+                    {indicadores[c]!.principal.suprimido ? <Oculto fila={indicadores[c]!.principal} /> : <b className="en-sin-partir">{f.media(indicadores[c]!.principal.media!)} / 6</b>}
                   </small>
                 </span>
                 <span className="t-go">→</span>
@@ -360,8 +360,9 @@ function ListaPuntos({ titulo, puntos, clase }: { titulo: string; puntos: Punto[
     <div className={`en-puntos-bloque ${clase}`}>
       <h4>{titulo}</h4>
       <ol className="en-lista-puntos">
-        {puntos.map((p) => (
+        {puntos.map((p, i) => (
           <li key={p.codigo}>
+            <span className="en-orden" aria-hidden="true">{i + 1}.</span>
             <span>{p.texto}<small>{t.panel_pct_bajo(f.porcentaje(p.pct_bajo))} · {t.tip_valoraciones(f.recuento(p.n))}</small></span>
             <b>{f.media(p.media)}</b>
           </li>
