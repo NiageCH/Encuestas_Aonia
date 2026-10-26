@@ -65,13 +65,13 @@ select is((select count(*)::int from public.registro_actividad where usuario_nom
 select is((select count(*)::int from antes where not exists (select 1 from public.registro_actividad r where r.id = antes.id)), 0,
   'no desaparece ninguna entrada del registro al eliminar');
 select is((select count(*)::int from public.registro_actividad) - (select count(*)::int from antes), 1, 'solo se añade la entrada de la eliminación');
-select is((select detalle ->> 'nombre' || ' ' || (detalle ->> 'correo') from public.registro_actividad where accion = 'desactivacion' and fecha < now()),
+select is((select detalle ->> 'nombre' || ' ' || (detalle ->> 'correo') from public.registro_actividad where accion = 'desactivacion' and detalle ->> 'usuario' = '00000000-0000-0000-0000-00000000000b'),
   'Dirección direccion@ejemplo.test', 'como destinataria, la entrada conserva su nombre y gana su correo');
 select pg_temp.como('admin', 'aal2'); set local role authenticated;
 select is((select string_agg(e ->> 'usuario' || ':' || (e ->> 'usuario_eliminado'), ',' order by e ->> 'accion')
-           from jsonb_array_elements(public.admin_registro()) e where e ->> 'accion' in ('exportacion', 'informe_profesor')),
+           from jsonb_array_elements(public.admin_registro()) e where e ->> 'accion' in ('exportacion', 'informe_profesor') and e ->> 'usuario' = 'Dirección'),
   'Dirección:true,Dirección:true', 'el registro las muestra a su nombre, marcadas como de un usuario eliminado');
-select is((select e -> 'detalle' ->> 'correo' || ' por ' || (e ->> 'usuario') from jsonb_array_elements(public.admin_registro()) e where e ->> 'accion' = 'eliminacion'),
+select is((select e -> 'detalle' ->> 'correo' || ' por ' || (e ->> 'usuario') from jsonb_array_elements(public.admin_registro()) e where e ->> 'accion' = 'eliminacion' and e -> 'detalle' ->> 'usuario' = '00000000-0000-0000-0000-00000000000b'),
   'direccion@ejemplo.test por Admin', 'la eliminación queda anotada con el correo y quién la hizo');
 
 -- Invitación pendiente: queda anulada
@@ -80,9 +80,9 @@ select lives_ok($$ select public.admin_eliminar_usuario('00000000-0000-0000-0000
 set local role postgres;
 select is((select count(*)::int from auth.one_time_tokens where user_id = '00000000-0000-0000-0000-00000000000c'), 0,
   'el código de su invitación deja de existir');
-select is((select detalle ->> 'nombre' from public.registro_actividad where accion = 'invitacion' and fecha < now()), 'Coord PAI',
+select is((select detalle ->> 'nombre' from public.registro_actividad where accion = 'invitacion' and detalle ->> 'usuario' = '00000000-0000-0000-0000-00000000000c'), 'Coord PAI',
   'la invitación que se le envió sigue en el registro');
-select is((select (detalle ->> 'correo') || ' por ' || coalesce(usuario_id::text, '?') from public.registro_actividad where accion = 'invitacion' and fecha < now()),
+select is((select (detalle ->> 'correo') || ' por ' || coalesce(usuario_id::text, '?') from public.registro_actividad where accion = 'invitacion' and detalle ->> 'usuario' = '00000000-0000-0000-0000-00000000000c'),
   'coord.pai@ejemplo.test por 00000000-0000-0000-0000-00000000000a', '«Admin invitó a Coord PAI»: tras eliminar a Coord PAI, conserva su nombre y correo, y el autor sigue siendo Admin');
 
 -- Último administrador activo: con otro administrador, se puede eliminar; la regla protege al que queda
