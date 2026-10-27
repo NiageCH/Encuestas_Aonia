@@ -1,6 +1,10 @@
 -- Revisión de lenguaje (docs/GLOSARIO.md): ninguna función del servidor conserva un mensaje con los términos descartados
 -- (migración 20261027000028 y, en fase2, 20261028000036).
 begin;
+-- pgTAP, como en fixtures/datos_ejemplo.psql (en la nube no está instalado; se deshace con el rollback)
+set local role postgres;
+set local search_path = public, extensions;
+create extension if not exists pgtap with schema extensions;
 select plan(4);
 
 -- Mensajes como «Sin acceso a este profesor»: entre comillas, empiezan por una palabra con mayúscula y llevan un término
