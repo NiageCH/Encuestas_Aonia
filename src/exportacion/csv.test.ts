@@ -88,3 +88,12 @@ describe("nombre de archivo", () => {
     expect(nombreArchivo(["Personal", "Primer año en el Colegio"], "csv")).toBe("Encuestas_2526_Personal_Primer-ano-en-el-Colegio.csv");
   });
 });
+
+describe("enunciados en el CSV", () => {
+  it("copia el enunciado exactamente como está guardado, sin mayúscula inicial", () => {
+    const tabla = tablaDetalle("Profesorado", [{ texto: "se comprenden bien las explicaciones", fila: visible }], ["a", "b", "c", "d", "e", "f"]);
+    const csv = aCsv({ ...ejemplo, tablas: [tabla] }, fecha, false);
+    expect(csv).toContain("\r\nse comprenden bien las explicaciones;");
+    expect(csv).not.toContain("Se comprenden bien las explicaciones");
+  });
+});

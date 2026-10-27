@@ -13,7 +13,7 @@ describe("mensaje de una etapa o un grupo oculto", () => {
   });
   it("alumnos con menos de 5 en un grupo", () => {
     expect(textoParteOculta("menos_de_5", "2025/26", "alumnos", "Y7 C")).toBe(
-      "En 2025/26 respondieron menos de 5 alumnos de Y7 C. Con menos de 5 no se muestran resultados, para proteger el anonimato.");
+      "En 2025/26 hubo menos de 5 respuestas del alumnado de Y7 C. Con menos de 5 no se muestran resultados, para proteger el anonimato.");
   });
 });
 

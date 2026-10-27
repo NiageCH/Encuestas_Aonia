@@ -15,6 +15,7 @@ import {
 import type { Perfil } from "../data/sesion";
 import {
   celdas, COLUMNAS_REC, filaRecomendacion, notasComunes, num, txt, type Exportacion, type Tabla, type Valor,
+  enunciado,
 } from "../exportacion/modelo";
 import * as f from "../formato";
 import { t } from "../i18n";
@@ -109,7 +110,7 @@ export function Panel({ perfil }: { perfil: Perfil }) {
       },
     ];
     const columnasPuntos = [t.exp_col_pregunta, t.exp_col_valoraciones, t.exp_col_media, t.exp_col_pct_bajo];
-    const filaPunto = (p: Punto): Valor[] => [txt(p.texto), num(p.n), num(p.media, 2), num(p.pct_bajo)];
+    const filaPunto = (p: Punto): Valor[] => [enunciado(p.texto), num(p.n), num(p.media, 2), num(p.pct_bajo)];
     for (const c of colectivos.filter((x) => puntos[x])) {
       tablas.push({ titulo: `${t.panel_mejora}: ${t.panel_colectivo[c]}`, columnas: columnasPuntos, filas: puntos[c]!.mejora.map(filaPunto) });
       tablas.push({ titulo: `${t.panel_fuertes}: ${t.panel_colectivo[c]}`, columnas: columnasPuntos, filas: puntos[c]!.fuertes.map(filaPunto),
@@ -126,7 +127,7 @@ export function Panel({ perfil }: { perfil: Perfil }) {
     }
     tablas.push({
       titulo: t.panel_comunes, columnas: [t.exp_col_pregunta, ...colectivos.map((c) => `${t.panel_colectivo[c]}: ${t.exp_col_media.toLowerCase()}`)],
-      filas: (comunes ?? []).map((x) => [txt(x.pregunta.texto),
+      filas: (comunes ?? []).map((x) => [enunciado(x.pregunta.texto),
         ...colectivos.map((c) => (x.valores[c] ? celdas(x.valores[c]!, ["media"])[0] : txt(t.exp_no_se_pregunta)))]),
       notas: [t.panel_comunes_lead, t.panel_comunes_nota],
     });
@@ -137,14 +138,14 @@ export function Panel({ perfil }: { perfil: Perfil }) {
     tablas.push({
       titulo: t.valorado, columnas: [t.exp_col_aspecto, ...visibles.map((c) => `% ${t.panel_colectivo[c]}`)],
       filas: [...elegidos].sort((a, b) => Math.max(...visibles.map((c) => pct(c, b))) - Math.max(...visibles.map((c) => pct(c, a))))
-        .map((codigo) => [txt(textos[codigo] ?? codigo), ...visibles.map((c) => num(pct(c, codigo)))]),
+        .map((codigo) => [enunciado(textos[codigo] ?? codigo), ...visibles.map((c) => num(pct(c, codigo)))]),
       notas: [t.panel_valorado_lead],
     });
     for (const c of visibles) {
       tablas.push({
         titulo: `${t.panel_menos}: ${t.panel_colectivo[c]}`, columnas: [t.exp_col_aspecto, t.exp_col_porcentaje],
         filas: [...(valorado[c]!.opciones ?? [])].filter((o) => o.n > 0).sort((a, b) => a.pct - b.pct).slice(0, 5)
-          .map((o) => [txt(textos[o.codigo] ?? o.codigo), num(o.pct)]),
+          .map((o) => [enunciado(textos[o.codigo] ?? o.codigo), num(o.pct)]),
         notas: [t.panel_menos_nota],
       });
     }
@@ -258,8 +259,8 @@ export function Panel({ perfil }: { perfil: Perfil }) {
               <div key={c} className="card">
                 <h3><i className={`en-punto-color ${CLASE[c]}`} aria-hidden="true" />{t.panel_colectivo[c]}</h3>
                 <ol className="en-lista-puntos">
-                  {[...(valorado[c]!.opciones ?? [])].filter((o) => o.n > 0).sort((a, b) => a.pct - b.pct).slice(0, 5).map((o) => (
-                    <li key={o.codigo}><span>{textos[o.codigo] ?? o.codigo}</span><b>{f.porcentaje(o.pct)}</b></li>
+                  {[...(valorado[c]!.opciones ?? [])].filter((o) => o.n > 0).sort((a, b) => a.pct - b.pct).slice(0, 5).map((o, i) => (
+                    <li key={o.codigo}><span className="en-orden" aria-hidden="true">{i + 1}.</span><span>{f.mayusculaInicial(textos[o.codigo] ?? o.codigo)}</span><b>{f.porcentaje(o.pct)}</b></li>
                   ))}
                 </ol>
               </div>
@@ -297,15 +298,15 @@ function PreguntaComparada({ comun, colectivos }: { comun: Comun; colectivos: Co
   const ayuda = useAyuda();
   return (
     <div className="en-comun">
-      <div className="en-comun-t">{comun.pregunta.texto}</div>
+      <div className="en-comun-t">{f.mayusculaInicial(comun.pregunta.texto)}</div>
       <div className="en-comun-barras">
         {colectivos.filter((c) => comun.valores[c]).map((c) => {
           const v = comun.valores[c]!;
           const ancho = v.suprimido ? 0 : ((v.media! - 1) / 5) * 100;
           return (
             <div key={c} className="en-comun-fila en-con-ayuda"
-                 {...ayuda(v.suprimido ? [comun.pregunta.texto, t.panel_colectivo[c], lineasOculto(v)]
-                   : [comun.pregunta.texto, t.panel_colectivo[c], t.tip_media(f.media(v.media!)), t.tip_valoraciones(f.recuento(v.n!))])}>
+                 {...ayuda(v.suprimido ? [f.mayusculaInicial(comun.pregunta.texto), t.panel_colectivo[c], lineasOculto(v)]
+                   : [f.mayusculaInicial(comun.pregunta.texto), t.panel_colectivo[c], t.tip_media(f.media(v.media!)), t.tip_valoraciones(f.recuento(v.n!))])}>
               <span className="en-serie-etq">{t.panel_colectivo[c]}</span>
               <span className="en-track" aria-hidden="true"><span className={`en-fill ${CLASE[c]}`} style={{ width: `${ancho}%` }} /></span>
               <span className="en-val">{v.suprimido ? <Oculto fila={v} /> : f.media(v.media!)}</span>
@@ -334,14 +335,14 @@ function ValoradoComparado({ valorado, textos, colectivos }: {
     <>
       {filas.map((codigo) => (
         <div key={codigo} className="en-comun">
-          <div className="en-comun-t">{textos[codigo] ?? codigo}</div>
+          <div className="en-comun-t">{f.mayusculaInicial(textos[codigo] ?? codigo)}</div>
           <div className="en-comun-barras">
             {visibles.map((c) => {
               const o = pct(c, codigo);
               const p = o?.pct ?? 0;
               return (
                 <div key={c} className="en-comun-fila en-con-ayuda"
-                     {...ayuda([textos[codigo] ?? codigo, t.panel_colectivo[c], f.porcentaje(p), t.tip_eligen(f.recuento(o?.n ?? 0), f.recuento(valorado[c]!.n!))])}>
+                     {...ayuda([f.mayusculaInicial(textos[codigo] ?? codigo), t.panel_colectivo[c], f.porcentaje(p), t.tip_eligen(f.recuento(o?.n ?? 0), f.recuento(valorado[c]!.n!))])}>
                   <span className="en-serie-etq">{t.panel_colectivo[c]}</span>
               <span className="en-track" aria-hidden="true"><span className={`en-fill ${CLASE[c]}`} style={{ width: `${p}%` }} /></span>
                   <span className="en-val">{f.porcentaje(p)}</span>
@@ -363,7 +364,7 @@ function ListaPuntos({ titulo, puntos, clase }: { titulo: string; puntos: Punto[
         {puntos.map((p, i) => (
           <li key={p.codigo}>
             <span className="en-orden" aria-hidden="true">{i + 1}.</span>
-            <span>{p.texto}<small>{t.panel_pct_bajo(f.porcentaje(p.pct_bajo))} · {t.tip_valoraciones(f.recuento(p.n))}</small></span>
+            <span>{f.mayusculaInicial(p.texto)}<small>{t.panel_pct_bajo(f.porcentaje(p.pct_bajo))} · {t.tip_valoraciones(f.recuento(p.n))}</small></span>
             <b>{f.media(p.media)}</b>
           </li>
         ))}

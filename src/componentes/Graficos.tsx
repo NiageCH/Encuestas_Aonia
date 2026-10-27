@@ -168,8 +168,9 @@ const TRAMOS_ACUERDO = ["en-esc-4", "en-esc-5", "en-esc-6"];       // 4, 5, 6
 
 /** Una pregunta de 1 a 6 con su distribución divergente: desacuerdo a la izquierda (1 a 3) y
  *  acuerdo a la derecha (4 a 6). */
-export function FilaPregunta({ texto, fila, etiquetas }: { texto: string; fila: Fila; etiquetas: string[] }) {
+export function FilaPregunta({ texto: guardado, fila, etiquetas }: { texto: string; fila: Fila; etiquetas: string[] }) {
   const ayuda = useAyuda();
+  const texto = f.mayusculaInicial(guardado);
   if (fila.suprimido) {
     return (
       <div className="en-item en-con-ayuda" {...ayuda([texto, lineasOculto(fila)])}>
@@ -228,7 +229,7 @@ export function LeyendaAcuerdo({ etiquetas }: { etiquetas: string[] }) {
   );
 }
 
-/** «Lo más valorado»: porcentaje de personas que eligen cada aspecto. */
+/** «Aspectos más destacados»: porcentaje de personas que eligen cada aspecto. */
 export function Ranking({ fila, textos, maximo = 10 }: { fila: Fila; textos: Record<string, string>; maximo?: number }) {
   const ayuda = useAyuda();
   if (fila.suprimido) return <p className="en-hint"><Oculto fila={fila} /> · {lineasOculto(fila)}</p>;
@@ -237,7 +238,7 @@ export function Ranking({ fila, textos, maximo = 10 }: { fila: Fila; textos: Rec
   return (
     <>
       {ops.map((o) => {
-        const texto = textos[o.codigo] ?? o.codigo;
+        const texto = f.mayusculaInicial(textos[o.codigo] ?? o.codigo);
         return (
           <div key={o.codigo} className="en-bar en-con-ayuda"
                {...ayuda([texto, f.porcentaje(o.pct), t.tip_eligen(f.recuento(o.n), f.recuento(fila.n!))])}>

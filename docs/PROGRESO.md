@@ -214,6 +214,13 @@ Orden de carga: `cargar_2526.py` → `convertir_alexia_2526.py` → `cargar_asig
 - Preguntas con la primera letra en mayúscula en la web, los PDF y los CSV (se aplica al recibir los datos; el texto guardado no cambia).
 - Puntos fuertes y de mejora: número de orden junto a la pregunta. Tarjetas de Inicio: cifra y escala en una sola línea.
 
+## Revisión de lenguaje de Aonia (rama `lenguaje-aonia`, 27/10/2026, pendiente de desplegar)
+
+- Términos inclusivos y uniformes (alumnado, profesorado, profesor/a, personal) en menús, títulos, filtros, leyendas, avisos, PDF, CSV y nombres de archivo; indicadores renombrados («Aspectos con mayor y menor valoración», «Aspectos más destacados», «Aspectos menos destacados»); recomendación en respuestas favorables, neutras y desfavorables. Glosario en `docs/GLOSARIO.md` y test `src/glosario.test.ts`.
+- CSV con los enunciados exactamente como están guardados; mayúscula inicial solo en la web y los PDF.
+- Tablas sin celdas partidas palabra a palabra: anchos de columna en los PDF según su contenido, rangos sin partir, anchos mínimos y filas apiladas en móvil.
+- Pendiente: aprobación de la lista de cambios adicionales de redacción y despliegue.
+
 ## Bloqueos
 
 - Cuestionario de personal en inglés (4 respuestas).

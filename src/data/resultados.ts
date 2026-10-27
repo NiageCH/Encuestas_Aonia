@@ -125,7 +125,7 @@ export async function detallePreguntas(filtro: Filtro, bloque: string, dimension
     p_dimensiones: dimensiones,
   });
   if (error) throw error;
-  return textosConMayuscula(data as DetallePregunta[]);
+  return data as DetallePregunta[];   // enunciados tal como están guardados: la web y los PDF les ponen mayúscula inicial
 }
 
 /** Texto de cada opción de una pregunta de selección múltiple (código -> texto). */
@@ -135,7 +135,7 @@ export async function opciones(pregunta: string): Promise<Record<string, string>
     .select("codigo, texto_es, pregunta!inner(codigo_diccionario)")
     .eq("pregunta.codigo_diccionario", pregunta);
   if (error) throw error;
-  return Object.fromEntries((data ?? []).map((o) => [o.codigo, mayusculaInicial(o.texto_es)]));
+  return Object.fromEntries((data ?? []).map((o) => [o.codigo, o.texto_es]));
 }
 
 /** Recuento informativo de personas por idioma en personal (cifras exactas, §5): no existe
@@ -161,7 +161,7 @@ export async function preguntasComunes(): Promise<PreguntaComun[]> {
   if (error) throw error;
   const porCodigo = new Map<string, PreguntaComun>();
   for (const fila of (data ?? []) as unknown as { codigo_comun: string; texto_es: string; colectivo: Colectivo; pregunta: { codigo_diccionario: string } }[]) {
-    const c = porCodigo.get(fila.codigo_comun) ?? { codigo: fila.codigo_comun, texto: mayusculaInicial(fila.texto_es), preguntas: {} };
+    const c = porCodigo.get(fila.codigo_comun) ?? { codigo: fila.codigo_comun, texto: fila.texto_es, preguntas: {} };
     c.preguntas[fila.colectivo] = fila.pregunta.codigo_diccionario;
     porCodigo.set(fila.codigo_comun, c);
   }
@@ -323,11 +323,11 @@ export async function informeEquipo(tramos: string[], registrar = false): Promis
 
 export interface Punto { codigo: string; texto: string; n: number; media: number; pct_bajo: number }
 
-/** Puntos fuertes y de mejora de un colectivo: preguntas de 1 a 6 con 5 o más valoraciones. */
+/** Aspectos con mayor y menor valoración de un colectivo: preguntas de 1 a 6 con 5 o más valoraciones. */
 export async function puntosColectivo(colectivo: Colectivo): Promise<{ mejora: Punto[]; fuertes: Punto[] }> {
   const { data, error } = await supabase.rpc("puntos_colectivo", { p_filtro: { curso: CURSO, colectivo } });
   if (error) throw error;
-  return textosConMayuscula(data as { mejora: Punto[]; fuertes: Punto[] });
+  return data as { mejora: Punto[]; fuertes: Punto[] };
 }
 
 export interface BloqueComparado { bloque: string; nombre: string; no_recomienda: Fila; recomienda: Fila; diferencia: number | null }

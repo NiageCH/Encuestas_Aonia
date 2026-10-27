@@ -6,6 +6,7 @@ import { t } from "../i18n";
 import { base, C, Cabecera, Pie } from "../pdf/comun";
 import { cabecera, numeroCsv } from "./csv";
 import type { Exportacion, Tabla, Valor } from "./modelo";
+import { mayusculaInicial } from "../formato";
 
 const s = StyleSheet.create({
   datos: { marginTop: 10, padding: 8, borderRadius: 6, backgroundColor: C.bg },
@@ -27,11 +28,41 @@ function Celda({ v, ancho, primera }: { v: Valor; ancho: number; primera: boolea
   const estilo = primera ? s.primera : [{ width: ancho }, s.num, s.der];
   if ("num" in v) return <Text style={estilo}>{numero(v.num, v.dec)}</Text>;
   if ("oculto" in v) return <Text style={[...[estilo].flat(), s.oculto]}>{v.oculto}</Text>;
-  return <Text style={estilo}>{v.texto}</Text>;
+  if ("enunciado" in v) return <Text style={estilo}>{mayusculaInicial(v.enunciado)}</Text>;
+  return <Text style={estilo}>{sinCortes(v.texto)}</Text>;
 }
 
-/** Ancho de una columna de cifras según su cabecera: «1» estrecha, «Valoraciones» ancha. */
-const anchoColumna = (c: string) => (c.length <= 3 ? 24 : c.length <= 6 ? 40 : 60);
+// Anchos de columna (revisión de lenguaje): ninguna celda se parte palabra a palabra. Cada columna mide al menos su
+// palabra más larga y, si cabe, su texto entero; la cabecera puede ir en dos líneas. Si no cabe todo, las columnas se
+// estrechan hasta su palabra más larga, nunca menos, y la primera columna se queda con el resto.
+const ANCHO_UTIL = 520;
+const PRIMERA_MIN = 150;
+const CAR = 4.7;   // ancho medio de un carácter de Raleway a 8 pt
+const medida = (x: string) => x.length * CAR + 8;
+const palabraMasLarga = (x: string) => Math.max(...x.split(/[ \t\n]+/).map(medida));
+/** Rangos y escalas sin partir: «de 1 a 6», «(9 y 10)», «6 o menos», «escala de 0 a 10». */
+export const sinCortes = (x: string) => x
+  .replace(/(\d+) (a|y|o) (\d+|menos)/g, "$1\u00a0$2\u00a0$3")
+  .replace(/\b(de|del) (\d)/g, "$1\u00a0$2")
+  .replace(/% (de|favorables|neutras|desfavorables)/g, "%\u00a0$1");
+const textoCelda = (v: Valor) => sinCortes("num" in v ? numero(v.num, v.dec) : "oculto" in v ? v.oculto : "enunciado" in v ? v.enunciado : v.texto);
+
+export function anchosColumnas(tabla: Tabla): number[] {
+  const cols = tabla.columnas.map((c, j) => {
+    if (j === 0) return { min: 0, ideal: 0 };
+    const textos = tabla.filas.map((f) => f[j]).filter(Boolean).map(textoCelda);
+    const min = Math.max(24, palabraMasLarga(sinCortes(c)) * 1.05, ...textos.map(palabraMasLarga));
+    const ideal = Math.max(min, Math.min(medida(c) * 1.05 / 2 + 8, 90), ...textos.map((x) => Math.min(medida(x), 110)));
+    return { min, ideal };
+  });
+  const resto = cols.slice(1);
+  const disponible = ANCHO_UTIL - PRIMERA_MIN;
+  const ideal = resto.reduce((a, c) => a + c.ideal, 0);
+  if (ideal <= disponible) return [0, ...resto.map((c) => c.ideal)];
+  const minimo = resto.reduce((a, c) => a + c.min, 0);
+  const k = minimo >= disponible ? 0 : (disponible - minimo) / (ideal - minimo);
+  return [0, ...resto.map((c) => c.min + (c.ideal - c.min) * k)];
+}
 
 /** Si todas las cifras de la fila están ocultas por el mismo motivo, se dice una sola vez. */
 function ocultaEntera(f: Valor[]): string | null {
@@ -42,7 +73,7 @@ function ocultaEntera(f: Valor[]): string | null {
 }
 
 function TablaPdf({ tabla }: { tabla: Tabla }) {
-  const anchos = tabla.columnas.map(anchoColumna);
+  const anchos = anchosColumnas(tabla);
   const sumaCifras = anchos.slice(1).reduce((a, b) => a + b, 0);
   return (
     <View>
@@ -50,7 +81,7 @@ function TablaPdf({ tabla }: { tabla: Tabla }) {
         <Text style={base.h2}>{tabla.titulo}</Text>
         {tabla.filas.length > 0 && (
           <View style={s.cab}>
-            {tabla.columnas.map((c, i) => <Text key={i} style={i === 0 ? s.primera : [{ width: anchos[i] }, s.num, s.der]}>{c}</Text>)}
+            {tabla.columnas.map((c, i) => <Text key={i} style={i === 0 ? s.primera : [{ width: anchos[i] }, s.num, s.der]}>{sinCortes(c)}</Text>)}
           </View>
         )}
       </View>

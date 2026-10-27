@@ -5,8 +5,9 @@
 import type { Fila } from "../data/resultados";
 import { t } from "../i18n";
 
-/** Una celda: texto, número (con sus decimales) o resultado oculto. Nunca hay celdas en blanco. */
-export type Valor = { texto: string } | { num: number; dec: number } | { oculto: string };
+/** Una celda: texto, enunciado de una pregunta u opción (tal como está guardado: el CSV lo copia igual y el PDF le pone
+ *  mayúscula inicial), número (con sus decimales) o resultado oculto. Nunca hay celdas en blanco. */
+export type Valor = { texto: string } | { enunciado: string } | { num: number; dec: number } | { oculto: string };
 
 export interface Tabla {
   titulo: string;
@@ -31,6 +32,7 @@ export interface Exportacion {
 }
 
 export const txt = (texto: string): Valor => ({ texto });
+export const enunciado = (texto: string): Valor => ({ enunciado: texto });
 export const num = (x: number, dec = 0): Valor => ({ num: x, dec });
 
 /** Texto de una celda oculta, el mismo que en pantalla. */
@@ -109,19 +111,19 @@ export function tablaDetalle(bloque: string, preguntas: { texto: string; fila: F
   return {
     titulo: `${t.detalle}: ${bloque}`,
     columnas: [t.exp_col_pregunta, t.exp_col_valoraciones, t.exp_col_media, "1", "2", "3", "4", "5", "6", t.exp_col_nsnc],
-    filas: preguntas.map(({ texto, fila }) => [txt(texto), ...celdas(fila, ["n", "media", "d1", "d2", "d3", "d4", "d5", "d6", "nsnc"])]),
+    filas: preguntas.map(({ texto, fila }) => [enunciado(texto), ...celdas(fila, ["n", "media", "d1", "d2", "d3", "d4", "d5", "d6", "nsnc"])]),
     notas: [t.exp_nota_detalle(etiquetas.map((e, i) => `${i + 1} ${e}`).join(" · "))],
   };
 }
 
-/** Lo más valorado: porcentaje de personas que eligen cada aspecto. */
+/** Aspectos más destacados: porcentaje de personas que eligen cada aspecto. */
 export function tablaValorado(titulo: string, fila: Fila, textos: Record<string, string>): Tabla {
   const columnas = [t.exp_col_aspecto, t.exp_col_personas, t.exp_col_porcentaje];
   if (fila.suprimido) return { titulo, columnas, filas: [[txt(t.exp_todos_aspectos), ...celdas(fila, ["n", "n"])]] };
   const ops = [...(fila.opciones ?? [])].filter((o) => o.n > 0).sort((a, b) => b.n - a.n);
   return {
     titulo, columnas,
-    filas: ops.map((o) => [txt(textos[o.codigo] ?? o.codigo), num(o.n), num(o.pct)]),
+    filas: ops.map((o) => [enunciado(textos[o.codigo] ?? o.codigo), num(o.n), num(o.pct)]),
     notas: [t.exp_nota_valorado(fila.n ?? 0)],
   };
 }

@@ -24,6 +24,7 @@ export function campoCsv(s: string): string {
 function valor(v: Valor): string {
   if ("num" in v) return numeroCsv(v.num, v.dec);
   if ("oculto" in v) return campoCsv(v.oculto);
+  if ("enunciado" in v) return campoCsv(v.enunciado);   // exactamente como está guardado
   return campoCsv(v.texto);
 }
 

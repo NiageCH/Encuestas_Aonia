@@ -159,12 +159,12 @@ function Informe({ profesor }: { profesor: Profesor }) {
                 {preguntas.map(({ p, r }) => (
                   <tr key={p.codigo}>
                     <td>{p.texto}</td>
-                    <td className="n en-con-ayuda" {...ayuda(r.global.suprimido ? [p.texto, t.prof_sin_visibles]
+                    <td className="n en-con-ayuda" data-etiqueta={t.prof_col_profesor} {...ayuda(r.global.suprimido ? [p.texto, t.prof_sin_visibles]
                       : [p.texto, t.tip_media(f.media(r.global.media!)), t.tip_valoraciones(f.recuento(r.global.n_valoraciones!))])}>
                       {r.global.suprimido ? <span className="en-oculto">{t.oculto_menos5}</span> : <strong>{f.media(r.global.media!)}</strong>}
                     </td>
-                    {etapas.map((e) => <td key={e} className="n">{celda(r.comparacion[e])}</td>)}
-                    {datos.comparacion.colegio && <td className="n">{celda(r.comparacion.colegio)}</td>}
+                    {etapas.map((e) => <td key={e} className="n" data-etiqueta={t.etapas[e as keyof typeof t.etapas]}>{celda(r.comparacion[e])}</td>)}
+                    {datos.comparacion.colegio && <td className="n" data-etiqueta={t.prof_col_colegio}>{celda(r.comparacion.colegio)}</td>}
                   </tr>
                 ))}
               </tbody>
