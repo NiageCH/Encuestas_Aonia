@@ -11,6 +11,12 @@ grant all on cod to authenticated;
 create function pg_temp.ultima() returns jsonb language sql security definer as $$
   select detalle from public.registro_actividad where accion = 'descarga' order by id desc limit 1 $$;
 grant execute on function pg_temp.ultima() to authenticated;
+-- Lo que ya hubiera en el registro (la base local puede tener descargas reales): se cuenta solo lo que añade el test.
+create temp table antes as select
+  (select count(*) from public.registro_actividad where accion = 'descarga')::int as total,
+  (select count(*) from public.registro_actividad where accion = 'descarga' and detalle ->> 'tipo' = 'csv')::int as csv,
+  (select count(*) from public.registro_actividad where accion = 'descarga' and privado.plano(detalle::text) like '%garcia%')::int as garcia;
+grant select on antes to authenticated;
 
 -- Quién puede anotar qué ----------------------------------------------------------------------------------------------
 set local role anon;
@@ -72,13 +78,13 @@ insert into cod select 'familias', r ->> 'codigo' from r1;
 select pg_temp.como('direccion'); set local role authenticated;
 select throws_ok($$ select public.admin_descargas() $$, '42501', 'Solo para administración', 'dirección no ve el registro de descargas');
 set local role postgres; select pg_temp.como('admin', 'aal2'); set local role authenticated;
-select is((public.admin_descargas() ->> 'total')::int, 4, 'administración ve todas');
+select is((public.admin_descargas() ->> 'total')::int, (select total from antes) + 4, 'administración ve todas');
 select is((select jsonb_agg(f ->> 'objeto') from jsonb_array_elements(public.admin_descargas(jsonb_build_object('codigo', lower((select valor from cod where nombre = 'familias')))) -> 'filas') f),
   '["Familias"]'::jsonb, 'búsqueda por código (sin distinguir mayúsculas)');
 select is((select jsonb_agg(f ->> 'tipo') from jsonb_array_elements(public.admin_descargas(jsonb_build_object('codigo', (select valor from cod where nombre = 'zip_dentro'))) -> 'filas') f),
   '["zip"]'::jsonb, 'el código de un informe de un ZIP lleva a su ZIP');
-select is((public.admin_descargas('{"objeto": "garcia"}') ->> 'total')::int, 1, 'persona del informe, sin acentos y también dentro de un ZIP');
-select is((public.admin_descargas('{"tipo": "csv"}') ->> 'total')::int, 2, 'por tipo');
+select is((public.admin_descargas('{"objeto": "garcia"}') ->> 'total')::int, (select garcia from antes) + 1, 'persona del informe, sin acentos y también dentro de un ZIP');
+select is((public.admin_descargas('{"tipo": "csv"}') ->> 'total')::int, (select csv from antes) + 2, 'por tipo');
 select is((public.admin_descargas('{"persona": "00000000-0000-0000-0000-00000000000c"}') ->> 'total')::int, 1, 'por persona que descarga');
 select is((public.admin_descargas(jsonb_build_object('desde', to_char(now() + interval '1 day', 'YYYY-MM-DD'))) ->> 'total')::int, 0, 'por fechas');
 select ok(not exists (select 1 from jsonb_array_elements(public.admin_registro(1000)) e where e ->> 'accion' = 'descarga'),
