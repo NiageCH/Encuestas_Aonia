@@ -7,24 +7,24 @@ en la nube lo autoriza Rodrigo antes de hacerlo.
 
 | Qué | Quién | Por qué |
 |---|---|---|
-| Confirmación de sistemas del colegio de que aceptan Supabase (§10, pregunta 4) | Rodrigo con sistemas | Su guía técnica dice que las herramientas con servidor, base de datos o usuarios las alojan ellos. Si no aceptan, el frontend no cambia (todo el acceso a datos está en `src/data/`), pero hay que rehacer el backend en su infraestructura. |
-| Contratos de tratamiento de datos (RGPD) | Rodrigo (Niage) con el colegio y Aonia | Niage actúa como encargado del tratamiento. Supabase y Brevo tienen sus propios acuerdos de tratamiento (DPA) que hay que aceptar al crear las cuentas. |
+| Confirmación de sistemas del Colegio de que aceptan Supabase (§10, pregunta 4) | Rodrigo con sistemas | Su guía técnica dice que las herramientas con servidor, base de datos o usuarios las alojan ellos. Si no aceptan, el frontend no cambia (todo el acceso a datos está en `src/data/`), pero hay que rehacer el backend en su infraestructura. |
+| Contratos de tratamiento de datos (RGPD) | Rodrigo (Niage) con el Colegio y Aonia | Niage actúa como encargado del tratamiento. Supabase y Brevo tienen sus propios acuerdos de tratamiento (DPA) que hay que aceptar al crear las cuentas. |
 
 ## 1. Lo que necesito de Rodrigo
 
 | # | Qué | Detalle | Dónde va |
 |---|---|---|---|
-| 1 | **Proyecto Supabase** en la región **Irlanda, UE (eu-west-1)**, en la organización de Niage. **Creado el 22/10/2026** (`osxjfmnhcyybgffanlqo`, plan Free) | Pasar al plan **Pro** antes de las pruebas con el colegio: los proyectos gratuitos se pausan tras una semana sin uso y no tienen copias de seguridad diarias. | — |
+| 1 | **Proyecto Supabase** en la región **Irlanda, UE (eu-west-1)**, en la organización de Niage. **Creado el 22/10/2026** (`osxjfmnhcyybgffanlqo`, plan Free) | Pasar al plan **Pro** antes de las pruebas con el Colegio: los proyectos gratuitos se pausan tras una semana sin uso y no tienen copias de seguridad diarias. | — |
 | 2 | **Referencia del proyecto** (project ref) y **contraseña de la base de datos** | Para enlazar el repositorio (`supabase link`) y subir las migraciones. | Solo en el equipo de Rodrigo (`.env`, fuera de git) |
 | 3 | Que Rodrigo ejecute `npx supabase login` en su equipo | La CLI necesita su token personal; no se comparte. | Su equipo |
 | 4 | **Clave anon** y **URL** del proyecto | Son públicas por diseño (van en el frontend; la seguridad la dan RLS y las RPC). | Variables del alojamiento web |
 | 5 | **Clave de servicio** (service_role) | Solo para la ETL en local. La Edge Function la recibe de Supabase sin que la tengamos que copiar. | `.env` local de Rodrigo, nunca en git ni en el alojamiento |
 | 6 | **Cuenta de Brevo** (plan gratuito: 300 correos al día, suficiente) | Clave SMTP para Supabase Auth. | Panel de Supabase (SMTP) |
-| 7 | **Remitente provisional de Niage** verificado en Brevo | Mientras el colegio no publique sus registros DNS (spec §3). | Brevo |
+| 7 | **Remitente provisional de Niage** verificado en Brevo | Mientras el Colegio no publique sus registros DNS (spec §3). | Brevo |
 | 8 | **Alojamiento web** con región UE y despliegue automático desde GitHub | Decisión pendiente (ver abajo). Acceso a la cuenta o invitación al repositorio. | — |
-| 9 | **Registros DNS del colegio** | `encuestas.sfpaula.com` (CNAME al alojamiento) y, para enviar desde `encuestas@sfpaula.com`, los que indique Brevo al dar de alta el dominio (código de verificación, DKIM y DMARC). | Sistemas del colegio |
+| 9 | **Registros DNS del Colegio** | `encuestas.sfpaula.com` (CNAME al alojamiento) y, para enviar desde `encuestas@sfpaula.com`, los que indique Brevo al dar de alta el dominio (código de verificación, DKIM y DMARC). | Sistemas del Colegio |
 | 10 | **Primer administrador** | El correo con el que entrará Rodrigo en producción; los demás se invitan desde la aplicación. | — |
-| 11 | **Excel de asignación de profesores** y lista de jefes | Para que los informes de profesores y departamentos sean reales (sin él, se despliega sin asignaciones). | ETL |
+| 11 | **Excel de asignación docente** y lista de jefaturas | Para que los informes de profesores y departamentos sean reales (sin él, se despliega sin asignaciones). | ETL |
 
 ### Alojamiento web: decisión pendiente
 
@@ -38,7 +38,7 @@ UE y despliegue automático desde GitHub. Opciones a valorar:
 - **Netlify, Vercel o Cloudflare Pages:** muy cómodos (GitHub, certificados y vistas previas),
   pero son empresas de EE. UU. con red de distribución mundial.
 
-Recomendación: proveedor europeo, por coherencia con la guía del colegio. Decide Rodrigo.
+Recomendación: proveedor europeo, por coherencia con la guía del Colegio. Decide Rodrigo.
 
 ## 2. Orden de trabajo
 
@@ -67,14 +67,14 @@ Cada paso se comprueba antes de pasar al siguiente.
 5. **Primer administrador:** alta de Rodrigo desde el panel de Supabase y su perfil de
    administrador con una sentencia SQL; al entrar, alta del doble factor. Desde ahí, invitaciones
    desde la aplicación.
-6. **Dominio:** registro DNS de `encuestas.sfpaula.com` (sistemas del colegio) → certificado en el
+6. **Dominio:** registro DNS de `encuestas.sfpaula.com` (sistemas del Colegio) → certificado en el
    alojamiento → actualizar URL del sitio y de redirección en Auth y `SITIO_URL`.
-7. **Remitente del colegio:** dominio `sfpaula.com` en Brevo con sus registros DNS → cambiar el
+7. **Remitente del Colegio:** dominio `sfpaula.com` en Brevo con sus registros DNS → cambiar el
    remitente a `encuestas@sfpaula.com`.
 8. **Pruebas finales:** móvil, iPad y escritorio; cada rol con un usuario real; PDF individuales y
    en lote; exportaciones.
-9. **Documentación:** manual del administrador y guía de usuario de una página.
-10. **Tarjeta en la intranet** del colegio que enlace a `encuestas.sfpaula.com`.
+9. **Documentación:** manual de administración y guía de uso de una página.
+10. **Tarjeta en la intranet** del Colegio que enlace a `encuestas.sfpaula.com`.
 
 ## 3. Lo que preparo antes, sin tocar la nube
 
@@ -86,7 +86,7 @@ Cada paso se comprueba antes de pasar al siguiente.
 
 ## 4. Entorno de pruebas: encuestas-sfp.niage.eu (22/10/2026)
 
-Hasta que el colegio tenga `encuestas.sfpaula.com`, las pruebas van en un subdominio de Niage.
+Hasta que el Colegio tenga `encuestas.sfpaula.com`, las pruebas van en un subdominio de Niage.
 Supabase: proyecto `osxjfmnhcyybgffanlqo` (Irlanda, UE, plan Free), sin datos reales.
 
 ### Alojamiento: Clever Cloud (empresa francesa, región París)
@@ -160,7 +160,7 @@ Supabase: proyecto `osxjfmnhcyybgffanlqo` (Irlanda, UE, plan Free), sin datos re
 5. Authentication → Rate Limits: subir el límite de correos por hora (por ejemplo, 60) cuando
    el SMTP propio esté activo.
 
-## 5. Carga de los datos reales en la nube (hecha el 22/10/2026, con autorización escrita del colegio)
+## 5. Carga de los datos reales en la nube (hecha el 22/10/2026, con autorización escrita del Colegio)
 
 **Qué se sube** (todo sale de `datos_locales/`, que no va a git; la carga va directa a la base
 de datos por conexión cifrada, sin pasar por el alojamiento web):
@@ -168,8 +168,8 @@ de datos por conexión cifrada, sin pasar por el alojamiento web):
 | Paso | Orden | Qué sube |
 |---|---|---|
 | 1 | `etl/cargar_2526.py --remoto` | 8 cuestionarios, 890 respuestas, unas 132.000 valoraciones, diccionario de 340 preguntas, tramos de tutoría (18) y atribuciones por nombre (388). Sin IP, fechas, identificadores, sexo ni respuestas abiertas; los nombres que escriben los alumnos no se cargan, solo el docente atribuido. |
-| 2 | `etl/cargar_asignaciones.py datos_locales/asignacion_2526_desde_alexia.xlsx --remoto` | 799 asignaciones de 97 docentes: nombre, apellidos, correo del colegio, departamento y situación (alta o baja). **Son datos personales del personal docente**: por eso hace falta la autorización. |
-| 3 | `etl/cargar_responsables.py --remoto` | 7 jefes de departamento (9 cargos: uno por departamento oficial; dos personas tienen dos departamentos) y 4 responsables del Equipo de Individuación (nombre y correo). |
+| 2 | `etl/cargar_asignaciones.py datos_locales/asignacion_2526_desde_alexia.xlsx --remoto` | 799 asignaciones de 97 docentes: nombre, apellidos, correo del Colegio, departamento y situación (alta o baja). **Son datos personales del personal docente**: por eso hace falta la autorización. |
+| 3 | `etl/cargar_responsables.py --remoto` | 7 jefaturas de departamento (9 cargos: uno por departamento oficial; dos personas tienen dos departamentos) y 4 responsables del Equipo de Individuación (nombre y correo). |
 
 Requisito: `DATABASE_URL` en el `.env` de Rodrigo con la cadena de conexión del proyecto
 (Supabase → Connect → *Session pooler*, IPv4), con su contraseña. Solo en su equipo; nunca en git.
@@ -184,7 +184,7 @@ Requisito: `DATABASE_URL` en el `.env` de Rodrigo con la cadena de conexión del
    el recuento (cuestionarios, respuestas, valoraciones, atribuciones, tramos, grupos, asignaturas,
    departamentos, asignaciones, cargos, personas y preguntas).
 3. `npx supabase test db --linked` (los tests usan su propio curso inventado y no dejan nada).
-4. Revisión en la web por Rodrigo: Inicio, Alumnos, Familias, Personal e informes, con la franja
+4. Revisión en la web por Rodrigo: Inicio, Alumnado, Familias, Personal e informes, con la franja
    «Resultados en validación».
 
 **Cómo se borraría:** `etl/borrar_2526.py --remoto --confirmar`. Borra en una sola transacción

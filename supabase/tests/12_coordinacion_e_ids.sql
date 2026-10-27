@@ -31,11 +31,11 @@ select is(public.resultados('{"curso":"2000/01","colectivo":"familias","referenc
 select ok((public.resultados('{"curso":"2000/01","colectivo":"familias"}', '{"tipo":"personas"}') -> 'total' ->> 'n')::int
           is distinct from (select n from total_familias), 'sin la referencia, sigue viendo solo su etapa');
 select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"familias","referencia":true}', '{"tipo":"personas"}', '{etapa}') $$,
-  'P0001', 'La referencia del colegio es solo el total de familias, sin filtros ni repartos', 'la referencia no se reparte por etapa');
+  'P0001', 'La referencia del Colegio es solo el total de familias, sin filtros ni repartos', 'la referencia no se reparte por etapa');
 select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"familias","referencia":true,"etapa":"pai"}', '{"tipo":"personas"}') $$,
-  'P0001', 'La referencia del colegio es solo el total de familias, sin filtros ni repartos', 'ni sirve para pedir otra etapa');
+  'P0001', 'La referencia del Colegio es solo el total de familias, sin filtros ni repartos', 'ni sirve para pedir otra etapa');
 select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"alumnos","referencia":true}', '{"tipo":"personas"}') $$,
-  'P0001', 'La referencia del colegio es solo el total de familias, sin filtros ni repartos', 'solo existe en familias');
+  'P0001', 'La referencia del Colegio es solo el total de familias, sin filtros ni repartos', 'solo existe en familias');
 select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"familias","etapa":"pai"}', '{"tipo":"personas"}') $$,
   '42501', 'Sin acceso a la etapa pai', 'fuera de la referencia, otra etapa sigue prohibida');
 

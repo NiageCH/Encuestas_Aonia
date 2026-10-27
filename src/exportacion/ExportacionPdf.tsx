@@ -7,6 +7,7 @@ import { base, C, Cabecera, Pie } from "../pdf/comun";
 import { cabecera, numeroCsv } from "./csv";
 import type { Exportacion, Tabla, Valor } from "./modelo";
 import { mayusculaInicial } from "../formato";
+import { sinCortes } from "../rangos";
 
 const s = StyleSheet.create({
   datos: { marginTop: 10, padding: 8, borderRadius: 6, backgroundColor: C.bg },
@@ -40,11 +41,6 @@ const PRIMERA_MIN = 150;
 const CAR = 4.7;   // ancho medio de un carácter de Raleway a 8 pt
 const medida = (x: string) => x.length * CAR + 8;
 const palabraMasLarga = (x: string) => Math.max(...x.split(/[ \t\n]+/).map(medida));
-/** Rangos y escalas sin partir: «de 1 a 6», «(9 y 10)», «6 o menos», «escala de 0 a 10». */
-export const sinCortes = (x: string) => x
-  .replace(/(\d+) (a|y|o) (\d+|menos)/g, "$1\u00a0$2\u00a0$3")
-  .replace(/\b(de|del) (\d)/g, "$1\u00a0$2")
-  .replace(/% (de|favorables|neutras|desfavorables)/g, "%\u00a0$1");
 const textoCelda = (v: Valor) => sinCortes("num" in v ? numero(v.num, v.dec) : "oculto" in v ? v.oculto : "enunciado" in v ? v.enunciado : v.texto);
 
 export function anchosColumnas(tabla: Tabla): number[] {

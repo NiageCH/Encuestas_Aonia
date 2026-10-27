@@ -219,7 +219,8 @@ Orden de carga: `cargar_2526.py` → `convertir_alexia_2526.py` → `cargar_asig
 - Términos inclusivos y uniformes (alumnado, profesorado, profesor/a, personal) en menús, títulos, filtros, leyendas, avisos, PDF, CSV y nombres de archivo; indicadores renombrados («Aspectos con mayor y menor valoración», «Aspectos más destacados», «Aspectos menos destacados»); recomendación en respuestas favorables, neutras y desfavorables. Glosario en `docs/GLOSARIO.md` y test `src/glosario.test.ts`.
 - CSV con los enunciados exactamente como están guardados; mayúscula inicial solo en la web y los PDF.
 - Tablas sin celdas partidas palabra a palabra: anchos de columna en los PDF según su contenido, rangos sin partir, anchos mínimos y filas apiladas en móvil.
-- Pendiente: aprobación de la lista de cambios adicionales de redacción y despliegue.
+- Propuestas aprobadas y aplicadas (27/10/2026): notas sin interpretaciones, jefaturas, persona responsable directa, rol «Administración», menú «Accesos», «Te damos la bienvenida», «Colegio» con mayúscula, «Mayor valoración» primero, rangos sin partir también en la web, plantilla Excel de asignación, mensajes del servidor (migración 20261027000028, que solo cambia textos, y Edge Function `admin-usuarios`), especificación, README y documentos de despliegue. 337 tests de base y 44 del frontend; validación de 2025/26 sin diferencias.
+- Pendiente: despliegue (copia previa, migración, Edge Function y web).
 
 ## Bloqueos
 

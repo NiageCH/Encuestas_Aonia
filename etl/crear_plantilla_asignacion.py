@@ -1,4 +1,4 @@
-"""Genera la plantilla Excel de asignación de profesores para el colegio (§7.2):
+"""Genera la plantilla Excel de asignación docente para el Colegio (§7.2):
 etl/plantillas/asignacion_docente_2526.xlsx
 
 Una fila por docente, grupo y asignatura. Si dos docentes comparten asignatura y grupo
@@ -28,12 +28,12 @@ from cargar_2526 import url_bd  # noqa: E402
 CURSO = "2025/26"
 COLUMNAS = [
     ("Curso", 10, "Curso escolar, por ejemplo 2025/26."),
-    ("Grupo", 10, "Grupo de alumnos tal como aparece en la hoja Listas, por ejemplo «Y9 A»."),
+    ("Grupo", 10, "Grupo tal como aparece en la hoja Listas, por ejemplo «Y9 A»."),
     ("Asignatura", 46, "Asignatura tal como aparece en la hoja Listas. Si el nombre del colegio es otro, escríbalo: se revisará a mano."),
     ("Apellidos", 24, "Apellidos del docente (se usan para el nombre del informe: Informe_2526_Apellido_Nombre.pdf)."),
     ("Nombre", 18, "Nombre del docente."),
     ("Correo", 30, "Correo del colegio del docente. Identifica a la persona: use siempre el mismo."),
-    ("Departamento", 30, "Departamento al que pertenece el docente (para los informes de jefes de departamento)."),
+    ("Departamento", 30, "Departamento al que pertenece el docente (para los informes de las jefaturas de departamento)."),
 ]
 # Colores de la intranet (:root): navy y soft.
 NAVY, SOFT = "1A2C4A", "EAF0F6"
@@ -93,10 +93,10 @@ def main() -> None:
     ins = libro.create_sheet("Instrucciones", 0)
     ins.column_dimensions["A"].width, ins.column_dimensions["B"].width = 16, 100
     filas = [
-        ("Asignación de profesores por grupo y asignatura · curso 2025/26", ""),
+        ("Asignación docente por grupo y asignatura · curso 2025/26", ""),
         ("", ""),
         ("Para qué sirve", "Con esta tabla la plataforma de encuestas sabe qué docente imparte cada asignatura en cada grupo, "
-                           "para preparar el informe de cada profesor con las encuestas de sus alumnos."),
+                           "para preparar el informe de cada profesor/a con las encuestas de su alumnado."),
         ("Cómo rellenarla", "En la hoja «Asignación», una fila por docente, grupo y asignatura. Si dos docentes comparten "
                             "asignatura y grupo (codocencia o desdoble), escriba dos filas."),
         ("", "Los nombres de grupo y asignatura conviene copiarlos de la hoja «Listas»: son los que aparecen en las encuestas. "
@@ -109,8 +109,8 @@ def main() -> None:
         ("Ejemplo", "2025/26 · Y9 A · Matemáticas · García López · Ana · ana.garcia@sfpaula.com · Matemáticas"),
         ("", "(Ejemplo inventado: no lo copie en la hoja Asignación.)"),
         ("", ""),
-        ("Privacidad", "Esta tabla solo se usa para atribuir los resultados agregados de las encuestas. Los alumnos no "
-                       "aparecen en ella y ningún resultado con menos de 5 respuestas se muestra en los informes."),
+        ("Privacidad", "Esta tabla solo se usa para atribuir los resultados agregados de las encuestas. El alumnado no "
+                       "aparece en ella y ningún resultado con menos de 5 respuestas se muestra en los informes."),
     ]
     for i, (a, b) in enumerate(filas, start=1):
         ins.cell(row=i, column=1, value=a).font = Font(bold=True, color=NAVY)

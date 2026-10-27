@@ -240,7 +240,7 @@ select is(jsonb_array_length(public.informe_profesor('2000/01', (select siete fr
 set local role postgres; select pg_temp.como('coord_pai'); set local role authenticated;
 select throws_ok($$ select public.listar_jefes('2000/01') $$, '42501', 'Sin acceso a los informes de responsables', 'coordinación: no ve los jefes');
 select throws_ok($$ select public.informe_equipo('2000/01', '{y6_y9}') $$, '42501', 'Sin acceso a los informes de responsables', 'ni el Equipo de Individuación');
-select throws_ok($$ select public.resultados_profesor('2000/01', (select cinco from ids)) $$, '42501', 'Sin acceso a este profesor',
+select throws_ok($$ select public.resultados_profesor('2000/01', (select cinco from ids)) $$, '42501', 'Sin acceso a este profesor/a',
   'ni profesores de Bachillerato');
 
 select * from finish();

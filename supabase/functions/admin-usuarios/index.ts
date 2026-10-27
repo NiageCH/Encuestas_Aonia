@@ -44,10 +44,10 @@ Deno.serve(async (req) => {
   if (errorSesion || !sesion.user) return respuesta(401, { error: "Sin sesión" });
 
   const { data: yo } = await admin.from("usuario_perfil").select("rol, activo").eq("id", sesion.user.id).maybeSingle();
-  if (!yo?.activo || yo.rol !== "administrador") return respuesta(403, { error: "Solo para administradores" });
+  if (!yo?.activo || yo.rol !== "administrador") return respuesta(403, { error: "Solo para administración" });
   // Doble factor obligatorio salvo que la base de datos local lo tenga desactivado (desarrollo).
   const { data: mfa } = await admin.rpc("mfa_admin_obligatorio");
-  if (mfa !== false && nivelAcceso(jwt) !== "aal2") return respuesta(403, { error: "Doble factor obligatorio para administradores" });
+  if (mfa !== false && nivelAcceso(jwt) !== "aal2") return respuesta(403, { error: "Doble factor obligatorio para las cuentas de administración" });
 
   let cuerpo: Record<string, unknown>;
   try {
@@ -70,12 +70,12 @@ Deno.serve(async (req) => {
     // Antes de invitar: si el correo ya existe, no se invita (Supabase reenviaría al usuario
     // existente) y, sobre todo, no se deshace nada que no se haya creado en esta llamada.
     const { data: existente } = await admin.rpc("admin_id_por_correo", { p_correo: correo });
-    if (existente) return respuesta(409, { error: "Ya existe un usuario con ese correo" });
+    if (existente) return respuesta(409, { error: "Ya existe un acceso con ese correo" });
 
     const { data, error } = await admin.auth.admin.inviteUserByEmail(correo, { redirectTo: SITIO, data: { nombre } });
     if (error || !data.user) {
       const existe = /already|registered|exists/i.test(error?.message ?? "");
-      return respuesta(existe ? 409 : 400, { error: existe ? "Ya existe un usuario con ese correo" : "No se ha podido enviar la invitación" });
+      return respuesta(existe ? 409 : 400, { error: existe ? "Ya existe un acceso con ese correo" : "No se ha podido enviar la invitación" });
     }
     const { error: errorPerfil } = await admin.rpc("admin_registrar_invitacion", {
       p_admin: sesion.user.id, p_usuario: data.user.id, p_nombre: nombre, p_rol: rol, p_etapa: etapa, p_reenvio: false,
@@ -92,10 +92,10 @@ Deno.serve(async (req) => {
   if (cuerpo.accion === "reenviar") {
     const id = String(cuerpo.id ?? "");
     const { data: u, error } = await admin.auth.admin.getUserById(id);
-    if (error || !u.user?.email) return respuesta(404, { error: "Usuario no encontrado" });
+    if (error || !u.user?.email) return respuesta(404, { error: "Acceso no encontrado" });
     if (u.user.last_sign_in_at) return respuesta(409, { error: "Esta persona ya ha entrado: no necesita invitación" });
     const { data: perfil } = await admin.from("usuario_perfil").select("nombre, rol, etapa, activo").eq("id", id).maybeSingle();
-    if (!perfil?.activo) return respuesta(409, { error: "El usuario está desactivado" });
+    if (!perfil?.activo) return respuesta(409, { error: "El acceso está desactivado" });
     const { error: errorInv } = await admin.auth.admin.inviteUserByEmail(u.user.email, { redirectTo: SITIO, data: { nombre: perfil.nombre } });
     if (errorInv) return respuesta(400, { error: "No se ha podido reenviar la invitación" });
     await admin.rpc("admin_registrar_invitacion", {

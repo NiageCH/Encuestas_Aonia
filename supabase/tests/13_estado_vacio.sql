@@ -9,7 +9,7 @@ select is(public.colectivos_cargados('1999/00'), '{}'::text[], 'un curso sin enc
 
 -- Administrador cuya sesión todavía no ha pasado el doble factor: error, nunca una lista vacía
 set local role postgres; select pg_temp.como('admin', 'aal1'); set local role authenticated;
-select throws_ok($$ select public.colectivos_cargados('2000/01') $$, '42501', 'Doble factor obligatorio para administradores',
+select throws_ok($$ select public.colectivos_cargados('2000/01') $$, '42501', 'Doble factor obligatorio para las cuentas de administración',
   'un administrador sin doble factor recibe un error, no «sin datos»');
 select is((select count(*)::int from public.cuestionario), 0, '(la lectura directa del catálogo le da una lista vacía, que era lo que confundía)');
 set local role postgres; select pg_temp.como('admin', 'aal2'); set local role authenticated;

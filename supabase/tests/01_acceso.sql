@@ -52,7 +52,7 @@ select throws_ok($$ select public.resumen('{"curso":"2000/01","colectivo":"famil
 -- administrador: doble factor obligatorio
 set local role postgres; select pg_temp.como('admin', 'aal1'); set local role authenticated;
 select throws_ok($$ select public.resumen('{"curso":"2000/01","colectivo":"familias"}') $$, '42501',
-  'Doble factor obligatorio para administradores', 'un administrador sin aal2 no obtiene resultados');
+  'Doble factor obligatorio para las cuentas de administración', 'un administrador sin aal2 no obtiene resultados');
 select is((select count(*) from public.usuario_perfil), 1::bigint,
   'un administrador sin aal2 solo ve su propio perfil (para saber que debe verificar el doble factor)');
 set local role postgres; select pg_temp.como('admin', 'aal2'); set local role authenticated;

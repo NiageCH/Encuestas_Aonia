@@ -26,7 +26,7 @@ describe("acceso a los resultados", () => {
     expect(puedeVerResultados("direccion", false, true, "aal1")).toBe(false);
   });
   it("una negativa del servidor no es «sin datos»", () => {
-    expect(estadoDeError({ code: "42501", message: "Doble factor obligatorio para administradores" })).toEqual({ estado: "sin_acceso" });
+    expect(estadoDeError({ code: "42501", message: "Doble factor obligatorio para las cuentas de administración" })).toEqual({ estado: "sin_acceso" });
     expect(estadoDeError(new Error("Failed to fetch"))).toEqual({ estado: "error" });
     expect(hayResultados({ estado: "sin_acceso" }, ["familias"])).toBe(false);
   });

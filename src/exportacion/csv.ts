@@ -17,14 +17,17 @@ export function numeroCsv(x: number, dec: number): string {
 }
 
 /** Comillas si hace falta (separador, comillas o salto de línea). Excel no necesita más. */
+const comillas = (s: string) => (/[";\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
+
+/** Campo de texto de la plataforma: los espacios que no se parten (rangos, src/rangos.ts) vuelven a ser normales. */
 export function campoCsv(s: string): string {
-  return /[";\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  return comillas(s.replace(/\u00a0/g, " "));
 }
 
 function valor(v: Valor): string {
   if ("num" in v) return numeroCsv(v.num, v.dec);
   if ("oculto" in v) return campoCsv(v.oculto);
-  if ("enunciado" in v) return campoCsv(v.enunciado);   // exactamente como está guardado
+  if ("enunciado" in v) return comillas(v.enunciado);   // exactamente como está guardado
   return campoCsv(v.texto);
 }
 

@@ -1,6 +1,6 @@
 # Glosario de la plataforma
 
-Términos aprobados en la revisión de lenguaje de Aonia (octubre de 2026). Se aplican a la web, los PDF, los CSV y las pantallas de la Fase 2: menús, títulos, filtros, leyendas de gráficos, avisos, textos explicativos, cabeceras de PDF y CSV y nombres de archivo.
+Términos aprobados en la revisión de lenguaje de Aonia (27 de octubre de 2026, con las propuestas aprobadas el mismo día). Se aplican a la web, los PDF, los CSV y las pantallas de la Fase 2: menús, títulos, filtros, leyendas de gráficos, avisos, textos explicativos, cabeceras de PDF y CSV y nombres de archivo.
 
 **No se aplican a los enunciados de las preguntas**, que se muestran tal como están en los cuestionarios.
 
@@ -18,7 +18,19 @@ Mejor siempre el colectivo que la barra.
 | profesorado tutor | tutores | |
 | personal | | Cuando incluye a docentes y no docentes. |
 | personal no docente | no docentes | |
-| jefe o jefa | jefe | Solo en los textos explicativos. El nombre del cargo («jefe de departamento», «jefe de equipo») no cambia. |
+| jefatura de departamento, jefatura de equipo | jefe de departamento, jefe de equipo | También «su jefatura» en los textos explicativos. |
+| persona responsable directa | jefe o superior directo | El bloque de la encuesta se sigue llamando «Superiores». |
+
+## Accesos y administración
+
+| Usar | En lugar de |
+|---|---|
+| Accesos (menú y pantalla), Nuevo acceso | Usuarios |
+| acceso, cuenta | usuario |
+| Administración (rol), cuentas de administración | Administrador, administradores |
+| Te damos la bienvenida | Bienvenida o bienvenido |
+
+El código del rol (`administrador`) y la dirección de la pantalla (`#/usuarios`) no cambian: no se ven en la interfaz.
 
 ## Indicadores
 
@@ -53,17 +65,27 @@ El rango es el de la escala: en las de 0 a 10 y de 1 a 10, «6 o menos» vale pa
 |---|---|
 | Selecciona un colectivo para consultar sus resultados detallados. | Entra en cada una para ver el detalle. |
 
-Tono institucional y descriptivo, sin interpretaciones que no salgan de los datos.
+Tono institucional y descriptivo, sin interpretaciones que no salgan de los datos. Por ejemplo, no «sus resultados son muy distintos» ni «lo que opina»: se describe qué se mide («Valoración de cada docente por parte del alumnado»).
+
+«Colegio», siempre con mayúscula cuando se refiere al CIS-SFP.
 
 ## Enunciados
 
 - **CSV:** los enunciados de preguntas y opciones van exactamente como están guardados.
 - **Web y PDF:** se muestran con mayúscula inicial, sin cambiar el texto guardado.
 
+## Orden
+
+«Aspectos con mayor y menor valoración»: primero «Mayor valoración» y después «Menor valoración», en la web, el PDF y el CSV.
+
+## Mensajes del servidor
+
+Los mensajes de error del servidor y de la función de accesos siguen el mismo glosario (por ejemplo, «Sin acceso a este profesor/a», «Solo para administración»). Los comprueba el test `supabase/tests/20_lenguaje_mensajes.sql`.
+
 ## Tablas
 
 Ninguna celda se parte palabra a palabra:
 
 - las columnas tienen un ancho mínimo;
-- los rangos («de 1 a 6», «9 y 10») no se separan;
+- los rangos («de 1 a 6», «9 y 10») no se separan, ni en la web ni en los PDF (`src/rangos.ts`); el CSV los escribe con espacios normales;
 - en el móvil, las filas se apilan.

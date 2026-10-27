@@ -53,7 +53,7 @@ select lives_ok($$ select public.informe_profesor('2000/01', (select uno from id
 set local role postgres; select pg_temp.como('coord_primaria'); set local role authenticated;
 select is(public.listar_profesores('2000/01'), '[]'::jsonb, 'coordinación de Primaria: no ve profesores de otras etapas');
 select throws_ok($$ select public.informe_profesor('2000/01', (select uno from ids)) $$,
-  '42501', 'Sin acceso a este profesor', 'coordinación de Primaria: ni su informe');
+  '42501', 'Sin acceso a este profesor/a', 'coordinación de Primaria: ni su informe');
 
 select * from finish();
 rollback;

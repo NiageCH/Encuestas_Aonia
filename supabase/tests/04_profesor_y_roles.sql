@@ -75,9 +75,9 @@ select throws_ok($$ select public.resumen('{"curso":"2000/01","colectivo":"perso
 -- Coordinación de Primaria e Infantil
 set local role postgres; select pg_temp.como('coord_primaria'); set local role authenticated;
 select throws_ok($$ select public.resultados_profesor('2000/01', (select uno from ids)) $$,
-  '42501', 'Sin acceso a este profesor', 'coordinación de Primaria no ve a un profesor que solo da clase en PAI');
+  '42501', 'Sin acceso a este profesor/a', 'coordinación de Primaria no ve a un profesor que solo da clase en PAI');
 select throws_ok($$ select public.informe_profesor('2000/01', (select uno from ids)) $$,
-  '42501', 'Sin acceso a este profesor', 'ni su informe completo');
+  '42501', 'Sin acceso a este profesor/a', 'ni su informe completo');
 select is(public.listar_profesores('2000/01'), '[]'::jsonb, 'coordinación de Primaria no ve profesores de otras etapas');
 select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"alumnos"}', '{"tipo":"personas"}') $$,
   'P0002', 'No hay datos para este filtro', 'coordinación de Primaria no ve alumnos de PAI');

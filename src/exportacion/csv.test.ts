@@ -75,7 +75,7 @@ describe("CSV para Excel en español", () => {
 
   it("la distribución de una recomendación oculta no da ninguna cifra", () => {
     const tabla = tablaDistribucion(menos5, 1);
-    expect(tabla.filas).toEqual([[txt(t.exp_todas), { oculto: "menos de 5" }, { oculto: "menos de 5" }]]);
+    expect(tabla.filas).toEqual([[txt(t.exp_todas), { oculto: t.oculto_menos5 }, { oculto: t.oculto_menos5 }]]);
   });
 });
 
@@ -95,5 +95,14 @@ describe("enunciados en el CSV", () => {
     const csv = aCsv({ ...ejemplo, tablas: [tabla] }, fecha, false);
     expect(csv).toContain("\r\nse comprenden bien las explicaciones;");
     expect(csv).not.toContain("Se comprenden bien las explicaciones");
+  });
+});
+
+describe("rangos sin partir", () => {
+  it("la web y el PDF llevan espacios que no se parten; el CSV, espacios normales", () => {
+    expect(t.exp_col_si).toBe("%\u00a0favorables (9\u00a0y\u00a010)");
+    const csv = aCsv({ ...ejemplo, tablas: [{ titulo: t.exp_col_si, columnas: [t.exp_col_media], filas: [] }] }, fecha, false);
+    expect(csv).toContain("% favorables (9 y 10)");
+    expect(csv).not.toContain("\u00a0");
   });
 });

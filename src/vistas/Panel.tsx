@@ -112,8 +112,8 @@ export function Panel({ perfil }: { perfil: Perfil }) {
     const columnasPuntos = [t.exp_col_pregunta, t.exp_col_valoraciones, t.exp_col_media, t.exp_col_pct_bajo];
     const filaPunto = (p: Punto): Valor[] => [enunciado(p.texto), num(p.n), num(p.media, 2), num(p.pct_bajo)];
     for (const c of colectivos.filter((x) => puntos[x])) {
-      tablas.push({ titulo: `${t.panel_mejora}: ${t.panel_colectivo[c]}`, columnas: columnasPuntos, filas: puntos[c]!.mejora.map(filaPunto) });
-      tablas.push({ titulo: `${t.panel_fuertes}: ${t.panel_colectivo[c]}`, columnas: columnasPuntos, filas: puntos[c]!.fuertes.map(filaPunto),
+      tablas.push({ titulo: `${t.panel_fuertes}: ${t.panel_colectivo[c]}`, columnas: columnasPuntos, filas: puntos[c]!.fuertes.map(filaPunto) });
+      tablas.push({ titulo: `${t.panel_mejora}: ${t.panel_colectivo[c]}`, columnas: columnasPuntos, filas: puntos[c]!.mejora.map(filaPunto),
                     notas: [t.panel_puntos_lead] });
     }
     for (const c of colectivos.filter((x) => dif[x])) {
@@ -207,8 +207,8 @@ export function Panel({ perfil }: { perfil: Perfil }) {
             {colectivos.filter((c) => puntos[c]).map((c) => (
               <div key={c} className="card">
                 <h3><i className={`en-punto-color ${CLASE[c]}`} aria-hidden="true" />{t.panel_colectivo[c]}</h3>
-                <ListaPuntos titulo={t.panel_mejora} puntos={puntos[c]!.mejora} clase="en-mejora" />
                 <ListaPuntos titulo={t.panel_fuertes} puntos={puntos[c]!.fuertes} clase="en-fuerte" />
+                <ListaPuntos titulo={t.panel_mejora} puntos={puntos[c]!.mejora} clase="en-mejora" />
               </div>
             ))}
           </div>

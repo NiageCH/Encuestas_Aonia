@@ -1,6 +1,6 @@
-# Migración al servidor del colegio
+# Migración al servidor del Colegio
 
-Plan para pasar la plataforma de Supabase en la nube y Clever Cloud a un servidor Linux del colegio, en su proveedor (Convive o Cedemon), con el software de Supabase de código abierto instalado con Docker. Estado: **decisiones tomadas el 26/10/2026** (§8); pendiente de elegir proveedor.
+Plan para pasar la plataforma de Supabase en la nube y Clever Cloud a un servidor Linux del Colegio, en su proveedor (Convive o Cedemon), con el software de Supabase de código abierto instalado con Docker. Estado: **decisiones tomadas el 26/10/2026** (§8); pendiente de elegir proveedor.
 
 Lo que no cambia: el código de la aplicación, las migraciones, las reglas de anonimato (mínimo de 5, supresión complementaria, sin datos identificativos), el doble factor de los administradores y la forma de trabajar (todo probado en local antes de tocar el servidor).
 
@@ -17,14 +17,14 @@ La aplicación usa como dirección de Supabase la misma `https://encuestas.sfpau
 
 ### 1.2 Correo por el relay de Microsoft 365 autenticado por IP: sí, con una condición de red
 El módulo de acceso (GoTrue) solo exige servidor, puerto y remitente; el usuario y la contraseña son opcionales («si el servidor de correo requiere autenticación»). Se configura así:
-- `SMTP_HOST`: el extremo del conector de Microsoft 365 del colegio (del tipo `sfpaula-com.mail.protection.outlook.com`);
+- `SMTP_HOST`: el extremo del conector de Microsoft 365 del Colegio (del tipo `sfpaula-com.mail.protection.outlook.com`);
 - `SMTP_PORT=25`;
 - `SMTP_ADMIN_EMAIL=encuestas@sfpaula.com` y `SMTP_SENDER_NAME="Encuestas CIS-SFP"`;
 - `SMTP_USER` y `SMTP_PASS` **sin definir** (quitadas también del `docker-compose.yml`, no como texto vacío).
 
 Condiciones:
 1. **El proveedor debe permitir la salida por el puerto 25.** Muchos proveedores la bloquean por defecto en sus servidores; hay que pedir que la abran hacia Microsoft 365.
-2. El servidor necesita una **IP pública fija**, que sistemas del colegio añade al conector de entrada de Microsoft 365 («desde el servidor de correo de tu organización», identificado por IP).
+2. El servidor necesita una **IP pública fija**, que sistemas del Colegio añade al conector de entrada de Microsoft 365 («desde el servidor de correo de tu organización», identificado por IP).
 3. `encuestas@sfpaula.com` debe ser un dominio aceptado en su Microsoft 365 (lo es, al ser `sfpaula.com`).
 
 **Alternativa recomendada si el puerto 25 no se puede abrir o para ganar robustez: relay local.** Un contenedor de Postfix en el mismo servidor, solo accesible desde la red interna de Docker:
@@ -32,7 +32,7 @@ Condiciones:
 - Postfix reenvía a Microsoft 365 con TLS obligatorio (`smtp_tls_security_level = encrypt`) por el conector de IP, y guarda en cola y reintenta si Microsoft no responde;
 - deja un registro propio de envíos para diagnosticar invitaciones que no llegan.
 
-Si el proveedor no abre el puerto 25 de ninguna manera, la salida tendría que ir por otro canal (un servicio de envío como Brevo por el 587, que ya conocemos), y eso lo decide el colegio.
+Si el proveedor no abre el puerto 25 de ninguna manera, la salida tendría que ir por otro canal (un servicio de envío como Brevo por el 587, que ya conocemos), y eso lo decide el Colegio.
 
 ### 1.3 Requisitos: suficientes
 | | Pedido | Supabase recomienda | Uso previsto |
@@ -99,15 +99,15 @@ En el servidor somos responsables de los registros. Para cumplir la regla de no 
 |---|---|---|---|
 | 0 | Elegir proveedor (Convive o Cedemon) y contratar el servidor con los requisitos del §1.3 | Colegio | Acceso SSH de Niage |
 | 1 | Pedir al proveedor la salida por el puerto 25 y confirmar la IP fija | Colegio con el proveedor | Prueba de conexión al 25 de Microsoft 365 desde el servidor |
-| 2 | Conector de Microsoft 365 para la IP del servidor | Sistemas del colegio | Correo de prueba desde el servidor |
+| 2 | Conector de Microsoft 365 para la IP del servidor | Sistemas del Colegio | Correo de prueba desde el servidor |
 | 3 | Preparar en local el despliegue (`despliegue/servidor/`: compose, Caddy, relay, copias) y probarlo en una máquina virtual igual | Niage | Pila completa en local con los datos restaurados de la copia |
 | 4 | Instalar en el servidor: Docker, cortafuegos, actualizaciones automáticas de seguridad, la pila del paso 3 | Niage | Servicios en marcha; Studio y Postgres no accesibles desde fuera |
-| 5 | DNS `encuestas.sfpaula.com` hacia la IP del servidor | Sistemas del colegio | Certificado HTTPS emitido |
+| 5 | DNS `encuestas.sfpaula.com` hacia la IP del servidor | Sistemas del Colegio | Certificado HTTPS emitido |
 | 6 | Base de datos: migraciones 1 a la última aprobada y datos de 2025/26 restaurados desde la copia de la nube (procedimiento ya probado) | Niage | Recuento y validación idénticos a la nube; 300 y pico tests pgTAP en verde contra el servidor |
 | 7 | Funciones, plantillas y web | Niage | Invitación y recuperación de contraseña reales; doble factor; formulario de prueba de punta a punta |
 | 8 | Usuarios: los administradores vuelven a configurar el doble factor (las claves nuevas invalidan las sesiones) | Niage y administradores | Entrada con código |
 | 9 | Revisión interna en el servidor (lista de `datos_locales/Revision_interna_2526.xlsx`) | Niage | Lista completa |
-| 10 | Corte: se avisa a los usuarios, se deja de usar la nube, se invita al colegio | Rodrigo | Primeros accesos del colegio |
+| 10 | Corte: se avisa a los usuarios, se deja de usar la nube, se invita al Colegio | Rodrigo | Primeros accesos del Colegio |
 | 11 | Retirada de Supabase en la nube y Clever Cloud tras un periodo de seguridad (30 días), con copia final guardada | Niage | Proyecto y aplicación eliminados; copia final verificada |
 
 Mientras no se haga el corte, la nube actual sigue siendo el entorno de revisión y la vuelta atrás.
@@ -122,11 +122,11 @@ Mientras no se haga el corte, la nube actual sigue siendo el entorno de revisió
 ## 8. Decisiones para Rodrigo
 
 1. **Proveedor:** Convive o Cedemon. **Decidido (26/10/2026):** el que garantice por escrito IP pública fija, salida por el puerto 25 hacia Microsoft 365, instantáneas diarias y soporte en horario escolar; el puerto 25 se confirma antes de contratar.
-2. **Correo:** ~~directo a Microsoft 365 por el 25 o con relay local~~ **Decidido (26/10/2026): relay local con Postfix hacia Microsoft 365**, por la cola, los reintentos y el registro de envíos. La regla 5 de `CLAUDE.md` queda precisada: sin inicio de sesión con Microsoft; el correo puede salir por el servidor de correo del colegio.
+2. **Correo:** ~~directo a Microsoft 365 por el 25 o con relay local~~ **Decidido (26/10/2026): relay local con Postfix hacia Microsoft 365**, por la cola, los reintentos y el registro de envíos. La regla 5 de `CLAUDE.md` queda precisada: sin inicio de sesión con Microsoft; el correo puede salir por el servidor de correo del Colegio.
 3. **Quién administra el sistema operativo:** **Decidido (26/10/2026):** el proveedor, el sistema (parches, actualizaciones, cortafuegos de su red, instantáneas); Niage, la aplicación (Docker, Supabase, web, copias de la base).
 4. **Destino de las copias externas.** **Decidido (26/10/2026):** espacio de copias del proveedor en otra ubicación distinta del servidor, con las copias cifradas antes de salir, y nunca fuera de la UE. Además, una copia semanal descargada a `datos_locales/` de Niage, **también cifrada**; el equipo donde se guarde debe tener **el disco cifrado**.
-5. **Qué hacemos con la nube actual hasta el corte:** **Decidido (26/10/2026):** se suben los cambios de `fase1-coordinacion` y las pruebas con el colegio se hacen en la nube actual hasta que llegue su servidor.
-6. **Fase 2 en el servidor:** el formulario público también saldrá por `encuestas.sfpaula.com`. **Decidido (26/10/2026):** el colegio debe aceptarlo por escrito, sabiendo que entran respuestas anónimas desde internet con las protecciones ya hechas (sin IP, prueba en el navegador, tope por enlace, límite por minuto) y que la plataforma de resultados no abre nada nuevo.
+5. **Qué hacemos con la nube actual hasta el corte:** **Decidido (26/10/2026):** se suben los cambios de `fase1-coordinacion` y las pruebas con el Colegio se hacen en la nube actual hasta que llegue su servidor.
+6. **Fase 2 en el servidor:** el formulario público también saldrá por `encuestas.sfpaula.com`. **Decidido (26/10/2026):** el Colegio debe aceptarlo por escrito, sabiendo que entran respuestas anónimas desde internet con las protecciones ya hechas (sin IP, prueba en el navegador, tope por enlace, límite por minuto) y que la plataforma de resultados no abre nada nuevo.
 
 ## Fuentes
 - Supabase, autoalojamiento con Docker: requisitos, servicios, pasarela, HTTPS con proxy y SMTP (https://supabase.com/docs/guides/self-hosting/docker).

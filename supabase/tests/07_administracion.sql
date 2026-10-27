@@ -15,11 +15,11 @@ select ok((select ultimo_acceso is not null from public.usuario_perfil where id 
 
 -- Permisos
 set local role postgres; select pg_temp.como('direccion'); set local role authenticated;
-select throws_ok($$ select public.admin_usuarios() $$, '42501', 'Solo para administradores', 'dirección no administra usuarios');
+select throws_ok($$ select public.admin_usuarios() $$, '42501', 'Solo para administración', 'dirección no administra usuarios');
 select throws_ok($$ select public.admin_registrar_invitacion('00000000-0000-0000-0000-00000000000b', gen_random_uuid(), 'X', 'direccion', null) $$,
   '42501', null, 'el alta de perfiles solo la hace la Edge Function (clave de servicio)');
 set local role postgres; select pg_temp.como('admin', 'aal1'); set local role authenticated;
-select throws_ok($$ select public.admin_usuarios() $$, '42501', 'Doble factor obligatorio para administradores', 'un administrador sin aal2 tampoco');
+select throws_ok($$ select public.admin_usuarios() $$, '42501', 'Doble factor obligatorio para las cuentas de administración', 'un administrador sin aal2 tampoco');
 
 -- Lista
 set local role postgres; select pg_temp.como('admin', 'aal2'); set local role authenticated;
@@ -42,9 +42,9 @@ select is((select e ->> 'usuario' from jsonb_array_elements(public.admin_registr
 
 -- Reglas
 select throws_ok($$ select public.admin_actualizar_usuario('00000000-0000-0000-0000-00000000000a', 'administrador', null, false) $$,
-  'P0001', 'No puedes quitarte el rol de administrador ni desactivarte a ti mismo', 'un administrador no se desactiva a sí mismo');
+  'P0001', 'No puedes quitarte el rol de administración ni desactivar tu propio acceso', 'un administrador no se desactiva a sí mismo');
 select throws_ok($$ select public.admin_actualizar_usuario('00000000-0000-0000-0000-00000000000a', 'direccion', null, true) $$,
-  'P0001', 'No puedes quitarte el rol de administrador ni desactivarte a ti mismo', 'ni se quita el rol de administrador');
+  'P0001', 'No puedes quitarte el rol de administración ni desactivar tu propio acceso', 'ni se quita el rol de administrador');
 select throws_ok($$ select public.admin_actualizar_usuario('00000000-0000-0000-0000-00000000000d', 'coordinacion', null, true) $$,
   'P0001', 'La coordinación necesita etapa, y los demás roles no la llevan', 'la coordinación necesita etapa');
 

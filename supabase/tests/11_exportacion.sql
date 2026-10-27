@@ -34,7 +34,7 @@ select throws_ok($$ select public.registrar_exportacion('personal', 'csv', '{}')
 set local role postgres; select pg_temp.como('inactivo'); set local role authenticated;
 select throws_ok($$ select public.registrar_exportacion('familias', 'csv', '{}') $$, '42501', 'Sin acceso', 'un usuario desactivado no exporta');
 set local role postgres; select pg_temp.como('admin', 'aal1'); set local role authenticated;
-select throws_ok($$ select public.registrar_exportacion('familias', 'csv', '{}') $$, '42501', 'Doble factor obligatorio para administradores',
+select throws_ok($$ select public.registrar_exportacion('familias', 'csv', '{}') $$, '42501', 'Doble factor obligatorio para las cuentas de administración',
   'un administrador sin doble factor no exporta');
 
 -- Lo que queda en el registro: solo las filas de esta transacción (fecha = now()), porque en la nube

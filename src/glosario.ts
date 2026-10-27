@@ -16,6 +16,13 @@ export const DESCARTADOS: { patron: RegExp; usar: string }[] = [
   { patron: /entra en cada una/i, usar: "Selecciona un colectivo para consultar sus resultados detallados" },
   { patron: /lo que tienen en común/i, usar: "Comparación de indicadores comunes entre colectivos" },
   { patron: /quienes no (lo )?recomendar[íi]an/i, usar: "Diferencias entre respuestas favorables y desfavorables a la recomendación" },
+  { patron: /\bjefes?\b/i, usar: "jefatura (de departamento, de equipo)" },
+  { patron: /superior(es)? directos?/i, usar: "persona responsable directa" },
+  { patron: /\badministrador(es)?\b/i, usar: "administración (rol y cuentas de administración)" },
+  { patron: /\busuarios?\b/i, usar: "acceso (menú «Accesos») o cuenta" },
+  { patron: /^bienvenid[oa]|bienvenid[oa] o bienvenid/i, usar: "Te damos la bienvenida" },
+  { patron: /\bcolegio\b/, usar: "Colegio, con mayúscula" },
+  { patron: /muy distint|lo que opina/i, usar: "un texto descriptivo, sin interpretaciones" },
 ];
 
 /** Todos los textos de un diccionario, con su clave: cadenas, listas, objetos y el código de las funciones (sus plantillas). */

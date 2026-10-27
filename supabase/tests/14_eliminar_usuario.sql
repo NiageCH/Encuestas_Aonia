@@ -18,13 +18,13 @@ insert into auth.one_time_tokens (id, user_id, token_type, token_hash, relates_t
 -- Permisos
 select pg_temp.como('direccion'); set local role authenticated;
 select throws_ok($$ select public.admin_eliminar_usuario('00000000-0000-0000-0000-00000000000c', 'coord.pai@ejemplo.test') $$,
-  '42501', 'Solo para administradores', 'dirección no puede eliminar');
+  '42501', 'Solo para administración', 'dirección no puede eliminar');
 set local role postgres; select pg_temp.como('coord_pai'); set local role authenticated;
 select throws_ok($$ select public.admin_eliminar_usuario('00000000-0000-0000-0000-00000000000b', 'direccion@ejemplo.test') $$,
-  '42501', 'Solo para administradores', 'coordinación tampoco');
+  '42501', 'Solo para administración', 'coordinación tampoco');
 set local role postgres; select pg_temp.como('admin', 'aal1'); set local role authenticated;
 select throws_ok($$ select public.admin_eliminar_usuario('00000000-0000-0000-0000-00000000000b', 'direccion@ejemplo.test') $$,
-  '42501', 'Doble factor obligatorio para administradores', 'un administrador sin doble factor tampoco');
+  '42501', 'Doble factor obligatorio para las cuentas de administración', 'un administrador sin doble factor tampoco');
 set local role anon;
 select throws_ok($$ select public.admin_eliminar_usuario('00000000-0000-0000-0000-00000000000b', 'direccion@ejemplo.test') $$,
   '42501', null, 'sin sesión, ni siquiera se puede llamar');
@@ -34,11 +34,11 @@ set local role postgres; select pg_temp.como('admin', 'aal2'); set local role au
 select throws_ok($$ select public.admin_eliminar_usuario('00000000-0000-0000-0000-00000000000a', 'admin@ejemplo.test') $$,
   'P0001', 'No puedes eliminarte a ti mismo', 'nadie se elimina a sí mismo');
 select throws_ok($$ select public.admin_eliminar_usuario('00000000-0000-0000-0000-00000000000b', 'otro@ejemplo.test') $$,
-  '22023', 'El correo escrito no coincide con el del usuario: no se ha eliminado', 'hay que escribir el correo exacto');
+  '22023', 'El correo escrito no coincide con el de la cuenta: no se ha eliminado', 'hay que escribir el correo exacto');
 select throws_ok($$ select public.admin_eliminar_usuario('00000000-0000-0000-0000-00000000000b', null) $$,
   '22023', null, 'sin correo, no se elimina');
 select throws_ok($$ select public.admin_eliminar_usuario(gen_random_uuid(), 'x@ejemplo.test') $$,
-  'P0002', 'Usuario no encontrado', 'usuario que no existe');
+  'P0002', 'Acceso no encontrado', 'usuario que no existe');
 
 set local role postgres;
 -- La relación del registro con el usuario no es en cascada
