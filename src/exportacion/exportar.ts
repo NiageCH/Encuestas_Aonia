@@ -1,8 +1,9 @@
-// Descarga de una exportación. Antes de generar el archivo, el servidor la deja en el registro de
-// actividad (y la rechaza si quien la pide no puede ver esa vista). El PDF se carga bajo demanda.
+// Descarga de una exportación (CSV o PDF de una vista, o el registro de descargas). Antes de crear el archivo, el servidor
+// la anota en el registro de descargas (y la rechaza si quien la pide no puede ver esa vista) y devuelve el código, el
+// nombre y la hora que van en el archivo. El PDF se carga bajo demanda y sale protegido (src/pdf/proteger.ts).
 
 import { AVISO_VALIDACION } from "../ajustes";
-import { supabase } from "../data/cliente";
+import { registrarDescarga } from "../data/descargas";
 import { aCsv, nombreArchivo } from "./csv";
 import type { Exportacion } from "./modelo";
 
@@ -17,23 +18,19 @@ function descargar(blob: Blob, nombre: string) {
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
-async function registrar(e: Exportacion, formato: "csv" | "pdf") {
-  const { error } = await supabase.rpc("registrar_exportacion", {
-    p_vista: e.vista, p_formato: formato, p_filtros: Object.fromEntries(e.filtros),
-  });
-  if (error) throw error;
-}
-
 export async function exportar(e: Exportacion, formato: "csv" | "pdf"): Promise<void> {
-  await registrar(e, formato);
-  const ahora = new Date();
+  const archivo = e.sinCurso ? `${e.archivo.join("_")}.${formato}` : nombreArchivo(e.archivo, formato);
+  const sello = await registrarDescarga(formato === "csv" ? "csv" : "vista_pdf", {
+    objeto: e.titulo, vista: e.vista, filtros: Object.fromEntries(e.filtros), archivo,
+  });
   if (formato === "csv") {
-    descargar(new Blob([aCsv(e, ahora, AVISO_VALIDACION)], { type: "text/csv;charset=utf-8" }), nombreArchivo(e.archivo, "csv"));
+    descargar(new Blob([aCsv(e, sello, AVISO_VALIDACION)], { type: "text/csv;charset=utf-8" }), archivo);
     return;
   }
-  const [{ pdf }, { createElement }, { ExportacionPdf }] = await Promise.all([
-    import("@react-pdf/renderer"), import("react"), import("./ExportacionPdf"),
+  const [{ pdf }, { createElement }, { ExportacionPdf }, { protegerPdf }] = await Promise.all([
+    import("@react-pdf/renderer"), import("react"), import("./ExportacionPdf"), import("../pdf/proteger"),
   ]);
-  const doc = createElement(ExportacionPdf, { exportacion: e, generado: ahora, aviso: AVISO_VALIDACION });
-  descargar(await pdf(doc as Parameters<typeof pdf>[0]).toBlob(), nombreArchivo(e.archivo, "pdf"));
+  const doc = createElement(ExportacionPdf, { exportacion: e, sello, aviso: AVISO_VALIDACION });
+  const blob = await pdf(doc as Parameters<typeof pdf>[0]).toBlob();
+  descargar(new Blob([await protegerPdf(blob, { titulo: e.titulo })], { type: "application/pdf" }), archivo);
 }

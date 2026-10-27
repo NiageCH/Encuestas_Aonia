@@ -21,7 +21,7 @@ const ejemplo: Exportacion = {
             [txt("Instalaciones"), ...celdas(compl, ["personas", "valoraciones", "media"])]] }],
   notas: ["Nota con \"comillas\""],
 };
-const fecha = new Date(2026, 9, 22, 16, 5);
+const fecha = { codigo: "7KQ2-M9XD", nombre: "Ana Directora", fecha: new Date(2026, 9, 22, 16, 5) };
 const lineas = (csv: string) => csv.replace(/^﻿/, "").split("\r\n");
 
 describe("CSV para Excel en español", () => {
@@ -30,15 +30,23 @@ describe("CSV para Excel en español", () => {
     expect(csv.charCodeAt(0)).toBe(0xfeff);
     expect(csv).toContain("\r\n");
     expect(csv.replace(/\r\n/g, "")).not.toMatch(/\n/);
-    expect(lineas(csv)[0]).toBe(`${t.exp_colegio};${t.colegio}`);
+    expect(lineas(csv)[0]).toBe("Confidencial · Uso exclusivo del Colegio");
   });
 
-  it("lleva la cabecera con colegio, curso, vista, filtros, fecha y aviso de validación", () => {
+  it("empieza por la confidencialidad, quién lo descargó, cuándo y su código; después colegio, curso, vista, filtros y aviso", () => {
     const l = lineas(aCsv(ejemplo, fecha, true));
-    expect(l.slice(0, 6)).toEqual([
+    expect(l.slice(0, 9)).toEqual([
+      "Confidencial · Uso exclusivo del Colegio",
+      "Descargado por;Ana Directora", "Fecha de descarga;22/10/2026 16:05", "Código;7KQ2-M9XD",
       `${t.exp_colegio};${t.colegio}`, `${t.exp_curso};Curso 2025/26`, `${t.exp_vista};Familias`,
-      `${t.exp_filtros};Etapa: PAI`, `${t.exp_fecha};22/10/2026 16:05`, `${t.exp_aviso};${t.aviso_validacion}`,
+      `${t.exp_filtros};Etapa: PAI`, `${t.exp_aviso};${t.aviso_validacion}`,
     ]);
+  });
+
+  it("el registro de descargas va sin la línea del curso", () => {
+    const l = lineas(aCsv({ ...ejemplo, vista: "descargas", titulo: "Registro de descargas", sinCurso: true }, fecha, false));
+    expect(l[0]).toBe("Confidencial · Uso exclusivo del Colegio");
+    expect(l.some((x) => x.startsWith(`${t.exp_curso};`))).toBe(false);
   });
 
   it("sin la franja de validación, no hay aviso; sin filtros, lo dice", () => {
@@ -59,7 +67,7 @@ describe("CSV para Excel en español", () => {
     const l = lineas(aCsv(ejemplo, fecha, true));
     expect(l).toContain("Servicios;menos de 5;menos de 5;menos de 5");
     expect(l).toContain("Instalaciones;oculto;oculto;oculto");
-    for (const x of l.slice(7).filter((y) => y.includes(";"))) expect(x.split(";")).not.toContain("");
+    for (const x of l.slice(10).filter((y) => y.includes(";"))) expect(x.split(";")).not.toContain("");
   });
 
   it("entrecomilla los textos con punto y coma o comillas", () => {

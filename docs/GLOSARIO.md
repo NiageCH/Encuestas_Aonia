@@ -82,6 +82,20 @@ Tono institucional y descriptivo, sin interpretaciones que no salgan de los dato
 
 Los mensajes de error del servidor y de la función de accesos siguen el mismo glosario (por ejemplo, «Sin acceso a este profesor/a», «Solo para administración»). Los comprueba el test `supabase/tests/20_lenguaje_mensajes.sql`.
 
+## Descargas protegidas
+
+Textos fijos de la marca de agua, el pie de los PDF y la cabecera de los CSV (§7.7 de la especificación):
+
+| Dónde | Texto |
+|---|---|
+| Marca de agua de los PDF | CONFIDENCIAL · Uso exclusivo del Colegio Internacional de Sevilla, San Francisco de Paula |
+| Pie de cada página | Descargado por [nombre] el [dd/mm/aaaa] a las [hh:mm] · Código [código] |
+| Asunto del PDF | Confidencial |
+| Primera línea del CSV | Confidencial · Uso exclusivo del Colegio |
+| Cabecera del CSV | Descargado por · Fecha de descarga · Código |
+
+En Accesos, la pestaña se llama «Descargas» y la otra «Personas y actividad». Tipos de descarga: «Informe de profesor/a», «Informe de jefatura», «Informe de equipo», «Informe de dirección», «Vista en PDF», «CSV» y «ZIP de informes». El código se escribe siempre así: «Código 7KQ2-M9XD».
+
 ## Tablas
 
 Ninguna celda se parte palabra a palabra:

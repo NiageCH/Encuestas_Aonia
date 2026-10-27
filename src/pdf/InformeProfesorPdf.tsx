@@ -7,7 +7,8 @@ import type { CeldaProfesor, Fila, InformeProfesor } from "../data/resultados";
 import { etiquetaClase, ordenarClases } from "../etiquetas";
 import * as f from "../formato";
 import { t } from "../i18n";
-import { base, C, Cabecera, Pie, textoOculto } from "./comun";
+import { base, C, Cabecera, MarcaAgua, Pie, textoOculto } from "./comun";
+import type { SelloDescarga } from "../exportacion/modelo";
 
 const s = StyleSheet.create({
   kpis: { flexDirection: "row", gap: 8, marginTop: 12 },
@@ -52,10 +53,10 @@ function FilaClase({ c }: { c: CeldaProfesor }) {
 export interface DatosInformePdf {
   profesor: { nombre: string; apellidos: string; departamento: string | null };
   informe: InformeProfesor;
-  generado: Date;
+  sello: SelloDescarga;
 }
 
-export function InformeProfesorPdf({ profesor, informe, generado }: DatosInformePdf) {
+export function InformeProfesorPdf({ profesor, informe, sello }: DatosInformePdf) {
   const g = informe.global;
   const etapas = Object.keys(informe.comparacion).filter((k) => k !== "colegio");
   const nombreEtapa = (e: string) => t.etapas[e as keyof typeof t.etapas] ?? e;
@@ -65,8 +66,9 @@ export function InformeProfesorPdf({ profesor, informe, generado }: DatosInforme
   const hayComplementaria = celdas.some((c) => c.motivo === "complementaria");
 
   return (
-    <Document title={`${t.prof_informe} · ${profesor.nombre} ${profesor.apellidos}`} author="Colegio Internacional de Sevilla, San Francisco de Paula" language="es">
+    <Document title={`${t.prof_informe} · ${profesor.nombre} ${profesor.apellidos}`} author="Colegio Internacional de Sevilla, San Francisco de Paula" subject={t.desc_asunto} language="es">
       <Page size="A4" style={base.pagina}>
+        <MarcaAgua />
         <Cabecera subtitulo={t.pdf_cab_sub} />
 
         <View style={base.cuerpo}>
@@ -133,7 +135,7 @@ export function InformeProfesorPdf({ profesor, informe, generado }: DatosInforme
           <Text style={base.nota}>{t.aviso_cierre}</Text>
         </View>
 
-        <Pie generado={generado} />
+        <Pie sello={sello} />
       </Page>
     </Document>
   );

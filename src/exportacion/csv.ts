@@ -5,7 +5,7 @@
 import { CURSO } from "../data/cliente";
 import { redondear } from "../formato";
 import { t } from "../i18n";
-import type { Exportacion, Valor } from "./modelo";
+import type { Exportacion, SelloDescarga, Valor } from "./modelo";
 
 const SEP = ";";
 const FIN = "\r\n";
@@ -44,19 +44,24 @@ export function textoFiltros(e: Pick<Exportacion, "filtros">): string {
   return e.filtros.length ? e.filtros.map(([k, v]) => `${k}: ${v}`).join(" · ") : t.exp_sin_filtros;
 }
 
-export function cabecera(e: Exportacion, fecha: Date, aviso: boolean): [string, string][] {
+/** Cabecera de la exportación: quién la descargó, cuándo y con qué código, y de qué es. */
+export function cabecera(e: Exportacion, sello: SelloDescarga, aviso: boolean): [string, string][] {
   return [
+    [t.desc_por, sello.nombre],
+    [t.desc_fecha, fechaExportacion(sello.fecha)],
+    [t.desc_codigo, sello.codigo],
     [t.exp_colegio, t.colegio],
-    [t.exp_curso, t.exp_curso_valor(CURSO)],
+    ...(e.sinCurso ? [] : [[t.exp_curso, t.exp_curso_valor(CURSO)] as [string, string]]),
     [t.exp_vista, e.titulo],
     [t.exp_filtros, textoFiltros(e)],
-    [t.exp_fecha, fechaExportacion(fecha)],
     ...(aviso ? [[t.exp_aviso, t.aviso_validacion] as [string, string]] : []),
   ];
 }
 
-export function aCsv(e: Exportacion, fecha: Date, aviso: boolean): string {
-  const lineas: string[] = cabecera(e, fecha, aviso).map(([k, v]) => linea([campoCsv(k), campoCsv(v)]));
+/** El CSV empieza por el aviso de confidencialidad y la cabecera (src/exportacion/csv.ts, cabecera). */
+export function aCsv(e: Exportacion, sello: SelloDescarga, aviso: boolean): string {
+  const lineas: string[] = [campoCsv(t.desc_confidencial_csv),
+    ...cabecera(e, sello, aviso).map(([k, v]) => linea([campoCsv(k), campoCsv(v)]))];
   for (const tabla of e.tablas) {
     lineas.push("", campoCsv(tabla.titulo));
     if (tabla.filas.length) lineas.push(linea(tabla.columnas.map(campoCsv)));

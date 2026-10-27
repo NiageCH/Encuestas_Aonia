@@ -7,7 +7,8 @@ import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { DetallePregunta, Fila } from "../data/resultados";
 import * as f from "../formato";
 import { t } from "../i18n";
-import { base, C, Cabecera, Pie, textoOculto } from "./comun";
+import { base, C, Cabecera, MarcaAgua, Pie, textoOculto } from "./comun";
+import type { SelloDescarga } from "../exportacion/modelo";
 
 const s = StyleSheet.create({
   kpis: { flexDirection: "row", gap: 8, marginTop: 12 },
@@ -77,7 +78,7 @@ export interface DatosNivelPdf {
   alumnos?: AlumnosDepartamentoPdf[];
   /** Texto en lugar de las secciones cuando no hay ninguna (departamento sin datos de reuniones). */
   sinSecciones?: string;
-  generado: Date;
+  sello: SelloDescarga;
 }
 
 function Seccion({ seccion, primera }: { seccion: SeccionPdf; primera: boolean }) {
@@ -118,12 +119,13 @@ function Seccion({ seccion, primera }: { seccion: SeccionPdf; primera: boolean }
   );
 }
 
-export function InformeNivelPdf({ eyebrow, titulo, subtitulo, secciones, alumnos, sinSecciones, generado }: DatosNivelPdf) {
+export function InformeNivelPdf({ eyebrow, titulo, subtitulo, secciones, alumnos, sinSecciones, sello }: DatosNivelPdf) {
   const hayComplementaria = secciones.some((x) => x.informe.preguntas.some((p) => p.resultado.total.motivo === "complementaria")
     || x.informe.total.motivo === "complementaria");
   return (
-    <Document title={`${eyebrow} · ${titulo}`} author="Colegio Internacional de Sevilla, San Francisco de Paula" language="es">
+    <Document title={`${eyebrow} · ${titulo}`} author="Colegio Internacional de Sevilla, San Francisco de Paula" subject={t.desc_asunto} language="es">
       <Page size="A4" style={base.pagina}>
+        <MarcaAgua />
         <Cabecera subtitulo={t.pdf_cab_resp} />
         <View style={base.cuerpo}>
           <Text style={base.eyebrow}>{eyebrow}</Text>
@@ -153,7 +155,7 @@ export function InformeNivelPdf({ eyebrow, titulo, subtitulo, secciones, alumnos
           {hayComplementaria && <Text style={base.nota}>{t.pdf_nota_asterisco}</Text>}
           <Text style={base.nota}>{t.aviso_cierre}</Text>
         </View>
-        <Pie generado={generado} />
+        <Pie sello={sello} />
       </Page>
     </Document>
   );

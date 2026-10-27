@@ -9,11 +9,13 @@ import {
 } from "../data/admin";
 import type { Perfil, Rol } from "../data/sesion";
 import { t } from "../i18n";
+import { aHash } from "../navegacion";
+import { Descargas } from "./Descargas";
 
 const ROLES: Rol[] = ["administrador", "direccion", "coordinacion"];
 const ETAPAS = ["infantil", "primaria", "pai", "bachillerato"] as const;
 
-export function Usuarios({ perfil }: { perfil: Perfil }) {
+export function Usuarios({ perfil, descargas }: { perfil: Perfil; descargas: boolean }) {
   const [lista, setLista] = useState<Usuario[] | null>(null);
   const [actividad, setActividad] = useState<EntradaRegistro[] | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -53,10 +55,15 @@ export function Usuarios({ perfil }: { perfil: Perfil }) {
       <p className="eyebrow">{t.usr_eyebrow}</p>
       <h1>👥 {t.usr_titulo}</h1>
       <p className="lead">{t.usr_lead}</p>
-      {aviso && <p className="notice en-alerta en-alerta-pos" role="status">{aviso}</p>}
-      {error && <p className="notice en-alerta en-alerta-neg" role="alert">{error}</p>}
-      {!lista && !error && <p className="en-cargando">{t.cargando}</p>}
-      {lista && (
+      <nav className="en-acc-pestanas" aria-label={t.usr_pestanas}>
+        <a href={aHash({ seccion: "/usuarios" })} aria-current={descargas ? undefined : "page"}>{t.usr_pestana_personas}</a>
+        <a href={aHash({ seccion: "/usuarios", descargas: true })} aria-current={descargas ? "page" : undefined}>{t.usr_pestana_descargas}</a>
+      </nav>
+      {descargas && <Descargas />}
+      {!descargas && aviso && <p className="notice en-alerta en-alerta-pos" role="status">{aviso}</p>}
+      {!descargas && error && <p className="notice en-alerta en-alerta-neg" role="alert">{error}</p>}
+      {!descargas && !lista && !error && <p className="en-cargando">{t.cargando}</p>}
+      {!descargas && lista && (
         <>
           <div className="en-kpis">
             <div className="card en-kpi hl"><div className="l">{t.usr_k_activos}</div><div className="v">{activos}</div><div className="d">{t.usr_k_activos_d(lista.length)}</div></div>

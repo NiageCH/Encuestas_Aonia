@@ -214,13 +214,21 @@ Orden de carga: `cargar_2526.py` → `convertir_alexia_2526.py` → `cargar_asig
 - Preguntas con la primera letra en mayúscula en la web, los PDF y los CSV (se aplica al recibir los datos; el texto guardado no cambia).
 - Puntos fuertes y de mejora: número de orden junto a la pregunta. Tarjetas de Inicio: cifra y escala en una sola línea.
 
-## Revisión de lenguaje de Aonia (rama `lenguaje-aonia`, 27/10/2026, pendiente de desplegar)
+## Revisión de lenguaje de Aonia (rama `lenguaje-aonia`, 27/10/2026, desplegada)
 
 - Términos inclusivos y uniformes (alumnado, profesorado, profesor/a, personal) en menús, títulos, filtros, leyendas, avisos, PDF, CSV y nombres de archivo; indicadores renombrados («Aspectos con mayor y menor valoración», «Aspectos más destacados», «Aspectos menos destacados»); recomendación en respuestas favorables, neutras y desfavorables. Glosario en `docs/GLOSARIO.md` y test `src/glosario.test.ts`.
 - CSV con los enunciados exactamente como están guardados; mayúscula inicial solo en la web y los PDF.
 - Tablas sin celdas partidas palabra a palabra: anchos de columna en los PDF según su contenido, rangos sin partir, anchos mínimos y filas apiladas en móvil.
 - Propuestas aprobadas y aplicadas (27/10/2026): notas sin interpretaciones, jefaturas, persona responsable directa, rol «Administración», menú «Accesos», «Te damos la bienvenida», «Colegio» con mayúscula, «Mayor valoración» primero, rangos sin partir también en la web, plantilla Excel de asignación, mensajes del servidor (migración 20261027000028, que solo cambia textos, y Edge Function `admin-usuarios`), especificación, README y documentos de despliegue. 337 tests de base y 44 del frontend; validación de 2025/26 sin diferencias.
-- Pendiente: despliegue (copia previa, migración, Edge Function y web).
+- Desplegada el 27/10/2026: copia previa de la nube, migración 20261027000028, función `admin-usuarios`, 337 tests en la nube, validación y recuento sin diferencias, web publicada desde `b743c86` (el commit `705998c` solo arregla un test).
+
+## Protección de PDF y CSV y registro de descargas (rama `proteccion-descargas`, 27/10/2026, pendiente del visto bueno)
+
+- Marca de agua en todas las páginas de todos los PDF, pie con «Descargado por… · Código…», propiedades (título, autor, asunto «Confidencial») y restricción de copia y edición (AES-256 con `@cantoo/pdf-lib` 2.11.1, dependencia nueva). CSV con «Confidencial · Uso exclusivo del Colegio», quién, cuándo y el código.
+- Registro de descargas (migración 20261027000029): un código único por descarga y por cada informe de un ZIP, inalterable (trigger), pestaña «Descargas» en Accesos con filtros, búsqueda por código y exportación. Detalle en `docs/ESPECIFICACION.md` §7.7.
+- 371 tests de base y 49 del frontend. Capturas en `datos_locales/capturas_descargas/`.
+- Propuesta de conservación para el encargo de tratamiento: dos años desde cada descarga y borrado después. El borrado periódico se construye cuando se apruebe (hoy el registro no deja borrar nada).
+- Pendiente: visto bueno, despliegue (copia previa, migración, web) y llevarlo a `fase2`.
 
 ## Bloqueos
 

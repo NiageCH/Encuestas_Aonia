@@ -272,7 +272,7 @@ Funciones del mockup `referencia/mockups/Mockup_Encuestas_5_admin_usuarios.png`;
 - **Caducidad del enlace:** Supabase limita la validez de los enlaces de correo (como máximo 24 horas, compruébalo en la versión actual). Se usa el máximo permitido y el botón "Reenviar invitación". El texto de la interfaz dirá la caducidad real, no 72 horas.
 - Desactivar, reactivar y reenviar invitación. Último acceso y aviso a los 90 días sin entrar.
 - Eliminar (26/10/2026): borra la cuenta, el perfil, el doble factor, las sesiones y la invitación pendiente; se confirma escribiendo el correo de la cuenta. El registro de actividad conserva sus acciones pasadas con el nombre y el correo que tenía y anota quién lo eliminó. Solo administración; nadie se elimina a sí mismo ni al último administrador activo. Para dejar de entrar durante un tiempo, «Desactivar».
-- Registro de actividad, escrito por el servidor: invitaciones, cambios de rol, desactivaciones, eliminaciones, exportaciones e informes generados.
+- Registro de actividad, escrito por el servidor: invitaciones, cambios de rol, desactivaciones, eliminaciones e informes consultados. Las descargas tienen su propia pestaña (§7.7).
 - Doble factor (TOTP) obligatorio para las cuentas de administración. Solo en la base de datos local de desarrollo puede desactivarse (`app.mfa_admin_obligatorio = 'off'`, ver README); en producción no existe ese ajuste.
 - Un acceso desactivado puede autenticarse, pero no obtiene ningún resultado (todas las RPC lo rechazan) y la aplicación le muestra que no tiene acceso.
 - Reglas: una cuenta de administración no puede desactivarse ni quitarse el rol a sí misma, y siempre queda al menos una cuenta de administración activa.
@@ -290,9 +290,21 @@ Funciones del mockup `referencia/mockups/Mockup_Encuestas_5_admin_usuarios.png`;
 - Vistas con exportación: Panel general, Alumnado, Familias y Personal (Profesorado e Informes por persona tienen sus propios PDF). Se exporta lo que se ve con los filtros activos; en Familias y Personal, el detalle por pregunta de todos los bloques.
 - CSV para Excel en español: UTF-8 con BOM, separador punto y coma, coma decimal y sin separador de miles.
 - Celdas ocultas con el mismo texto que en pantalla («menos de 5», «oculto», «sin datos»); nunca en blanco.
-- Cabecera en el CSV y en el PDF: Colegio, curso, vista, filtros activos, fecha de exportación y «Resultados en validación» mientras esté activa la franja.
+- Cabecera en el CSV y en el PDF: quién lo descargó, fecha y hora de la descarga y su código (§7.7), Colegio, curso, vista, filtros activos y «Resultados en validación» mientras esté activa la franja. El CSV empieza por «Confidencial · Uso exclusivo del Colegio».
 - Nombre de archivo: `Encuestas_2526_<Vista>[_<Filtro>].csv` o `.pdf` (por ejemplo, `Encuestas_2526_Familias_Etapa-PAI.csv`).
-- Cada exportación queda en el registro de actividad, escrito por el servidor (`registrar_exportacion`), con la vista, el formato y los filtros. La coordinación no puede exportar personal.
+- Cada exportación queda en el registro de descargas (§7.7), escrito por el servidor (`registrar_descarga`), con la vista, el formato, los filtros y su código. La coordinación no puede exportar personal.
+
+### 7.7 Protección de PDF y CSV y registro de descargas (decisión del 27/10/2026)
+- **Marca de agua** en todas las páginas de todos los PDF (informes por persona, vistas y panel): «CONFIDENCIAL · Uso exclusivo del Colegio Internacional de Sevilla, San Francisco de Paula», en diagonal y gris muy claro, detrás del contenido para no tapar cifras ni gráficos.
+- **Pie de cada página:** «Descargado por [nombre] el [fecha] a las [hora] · Código [código]» y la página. Nombre, hora y código los pone el servidor al anotar la descarga. En un ZIP, cada PDF lleva su propio código y el ZIP el suyo.
+- **Propiedades del PDF:** título, autor «Colegio Internacional de Sevilla, San Francisco de Paula», asunto «Confidencial» y permisos que impiden copiar el texto, editar, anotar y reorganizar páginas (se abre sin contraseña y se puede imprimir). Se cifra con AES-256 y una contraseña de propietario aleatoria que no se guarda (`src/pdf/proteger.ts`, con `@cantoo/pdf-lib`). Es una restricción del formato: la respetan los lectores habituales, pero no impide una captura de pantalla; la protección de verdad es la marca de agua y el código.
+- **CSV:** primera línea «Confidencial · Uso exclusivo del Colegio» y, en la cabecera, quién lo descargó, cuándo y el código.
+- **Código:** 8 caracteres sin los que se confunden (0/O, 1/I/L), en dos grupos («7KQ2-M9XD»), único en todo el registro.
+- **Registro de descargas** (`registrar_descarga`, migración 20261027000029): una entrada del registro de actividad por descarga, con fecha y hora, persona, tipo (informe de profesor/a, de jefatura, de equipo, de dirección, vista en PDF, CSV o ZIP), de quién o de qué vista es, filtros, archivo y código; en un ZIP, la lista de informes con el código de cada uno. Primero se piden los datos (con los permisos de siempre), después se anota y por último se crea el archivo: si la anotación falla, no hay descarga.
+- **Pestaña «Descargas» en Accesos** (`#/usuarios/descargas`, `admin_descargas`): filtros por persona, tipo, fechas y persona del informe (también dentro de un ZIP) y búsqueda por código (también el de cada informe de un ZIP); exportación a CSV de lo filtrado, con la misma cabecera, que también queda anotada. Solo administración. La actividad de la otra pestaña deja fuera las descargas.
+- **Inalterable:** nadie desde la aplicación escribe en el registro, y un trigger impide cambiar o borrar una descarga a cualquier rol de la base de datos. Solo se permite lo que ya hacía eliminar una cuenta (guardar su nombre y correo).
+- **Conservación (propuesta para el encargo de tratamiento):** dos años desde cada descarga y, después, borrado (ver PROGRESO).
+- Tests: `supabase/tests/23_registro_descargas.sql`, `src/pdf/proteger.test.ts` y `src/exportacion/csv.test.ts`.
 
 ---
 

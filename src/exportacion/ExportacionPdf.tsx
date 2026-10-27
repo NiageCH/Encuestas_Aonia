@@ -3,9 +3,9 @@
 
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { t } from "../i18n";
-import { base, C, Cabecera, Pie } from "../pdf/comun";
+import { base, C, Cabecera, MarcaAgua, Pie } from "../pdf/comun";
 import { cabecera, numeroCsv } from "./csv";
-import type { Exportacion, Tabla, Valor } from "./modelo";
+import type { Exportacion, SelloDescarga, Tabla, Valor } from "./modelo";
 import { mayusculaInicial } from "../formato";
 import { sinCortes } from "../rangos";
 
@@ -96,10 +96,11 @@ function TablaPdf({ tabla }: { tabla: Tabla }) {
   );
 }
 
-export function ExportacionPdf({ exportacion, generado, aviso }: { exportacion: Exportacion; generado: Date; aviso: boolean }) {
+export function ExportacionPdf({ exportacion, sello, aviso }: { exportacion: Exportacion; sello: SelloDescarga; aviso: boolean }) {
   return (
-    <Document title={`${t.brand_title} · ${exportacion.titulo}`} author={t.colegio} language="es">
+    <Document title={`${t.brand_title} · ${exportacion.titulo}`} author={t.colegio} subject={t.desc_asunto} language="es">
       <Page size="A4" style={base.pagina}>
+        <MarcaAgua />
         <Cabecera subtitulo={t.exp_pdf_sub} />
         {/* Aire bajo la cabecera también en las páginas siguientes */}
         <View fixed style={{ height: 8 }} />
@@ -107,7 +108,7 @@ export function ExportacionPdf({ exportacion, generado, aviso }: { exportacion: 
           <Text style={base.eyebrow}>{t.exp_pdf_eyebrow}</Text>
           <Text style={base.titulo}>{exportacion.titulo}</Text>
           <View style={s.datos}>
-            {cabecera(exportacion, generado, aviso).map(([k, v]) => (
+            {cabecera(exportacion, sello, aviso).map(([k, v]) => (
               <View key={k} style={s.dato}><Text style={s.datoK}>{k}</Text><Text style={s.datoV}>{v}</Text></View>
             ))}
           </View>
@@ -116,7 +117,7 @@ export function ExportacionPdf({ exportacion, generado, aviso }: { exportacion: 
             {exportacion.notas.map((n, i) => <Text key={i} style={base.nota}>{n}</Text>)}
           </View>
         </View>
-        <Pie generado={generado} />
+        <Pie sello={sello} />
       </Page>
     </Document>
   );

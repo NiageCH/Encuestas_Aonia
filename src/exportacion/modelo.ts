@@ -16,7 +16,11 @@ export interface Tabla {
   notas?: string[];
 }
 
-export type VistaExportable = "inicio" | "alumnos" | "familias" | "personal";
+export type VistaExportable = "inicio" | "alumnos" | "familias" | "personal" | "descargas";
+
+/** Quién descargó, cuándo y con qué código: lo pone el servidor (registrar_descarga) y va en el pie de cada página del PDF
+ *  y en la cabecera del CSV. */
+export interface SelloDescarga { codigo: string; nombre: string; fecha: Date }
 
 export interface Exportacion {
   vista: VistaExportable;
@@ -29,6 +33,8 @@ export interface Exportacion {
   tablas: Tabla[];
   /** Notas generales al final (anonimato, cierre). */
   notas: string[];
+  /** Sin la línea del curso (el registro de descargas no es de un curso). */
+  sinCurso?: boolean;
 }
 
 export const txt = (texto: string): Valor => ({ texto });

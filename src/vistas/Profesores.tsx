@@ -205,16 +205,16 @@ function BotonPdf({ profesor }: { profesor: Profesor }) {
 }
 
 function Lote({ profesores }: { profesores: Profesor[] }) {
-  const [progreso, setProgreso] = useState<[number, number] | null>(null);
+  const [progreso, setProgreso] = useState<[number, number, "datos" | "pdf"] | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const cancelar = useRef(false);
   async function generar() {
     cancelar.current = false;
     setMensaje(null);
-    setProgreso([0, profesores.length]);
+    setProgreso([0, profesores.length, "datos"]);
     try {
       const { descargarLote } = await import("../pdf/generar");
-      const hechos = await descargarLote(profesores, (n, total) => setProgreso([n, total]), () => cancelar.current);
+      const hechos = await descargarLote(profesores, (n, total, fase) => setProgreso([n, total, fase]), () => cancelar.current);
       setMensaje(hechos > 0 ? t.pdf_lote_hecho(hechos) : null);
     } catch {
       setMensaje(t.pdf_error);
@@ -226,9 +226,9 @@ function Lote({ profesores }: { profesores: Profesor[] }) {
     <div className="en-lote">
       {progreso ? (
         <>
-          <p className="en-hint" role="status">{t.pdf_lote_progreso(progreso[0], progreso[1])}</p>
+          <p className="en-hint" role="status">{progreso[2] === "datos" ? t.pdf_lote_preparando(progreso[0], progreso[1]) : t.pdf_lote_progreso(progreso[0], progreso[1])}</p>
           <progress max={progreso[1]} value={progreso[0]} />
-          <button type="button" className="btn" onClick={() => { cancelar.current = true; }}>{t.pdf_lote_cancelar}</button>
+          {progreso[2] === "datos" && <button type="button" className="btn" onClick={() => { cancelar.current = true; }}>{t.pdf_lote_cancelar}</button>}
         </>
       ) : (
         <>

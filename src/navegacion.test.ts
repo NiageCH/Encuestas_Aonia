@@ -68,3 +68,12 @@ describe("navegación de dirección y administración", () => {
     expect(ir("#access_token=x&type=invite", "direccion")).toBe("#/");
   });
 });
+
+describe("registro de descargas", () => {
+  it("pestaña de Accesos, solo para administración", () => {
+    expect(ir("#/usuarios/descargas", "administrador")).toBe("#/usuarios/descargas");
+    expect(ir("#/usuarios/otra", "administrador")).toBe("#/usuarios");
+    expect(ir("#/usuarios/descargas", "direccion")).toBe("#/");
+    expect(ir("#/usuarios/descargas", "coordinacion")).toBe("#/");
+  });
+});

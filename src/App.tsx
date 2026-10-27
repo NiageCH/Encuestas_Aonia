@@ -105,7 +105,7 @@ export function App() {
     : ruta.seccion === "/familias" ? (hay("familias") ? <Familias perfil={perfil} /> : vacia(t.nav_familias, "familias"))
     : ruta.seccion === "/personal" ? <Personal />
     : ruta.seccion === "/informes" ? <InformesPorPersona perfil={perfil} nivel={ruta.nivel ?? "profesores"} />
-    : <Usuarios perfil={perfil} />;
+    : <Usuarios perfil={perfil} descargas={!!ruta.descargas} />;
   return (
     <Marco ruta={ruta.seccion} enlaces={enlaces} usuario={{ nombre: perfil.nombre, onSalir: salir }}>
       {perfil.rol === "administrador" && mfaObligatorio === false && <p className="en-aviso-entorno" role="note">{t.mfa_desactivado_local}</p>}

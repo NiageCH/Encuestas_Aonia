@@ -6,7 +6,7 @@
 //   #/alumnos · #/familias
 //   #/personal                          Encuesta de personal (no para la coordinación)
 //   #/informes/<nivel>                  Informes por persona: direccion · equipos · departamentos · profesores
-//   #/usuarios                          Solo administradores
+//   #/usuarios[/descargas]              Solo administradores: personas y actividad, o el registro de descargas
 
 export type Rol = "administrador" | "direccion" | "coordinacion";
 export type Seccion = "/" | "/alumnos" | "/familias" | "/personal" | "/informes" | "/usuarios";
@@ -18,9 +18,12 @@ export const NIVELES: Nivel[] = ["direccion", "equipos", "departamentos", "profe
 export interface Ruta {
   seccion: Seccion;
   nivel?: Nivel;
+  /** En Accesos: la pestaña del registro de descargas. */
+  descargas?: boolean;
 }
 
 export function aHash(r: Ruta): string {
+  if (r.seccion === "/usuarios" && r.descargas) return "#/usuarios/descargas";
   return r.seccion === "/informes" ? `#/informes/${r.nivel}` : `#${r.seccion}`;
 }
 
@@ -61,6 +64,7 @@ export function leerRuta(hash: string, rol: Rol): Ruta {
     // La coordinación solo tiene los informes de sus profesores.
     return rol === "coordinacion" ? informes("profesores", rol) : { seccion: "/personal" };
   }
-  const r: Ruta = ["alumnos", "familias", "usuarios"].includes(partes[0]) ? { seccion: `/${partes[0]}` as Seccion } : { seccion: "/" };
+  const r: Ruta = partes[0] === "usuarios" && partes[1] === "descargas" ? { seccion: "/usuarios", descargas: true }
+    : ["alumnos", "familias", "usuarios"].includes(partes[0]) ? { seccion: `/${partes[0]}` as Seccion } : { seccion: "/" };
   return permitida(r, rol) ? r : { seccion: "/" };
 }
