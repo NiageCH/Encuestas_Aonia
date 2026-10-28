@@ -468,6 +468,7 @@ export const I18N = {
       coordinacion: "Ve solo los resultados de su etapa.",
     },
     reg_invitacion: (quien: string, a: string, rol: string) => `${quien} ha invitado a ${a} (${rol})`,
+    reg_alta_directa: (quien: string, a: string, rol: string) => `${quien} ha dado de alta a ${a} (${rol}), sin invitación`,
     reg_reenvio: (quien: string, a: string) => `${quien} ha reenviado la invitación a ${a}`,
     reg_desactivacion: (quien: string, a: string) => `${quien} ha desactivado a ${a}`,
     reg_reactivacion: (quien: string, a: string) => `${quien} ha reactivado a ${a}`,

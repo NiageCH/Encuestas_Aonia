@@ -252,6 +252,7 @@ function describir(e: EntradaRegistro): string {
   e = { ...e, usuario: autor };
   switch (e.accion) {
     case "invitacion": return t.reg_invitacion(e.usuario, quien, t.roles[d.rol as Rol] ?? String(d.rol));
+    case "alta_directa": return t.reg_alta_directa(e.usuario, quien, t.roles[d.rol as Rol] ?? String(d.rol));
     case "reenvio_invitacion": return t.reg_reenvio(e.usuario, quien);
     case "desactivacion": return t.reg_desactivacion(e.usuario, quien);
     case "reactivacion": return t.reg_reactivacion(e.usuario, quien);
