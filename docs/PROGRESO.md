@@ -230,6 +230,11 @@ Orden de carga: `cargar_2526.py` → `convertir_alexia_2526.py` → `cargar_asig
 - Conservación del registro de descargas: dos años desde cada descarga y borrado después (aprobada el 28/10/2026; va en el encargo de tratamiento, `docs/DESPLIEGUE.md`). Pendiente: construir el borrado periódico (hoy el registro no deja borrar nada).
 - Despliegue: en curso el 28/10/2026 (copia previa `datos_locales/copias/nube_2026-10-28_0830`).
 
+## Tareas con fecha
+
+- **Eliminar las cuentas de demo y borrar `datos_locales/demo_accesos.txt`** (Rodrigo), el día de la demo, al terminar: fecha por confirmar. Son «Demo Dirección» (demo.direccion@demo.invalid) y «Demo Coordinación» (demo.coordinacion@demo.invalid), en producción y creadas con `datos_locales/scripts/crear_cuentas_demo.py`. Se eliminan en Accesos y el registro de actividad conserva su alta y su eliminación.
+- Borrar las copias de la nube con la numeración antigua de migraciones: 02/11/2026.
+
 ## Bloqueos
 
 - Cuestionario de personal en inglés (4 respuestas).
