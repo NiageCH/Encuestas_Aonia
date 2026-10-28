@@ -228,7 +228,7 @@ Orden de carga: `cargar_2526.py` → `convertir_alexia_2526.py` → `cargar_asig
 - Registro de descargas (migración 20261027000029): un código único por descarga y por cada informe de un ZIP, inalterable (trigger), pestaña «Descargas» en Accesos con filtros, búsqueda por código y exportación. Detalle en `docs/ESPECIFICACION.md` §7.7.
 - 371 tests de base y 49 del frontend. Capturas en `datos_locales/capturas_descargas/`.
 - Conservación del registro de descargas: dos años desde cada descarga y borrado después (aprobada el 28/10/2026; va en el encargo de tratamiento, `docs/DESPLIEGUE.md`). Pendiente: construir el borrado periódico (hoy el registro no deja borrar nada).
-- Despliegue: en curso el 28/10/2026 (copia previa `datos_locales/copias/nube_2026-10-28_0830`).
+- Desplegada el 28/10/2026: copia previa `datos_locales/copias/nube_2026-10-28_0830` (comprobada), migración 20261027000029, 371 tests en la nube, validación y recuento sin diferencias, web publicada desde `f2dd38c`. Pendiente: que Rodrigo haga una descarga real en la web publicada y la busque por su código en Accesos › Descargas.
 
 ## Tareas con fecha
 
