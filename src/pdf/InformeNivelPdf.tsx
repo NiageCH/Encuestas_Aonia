@@ -91,7 +91,7 @@ function Seccion({ seccion, primera }: { seccion: SeccionPdf; primera: boolean }
         <View style={s.kpi}>
           <Text style={s.kpiL}>{t.resp_media_bloque}</Text>
           <Text style={s.kpiV}>{tot.suprimido ? textoOculto(tot) : `${f.media(tot.media!)} / 6`}</Text>
-          {!tot.suprimido && <Text style={s.kpiD}>{t.tip_personas(f.recuento(tot.n!))} · {t.tip_valoraciones(f.recuento(tot.n_valoraciones ?? 0))}</Text>}
+          {!tot.suprimido && <Text style={s.kpiD}>{t.tip_personas(f.recuento(tot.n!))} · {t.tip_valoraciones(f.recuento(tot.n_valoraciones ?? 0))}{tot.menos_de_5 ? ` · ${t.marca_menos5}` : ""}</Text>}
         </View>
       </View>
       {seccion.nota && <Text style={base.aviso}>{seccion.nota}</Text>}
@@ -109,7 +109,7 @@ function Seccion({ seccion, primera }: { seccion: SeccionPdf; primera: boolean }
                 <Text style={s.pregunta}>{p.texto}</Text>
                 {r.suprimido ? <View style={s.div} /> : <Divergente fila={r} />}
                 <Text style={[s.media, r.suprimido ? base.oculto : {}]}>{r.suprimido ? textoOculto(r) : f.media(r.media!)}</Text>
-                <Text style={s.n}>{r.suprimido ? "" : `n ${f.recuento(r.n!)}`}</Text>
+                <Text style={s.n}>{r.suprimido ? "" : `n ${f.recuento(r.n!)}`}{r.menos_de_5 ? `\n${t.marca_menos5}` : ""}</Text>
               </View>
             );
           })}
@@ -151,9 +151,10 @@ export function InformeNivelPdf({ eyebrow, titulo, subtitulo, secciones, alumnos
           ))}
 
           <Text style={[base.nota, { marginTop: 14 }]}>{t.pdf_nota_escala}</Text>
-          <Text style={base.nota}>{t.pdf_nota_oculto}</Text>
+          {/* Solo los descargan Dirección y administración: con su criterio (§5.0). */}
+          <Text style={base.nota}>{t.leyenda_menos5}</Text>
           {hayComplementaria && <Text style={base.nota}>{t.pdf_nota_asterisco}</Text>}
-          <Text style={base.nota}>{t.aviso_cierre}</Text>
+          <Text style={base.nota}>{t.aviso_cierre_direccion}</Text>
         </View>
         <Pie sello={sello} />
       </Page>

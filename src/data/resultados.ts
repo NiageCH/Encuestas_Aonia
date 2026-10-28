@@ -12,6 +12,8 @@ export interface Fila {
   suprimido: boolean;
   motivo?: Motivo;
   n?: number;
+  /** Visible con menos de 5 respuestas: solo para Dirección y administración (§5.0). */
+  menos_de_5?: boolean;
   media?: number;
   n_personas?: number;
   n_valoraciones?: number;
@@ -190,10 +192,18 @@ export interface CeldaProfesor extends Fila {
   docentes_clase: number;
 }
 
+export interface GlobalProfesor {
+  suprimido: boolean; motivo?: string; combinaciones?: number; n_personas_por_asignatura?: number; n_valoraciones?: number; media?: number;
+  /** Clases con menos de 5 respuestas que entran en la media (solo en la versión completa). */
+  menos_de_5?: number;
+}
+
 export interface ResultadoProfesor {
   docente: { id: number; nombre: string; apellidos: string };
   celdas: CeldaProfesor[];
-  global: { suprimido: boolean; motivo?: string; combinaciones?: number; n_personas_por_asignatura?: number; n_valoraciones?: number; media?: number };
+  global: GlobalProfesor;
+  /** Solo en la versión completa (Dirección y administración): la media global tal como sale en la versión docente. */
+  global_docente?: GlobalProfesor;
   combinaciones_excluidas: number;
   compartidas: number;
   comparacion: Record<string, Fila>;
@@ -227,12 +237,19 @@ export async function preguntasProfesorado(cuestionarios: string[]): Promise<Pre
   return [...vistos.values()];
 }
 
-export type InformeProfesor = ResultadoProfesor & { preguntas: { codigo: string; texto: string; resultado: ResultadoProfesor }[] };
+/** completa: la de Dirección y administración, con todo y la marca «menos de 5». docente: la que recibe el docente, con el
+ *  mínimo de 5 y la complementaria (§5.0). La coordinación siempre recibe la docente. */
+export type VersionInforme = "completa" | "docente";
 
-/** Informe completo de un profesor (bloque y cada pregunta) para el PDF. Queda en el registro
- *  de actividad, indicando si forma parte de un lote. */
-export async function informeProfesor(docente: number, lote = false): Promise<InformeProfesor> {
-  const { data, error } = await supabase.rpc("informe_profesor", { p_curso: CURSO, p_docente: docente, p_lote: lote });
+export type InformeProfesor = ResultadoProfesor & {
+  preguntas: { codigo: string; texto: string; resultado: ResultadoProfesor }[];
+  version: VersionInforme;
+};
+
+/** Informe de un profesor (bloque, cada pregunta y cada pregunta en cada clase) para el PDF. Queda en el registro de
+ *  actividad, con la versión y si forma parte de un lote. */
+export async function informeProfesor(docente: number, lote = false, version: VersionInforme = "completa"): Promise<InformeProfesor> {
+  const { data, error } = await supabase.rpc("informe_profesor", { p_curso: CURSO, p_docente: docente, p_lote: lote, p_version: version });
   if (error) throw error;
   return textosConMayuscula(data as InformeProfesor);
 }
@@ -257,7 +274,7 @@ export async function informeResponsable(tipo: TipoResponsable, ambito: string |
 
 export interface MediaDepartamentoAlumnos {
   profesores: number;
-  global: { suprimido: boolean; motivo?: string; combinaciones?: number; n_valoraciones?: number; media?: number };
+  global: GlobalProfesor;
   combinaciones_excluidas: number;
 }
 

@@ -16,6 +16,8 @@ export interface DatosDescarga {
   vista?: string;
   filtros?: Record<string, string>;
   archivo: string;
+  /** Informe del profesor/a: versión completa o docente. */
+  version?: "completa" | "docente";
   /** Solo en un ZIP: sus informes, cada uno con su código. */
   informes?: { objeto: string; docente?: number }[];
 }

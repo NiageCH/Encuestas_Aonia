@@ -33,9 +33,9 @@ El detalle está en [`docs/PROGRESO.md`](docs/PROGRESO.md).
 
 ## Principios
 
-1. **Anonimato.** Ningún resultado agregado con menos de **5 respuestas**, con **supresión complementaria**: si en un reparto queda una sola parte oculta, se oculta también la siguiente más pequeña para que no se pueda deducir restando. Se aplica en la base de datos, no en pantalla.
-2. **Sin datos identificativos.** No se cargan IPs, identificadores de Encuesta Fácil, fechas de respuesta, respuestas abiertas ni sexo.
-3. **Las respuestas individuales nunca llegan al cliente.** Solo funciones agregadas (RPC) que aplican permisos y anonimato. Las exportaciones y los PDF salen de esas mismas funciones.
+1. **Anonimato según el rol** (criterio confirmado por Mark el (fecha pendiente), especificación §5.0). Para la coordinación y en el informe que recibe cada docente, ningún resultado agregado con menos de **5 respuestas**, con **supresión complementaria**: si en un reparto queda una sola parte oculta, se oculta también la siguiente más pequeña para que no se pueda deducir restando. Dirección y administración lo ven todo, con la marca «menos de 5». Se aplica en la base de datos, no en pantalla.
+2. **Sin datos identificativos.** No se cargan IPs, identificadores de Encuesta Fácil, fechas de respuesta ni sexo. Las respuestas abiertas, tal cual, solo para Dirección y administración y sin enlace con las respuestas cerradas (§7.9).
+3. **Las respuestas individuales nunca llegan al cliente.** Solo funciones (RPC) que aplican permisos y el criterio de cada rol; la única excepción son los textos de las respuestas abiertas, sueltos. Las exportaciones y los PDF salen de esas mismas funciones.
 4. **Nada de datos del Colegio ni secretos en git.**
 5. **Estilo de la intranet del Colegio** y textos en español, en un diccionario preparado para añadir inglés.
 
@@ -238,7 +238,7 @@ python3 -m venv .venv && .venv/bin/pip install -r etl/requirements.txt
 ```
 
 - Cada columna de cada fichero se carga o se descarta con un motivo; una columna sin regla detiene la carga.
-- Nunca se cargan identificadores, fechas, IP, correo, nombres, respuestas abiertas, sexo ni el Plan de Igualdad.
+- Nunca se cargan identificadores, fechas, IP, correo, nombres, sexo ni las preguntas cerradas del Plan de Igualdad. Las respuestas abiertas se cargan aparte, con `etl/cargar_abiertas_2526.py` (§7.9).
 - El nombre del profesor/a o de la optativa que escribe el alumnado solo se usa en memoria para atribuir la respuesta a un docente; el texto nunca se carga. Del nivel de tutoría del personal solo se carga el tramo, y solo para el bloque del Equipo de Individuación.
 - Informes de carga y de validación: `datos_locales/informes/`.
 
@@ -250,6 +250,8 @@ Asignación docente y responsables (orden de carga: encuestas, conversión, asig
 .venv/bin/python etl/crear_plantilla_asignacion.py                    # plantilla para el Colegio (etl/plantillas/)
 .venv/bin/python etl/cargar_asignaciones.py RUTA.xlsx --ensayo         # valida y lista lo que no casa
 .venv/bin/python etl/cargar_asignaciones.py RUTA.xlsx                  # carga (sustituye las del curso)
+.venv/bin/python etl/cargar_abiertas_2526.py --ensayo                  # respuestas abiertas: solo el recuento por pregunta, sin textos
+.venv/bin/python etl/cargar_abiertas_2526.py                           # carga (después de cargar_2526.py, que las borra al recargar)
 .venv/bin/python etl/ejemplo_asignaciones.py                          # docentes inventados para probar (datos_locales/)
 ```
 - Para cargar en otra base de datos: `DATABASE_URL` en `.env` y `--remoto`. Una `DATABASE_URL` en el entorno tiene prioridad sobre `.env` (por ejemplo, la local: `DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:55422/postgres`).

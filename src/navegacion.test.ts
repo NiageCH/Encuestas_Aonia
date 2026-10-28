@@ -5,8 +5,8 @@ const ir = (hash: string, rol: "administrador" | "direccion" | "coordinacion") =
 
 describe("menú de arriba", () => {
   it("Informes por persona va después de Personal y antes de Usuarios", () => {
-    expect(menu("administrador")).toEqual(["/", "/alumnos", "/familias", "/personal", "/informes", "/usuarios"]);
-    expect(menu("direccion")).toEqual(["/", "/alumnos", "/familias", "/personal", "/informes"]);
+    expect(menu("administrador")).toEqual(["/", "/alumnos", "/familias", "/personal", "/abiertas", "/informes", "/usuarios"]);
+    expect(menu("direccion")).toEqual(["/", "/alumnos", "/familias", "/personal", "/abiertas", "/informes"]);
   });
   it("la coordinación no ve Personal ni Usuarios, sí Informes por persona", () => {
     expect(menu("coordinacion")).toEqual(["/", "/alumnos", "/familias", "/informes"]);
@@ -48,6 +48,7 @@ describe("navegación de dirección y administración", () => {
   });
   it("Informes por persona: todos los niveles, en orden jerárquico, empezando por Dirección", () => {
     expect(nivelesPermitidos("direccion")).toEqual(["direccion", "equipos", "departamentos", "profesores"]);
+    expect(nivelesPermitidos("administrador")).toEqual(["direccion", "equipos", "departamentos", "profesores", "envio"]);
     expect(ir("#/informes", "direccion")).toBe("#/informes/direccion");
     expect(ir("#/informes/departamentos", "direccion")).toBe("#/informes/departamentos");
     expect(ir("#/informes/no-existe", "direccion")).toBe("#/informes/direccion");
@@ -75,5 +76,18 @@ describe("registro de descargas", () => {
     expect(ir("#/usuarios/otra", "administrador")).toBe("#/usuarios");
     expect(ir("#/usuarios/descargas", "direccion")).toBe("#/");
     expect(ir("#/usuarios/descargas", "coordinacion")).toBe("#/");
+  });
+});
+
+describe("respuestas abiertas y envío de informes (§7.9 y §7.10)", () => {
+  it("las respuestas abiertas, solo Dirección y administración", () => {
+    expect(ir("#/abiertas", "direccion")).toBe("#/abiertas");
+    expect(ir("#/abiertas", "administrador")).toBe("#/abiertas");
+    expect(ir("#/abiertas", "coordinacion")).toBe("#/");
+  });
+  it("el envío al profesorado, solo administración", () => {
+    expect(ir("#/informes/envio", "administrador")).toBe("#/informes/envio");
+    expect(ir("#/informes/envio", "direccion")).toBe("#/informes/direccion");
+    expect(ir("#/informes/envio", "coordinacion")).toBe("#/informes/profesores");
   });
 });

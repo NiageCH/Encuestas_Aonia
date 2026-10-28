@@ -230,6 +230,16 @@ Orden de carga: `cargar_2526.py` → `convertir_alexia_2526.py` → `cargar_asig
 - Conservación del registro de descargas: dos años desde cada descarga y borrado después (aprobada el 28/10/2026; va en el encargo de tratamiento, `docs/DESPLIEGUE.md`). Pendiente: construir el borrado periódico (hoy el registro no deja borrar nada).
 - Desplegada el 28/10/2026: copia previa `datos_locales/copias/nube_2026-10-28_0830` (comprobada), migración 20261027000029, 371 tests en la nube, validación y recuento sin diferencias, web publicada desde `f2dd38c`. Pendiente: que Rodrigo haga una descarga real en la web publicada y la busque por su código en Accesos › Descargas.
 
+## Criterio de anonimato de Dirección, respuestas abiertas y envío al profesorado (rama `anonimato-direccion`, 28/10/2026, sin subir)
+
+Confirmado por escrito por Mark el (fecha pendiente). Hecho en local, con tests; **pendiente del visto bueno de Rodrigo**:
+- **Criterio según el rol** (§5.0, migración 30): Dirección y administración ven también lo de menos de 5, marcado «menos de 5» con su número, sin complementaria, en vistas, informes, CSV y PDF. La coordinación y la versión docente, como antes.
+- **Informe del profesor/a en dos versiones** (§7.2): la completa añade el detalle de cada pregunta en cada clase; la cabecera del PDF dice la versión; en lote se elige.
+- **Respuestas abiertas** (§7.9, migración 31, `etl/cargar_abiertas_2526.py`): 18 preguntas y 750 respuestas, cargadas solo en local. Pantalla «Respuestas abiertas» para Dirección y administración, con filtros, registro de cada consulta y exportación con código.
+- **Envío al profesorado** (§7.10, migración 32, Edge Function `enviar-informes`): enlace personal de 7 días a la versión docente, aperturas y descargas registradas, envío individual o por departamento, etapa o tramo con vista previa. En **modo de pruebas**: solo a correos de Niage.
+- Tests: 454 pgTAP (25, 26 y 27 nuevos) y 51 de vitest.
+- Pendiente de decidir: si los informes de jefatura y de equipo necesitan también una versión con el mínimo de 5 (§5.0); cuánto se guardan las respuestas abiertas y los enlaces; si se cargan en la nube las tres preguntas abiertas del Plan de Igualdad; el texto exacto de las dos preguntas abiertas de familias.
+
 ## Tareas con fecha
 
 - **Eliminar las cuentas de demo y borrar `datos_locales/demo_accesos.txt`** (Rodrigo): **29/10/2026** (la demo es el 28/10/2026). Son «Demo Dirección» (demo.direccion@demo.invalid) y «Demo Coordinación» (demo.coordinacion@demo.invalid), en producción y creadas con `datos_locales/scripts/crear_cuentas_demo.py`. Se eliminan en Accesos y el registro de actividad conserva su alta y su eliminación.

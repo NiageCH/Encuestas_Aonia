@@ -3,7 +3,7 @@
 
 import type { ReactNode } from "react";
 import { useAyuda } from "./Ayuda";
-import { Oculto } from "./Oculto";
+import { MarcaMenos5, Oculto } from "./Oculto";
 import type { Fila } from "../data/resultados";
 import * as f from "../formato";
 import { t } from "../i18n";
@@ -22,10 +22,10 @@ export function Indicador({ etiqueta, fila, valor, detalle, destacado, explicaci
   const ayuda = useAyuda();
   return (
     <div className={`card en-kpi en-con-ayuda${destacado ? " hl" : ""}`}
-         {...ayuda([etiqueta, fila.suprimido ? lineasOculto(fila) : explicacion])}>
+         {...ayuda([etiqueta, fila.suprimido ? lineasOculto(fila) : explicacion, ...(fila.menos_de_5 ? [t.tip_menos5] : [])])}>
       <div className="l">{etiqueta}</div>
       <div className="v">{fila.suprimido ? <Oculto fila={fila} /> : valor(fila)}</div>
-      <div className="d">{fila.suprimido ? "" : detalle(fila)}</div>
+      <div className="d">{fila.suprimido ? "" : detalle(fila)} <MarcaMenos5 fila={fila} /></div>
     </div>
   );
 }
@@ -45,6 +45,7 @@ export function Barra({ etiqueta, fila, referencia }: { etiqueta: string; fila: 
     t.tip_personas(f.recuento(fila.n_personas ?? fila.n!)),
     t.tip_valoraciones(f.recuento(fila.n_valoraciones ?? 0)),
     ...(fila.ns_nc ? [t.tip_nsnc(f.recuento(fila.ns_nc))] : []),
+    ...(fila.menos_de_5 ? [t.tip_menos5] : []),
   ];
   if (ref != null) lineas.push(t.tip_referencia_colegio(f.media(ref)));
   return (
@@ -55,7 +56,7 @@ export function Barra({ etiqueta, fila, referencia }: { etiqueta: string; fila: 
         {ref != null && <span className="en-ref" style={{ left: `${((ref - 1) / 5) * 100}%` }} />}
       </span>
       <span className="en-val">
-        {fila.suprimido ? <Oculto fila={fila} /> : <>{f.media(fila.media!)}<small>n {f.recuento(fila.n!)}</small></>}
+        {fila.suprimido ? <Oculto fila={fila} /> : <>{f.media(fila.media!)}<small>n {f.recuento(fila.n!)}</small><MarcaMenos5 fila={fila} /></>}
         {ref != null && <small className="en-ref-txt">{t.colegio_corto} {f.media(ref)}</small>}
       </span>
     </div>
@@ -103,7 +104,7 @@ export function IndicadorRecomendacion({ etiqueta, fila }: { etiqueta: string; f
   }
   return (
     <div className="card en-kpi en-kpi-rec">
-      <div className="l">{etiqueta}</div>
+      <div className="l">{etiqueta} <MarcaMenos5 fila={fila} /></div>
       <BarraReparto fila={fila} fina />
       <div className="en-reparto">{textoReparto(fila)}</div>
       <div className="d en-con-ayuda" {...ayuda([t.indice, t.indice_explicacion])}>
@@ -129,7 +130,7 @@ export function Recomendacion({ fila, desde }: { fila: Fila; desde: number }) {
     <div className="en-two">
       <section className="card">
         <h3>{t.reparto_titulo}</h3>
-        <p className="en-hint">{f.recuento(fila.n!)} {t.respuestas}</p>
+        <p className="en-hint">{f.recuento(fila.n!)} {t.respuestas} <MarcaMenos5 fila={fila} /></p>
         <BarraReparto fila={fila} />
         <p className="en-reparto grande">{textoReparto(fila)}</p>
         <div className="en-indice">
@@ -194,6 +195,7 @@ export function FilaPregunta({ texto: guardado, fila, etiquetas }: { texto: stri
     t.tip_media(f.media(fila.media!)),
     ...dist.map((c, i) => `${i + 1} · ${etiquetas[i] ?? ""}: ${f.recuento(c)} (${f.porcentaje((100 * c) / n)})`),
     ...(fila.ns_nc ? [t.tip_nsnc(f.recuento(fila.ns_nc))] : []),
+    ...(fila.menos_de_5 ? [t.tip_menos5] : []),
   ];
   return (
     <div className="en-item en-con-ayuda" {...ayuda(lineas)}>
@@ -204,7 +206,7 @@ export function FilaPregunta({ texto: guardado, fila, etiquetas }: { texto: stri
         <span className="h r">{[4, 5, 6].map((v) => tramo(v, TRAMOS_ACUERDO[v - 4]))}</span>
       </span>
       <span className="n"><strong>{f.media(fila.media!)}</strong></span>
-      <span className="n">{f.recuento(n)}</span>
+      <span className="n">{f.recuento(n)}<MarcaMenos5 fila={fila} /></span>
       <span className="n">{fila.ns_nc ? f.recuento(fila.ns_nc) : ""}</span>
     </div>
   );
@@ -237,6 +239,7 @@ export function Ranking({ fila, textos, maximo = 10 }: { fila: Fila; textos: Rec
   const tope = Math.max(1, ...ops.map((o) => o.pct));
   return (
     <>
+      {fila.menos_de_5 && <p className="en-hint">{t.tip_eligen_total(f.recuento(fila.n!))} <MarcaMenos5 fila={fila} /></p>}
       {ops.map((o) => {
         const texto = f.mayusculaInicial(textos[o.codigo] ?? o.codigo);
         return (

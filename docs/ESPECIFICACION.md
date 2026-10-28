@@ -41,7 +41,7 @@ Origen: SharePoint del Colegio, sitio `sfpaula`, biblioteca `VdAE/Encuestas`. Ro
 - **«Aspectos más destacados»:** selección múltiple, hasta tres aspectos por persona, con una lista de opciones común a los tres colectivos.
 - **Preguntas duplicadas:** en profesorado aparecen preguntas con redacción casi igual (por ejemplo con "..." delante, o con "trabajdo" y "trabajado"). Se unifican en el diccionario.
 - **Nombres del profesorado:** los ficheros casi nunca los traen. La relación docente, asignatura y grupo viene del Excel del Colegio (§7.2).
-- **Se descartan siempre:** identificador de respuesta, fechas y horas, IP, correo, nombre y apellidos, campos libres y parámetros de usuario, respuestas abiertas (incluidas "Otro, especifique" y los nombres del profesorado), sexo, Plan de Igualdad, y datos que acotan a la persona sin estar en el alcance (nivel de tutoría y niveles en que imparte, segundo idioma, optativa, uso de transporte, comedor y canasto, curso de cada hijo).
+- **Se descartan siempre:** identificador de respuesta, fechas y horas, IP, correo, nombre y apellidos, campos libres y parámetros de usuario, los nombres del profesorado y de la optativa, sexo, las preguntas cerradas del Plan de Igualdad, y datos que acotan a la persona sin estar en el alcance (nivel de tutoría y niveles en que imparte, segundo idioma, optativa, uso de transporte, comedor y canasto, curso de cada hijo). Las respuestas abiertas se cargan aparte, tal cual y solo para Dirección y administración (§7.9).
 - **Respuestas abandonadas:**
   - **Se cargan**, con las preguntas que la persona sí contestó. La columna "Abandonado" solo sirve para contarlas.
   - **n = personas con al menos una valoración válida** (u opción marcada) en ese conjunto.
@@ -105,6 +105,16 @@ Ninguna política RLS permite `select` desde el cliente sobre `respuesta`, `resp
 
 ## 5. Anonimato: mínimo de 5 y supresión complementaria
 
+### 5.0 Criterio según el rol (confirmado por escrito por Mark el (fecha pendiente))
+
+- **Dirección y administración** ven todos los resultados, también los de menos de 5 respuestas, con la marca «menos de 5» y su número de respuestas. Para estos roles **no se aplica la supresión complementaria**. Vale en todas las vistas, informes, CSV y PDF que descargan.
+- **La coordinación** y **el informe que recibe cada docente** (la «versión docente», también por su enlace personal, §7.10) siguen con el mínimo de 5 y la supresión complementaria: todo lo que sigue en este apartado.
+- **Cómo se aplica:** en el servidor, en un solo sitio (`privado.ve_menos_de_5`, migración 20261028000030). `privado.suprimir` no suprime nada para Dirección y administración, y `privado.fila` marca `"menos_de_5": true` en cada resultado visible con menos de 5. La versión docente la pide `informe_profesor(..., p_version => 'docente')` y el enlace del docente; la coordinación la recibe siempre, pida lo que pida. El ajuste que la activa solo puede endurecer el criterio, nunca ablandarlo.
+- **Presentación:** la cifra de respuestas lleva al lado «menos de 5» (en pantalla, como etiqueta; en CSV, «3 (menos de 5)»; en PDF, debajo de la cifra) y la nota «“menos de 5” junto a una cifra: resultado con menos de 5 respuestas, visible solo para Dirección y administración. Con tan pocas respuestas, cada persona pesa mucho en el resultado y es más fácil reconocerla».
+- **Aspectos con mayor y menor valoración (§7.1):** para Dirección y administración entran también las preguntas con menos de 5 valoraciones, marcadas.
+- **Informes de jefatura y de equipo:** los descargan Dirección y administración, así que salen con su criterio. **Si se entregan a la jefatura, enseñan valoraciones de grupos muy pequeños de su personal**: falta decidir si necesitan también una versión con el mínimo de 5.
+- Tests: `supabase/tests/25_criterio_direccion.sql`. Los tests anteriores de anonimato (02, 04, 06, 08, 09 y 10) siguen comprobando el mínimo y la complementaria en la versión docente.
+
 1. **Mínimo:** ningún resultado agregado con n < 5. Se devuelve como suprimido, sin valor.
 2. **Supresión complementaria:** cuando una vista enseña a la vez un total y sus partes (grupos de un cuestionario, asignaturas y grupos de un profesor/a, etapas, segmentos de personal), si **exactamente una** parte queda suprimida, se suprime también la siguiente parte más pequeña. Así no se puede deducir la parte oculta restando al total.
 3. **Media global del profesor/a:** se calcula **solo con las combinaciones visibles**. El informe indica cuántas combinaciones se han excluido por tener menos de 5 respuestas.
@@ -143,6 +153,10 @@ Tests obligatorios: una batería de casos en `supabase/tests` que intente saltar
 | Personal → Encuesta de personal | Sí | Sí | No |
 | Personal → Informes por persona → Dirección, Equipos y Departamentos | Sí | Sí | No |
 | Personal → Informes por persona → Profesorado | Sí | Sí | **Solo el profesorado con docencia en su etapa**, y solo con los resultados de esa etapa. Ve también la media del Colegio como referencia |
+| Respuestas abiertas (§7.9) | Sí | Sí | **No** |
+| Resultados de menos de 5 (§5.0) | Sí, marcados | Sí, marcados | No (mínimo de 5 y complementaria) |
+| Informe del profesor/a | Completo y docente | Completo y docente | Solo el docente |
+| Envío de informes al profesorado (§7.10) | Sí | No | No |
 | Accesos y registro de actividad | Sí | No | No |
 
 Correspondencia de cuestionarios con etapas:
@@ -207,6 +221,10 @@ Direcciones: `#/personal` y `#/informes/<direccion|equipos|departamentos|profeso
 - **Docentes de baja:** se incluyen, porque dieron clase ese curso.
 - **Inmersión lingüística** (Y6 a Y10): no se atribuye; sus grupos no son grupos de clase.
 - **Optativa** (Y6 a Y9): se atribuye por el nombre de la optativa cuando esta tiene un solo docente. Como las optativas mezclan grupos, el resultado del docente es de todos sus grupos juntos, con la complementaria entre docentes dentro de la asignatura.
+- **Dos versiones del informe** (confirmado por Mark el (fecha pendiente), §5.0):
+  - **Completa**, para Dirección y administración: además de la media global y la de cada clase, el **detalle de cada pregunta en cada clase** (asignatura y grupo), con la marca «menos de 5» donde corresponda. La media global incluye todas sus clases propias; el informe dice cuántas tienen menos de 5 y cuál es la media de la versión docente.
+  - **Docente**, la que recibe el docente: igual que hasta ahora (mínimo de 5 y complementaria, media global solo con las clases visibles).
+  - El PDF lo dice en la cabecera («Versión completa» o «Versión docente») y bajo el nombre («Versión completa (Dirección y administración) · no entregar al docente»). Archivo: `Informe_2526_Apellido_Nombre_completo.pdf` y, la docente, `Informe_2526_Apellido_Nombre.pdf`. En lote se elige la versión. El registro de actividad y el de descargas anotan la versión.
 - **PDF por profesor/a:** descarga individual y en lote (ZIP, `Informe_2526_Apellido_Nombre.pdf`), con el estilo del Colegio. La generación queda en el registro de actividad.
 - **Origen:** el listado de Alexia del Colegio (grupos, asignaturas y docentes), convertido con `etl/convertir_alexia_2526.py` al formato de la plantilla (`etl/plantillas/asignacion_docente_2526.xlsx`) y cargado con `etl/cargar_asignaciones.py`. Las materias de Alexia se casan con las de la encuesta mediante una tabla de equivalencias por cuestionario. Las que los alumnos no valoran (tutoría, refuerzos, CICE y similares) no se cargan.
 - **Departamento:** el que confirmó el Colegio en la revisión (la columna «Departamento correcto» manda; «Sin dpto.» es «Otros»), con los nombres oficiales. El antiguo «Inglés y Adquisición de Lenguas» se reparte entre Lengua y Literatura Inglesas y Adquisición de Lenguas según lo que imparte cada docente; quien dé de las dos se marca para revisión.
@@ -289,7 +307,7 @@ Funciones del mockup `referencia/mockups/Mockup_Encuestas_5_admin_usuarios.png`;
 - Nunca se exportan respuestas individuales.
 - Vistas con exportación: Panel general, Alumnado, Familias y Personal (Profesorado e Informes por persona tienen sus propios PDF). Se exporta lo que se ve con los filtros activos; en Familias y Personal, el detalle por pregunta de todos los bloques.
 - CSV para Excel en español: UTF-8 con BOM, separador punto y coma, coma decimal y sin separador de miles.
-- Celdas ocultas con el mismo texto que en pantalla («menos de 5», «oculto», «sin datos»); nunca en blanco.
+- Celdas ocultas con el mismo texto que en pantalla («menos de 5», «oculto», «sin datos»); nunca en blanco. Para Dirección y administración, la cifra de respuestas de un resultado con menos de 5 lleva la marca: «3 (menos de 5)» (§5.0).
 - Cabecera en el CSV y en el PDF: quién lo descargó, fecha y hora de la descarga y su código (§7.7), Colegio, curso, vista, filtros activos y «Resultados en validación» mientras esté activa la franja. El CSV empieza por «Confidencial · Uso exclusivo del Colegio».
 - Nombre de archivo: `Encuestas_2526_<Vista>[_<Filtro>].csv` o `.pdf` (por ejemplo, `Encuestas_2526_Familias_Etapa-PAI.csv`).
 - Cada exportación queda en el registro de descargas (§7.7), escrito por el servidor (`registrar_descarga`), con la vista, el formato, los filtros y su código. La coordinación no puede exportar personal.
@@ -305,6 +323,22 @@ Funciones del mockup `referencia/mockups/Mockup_Encuestas_5_admin_usuarios.png`;
 - **Inalterable:** nadie desde la aplicación escribe en el registro, y un trigger impide cambiar o borrar una descarga a cualquier rol de la base de datos. Solo se permite lo que ya hacía eliminar una cuenta (guardar su nombre y correo).
 - **Conservación (aprobada el 28/10/2026, para el encargo de tratamiento):** dos años desde cada descarga y, después, borrado. Cubre dos campañas, por si un documento aparece fuera del Colegio meses después. El borrado periódico está por construir: hoy el registro no deja borrar nada.
 - Tests: `supabase/tests/23_registro_descargas.sql`, `src/pdf/proteger.test.ts` y `src/exportacion/csv.test.ts`.
+
+### 7.9 Respuestas abiertas (confirmado por Mark el (fecha pendiente))
+- Se cargan **tal cual**, sin ocultar nada, desde los ficheros de 2025/26 (`etl/cargar_abiertas_2526.py`, después de `cargar_2526.py`). Son 18 preguntas y 750 respuestas: «¿Qué echas en falta en el Colegio?» y «Comentarios» en cada cuestionario del alumnado (la de Y12 solo tiene comentarios), en familias y en personal, y las tres del Plan de Igualdad en personal. En familias la exportación no trae el texto de sus dos preguntas: se deduce por su posición y la pantalla lo avisa.
+- **No se cargan** las columnas que piden el nombre de un docente o de la optativa (solo sirven para atribuir valoraciones, §7.2).
+- **Solo Dirección y administración.** Nunca la coordinación ni los informes del profesorado. Entrada propia del menú: «Respuestas abiertas» (`#/abiertas`).
+- **Pantalla por colectivo y pregunta**, con los filtros del colectivo: alumnado (etapa, cuestionario y grupo), familias (etapa) y personal (docente o no docente, o antigüedad, de uno en uno).
+- **Sin vínculo con las respuestas cerradas:** cada respuesta abierta va suelta (`privado.respuesta_abierta`, sin `respuesta_id`), con identificador aleatorio y cargada en orden aleatorio, con solo lo necesario para los filtros. La RPC devuelve solo los textos.
+- **Registro:** cada consulta queda en el registro de actividad (colectivo, pregunta, filtros y número de respuestas; nunca el texto). La exportación (CSV y PDF) lleva la marca de confidencialidad, su código y queda en el registro de descargas.
+- RPC: `abiertas_preguntas`, `abiertas`, `abiertas_grupos` (migración 20261028000031). Tests: `supabase/tests/26_respuestas_abiertas.sql`.
+
+### 7.10 Envío de informes al profesorado (confirmado por Mark el (fecha pendiente))
+- **Enlace personal por docente** a la versión docente de su informe, **válido 7 días**. Se abre sin cuenta (`#/informe/<token>`): enseña el informe y deja descargar el PDF, a nombre del docente y con su código. **Cada apertura y cada descarga quedan registradas.** El token solo existe en claro hasta que sale el correo; en la base de datos queda su huella (SHA-256). Un enlace se puede anular.
+- **Envío individual o por departamento, etapa o tramo** (Y1 a Y5, Y6 a Y9, Y10 a Y12), o a todo el profesorado, siempre con **vista previa de destinatarios** antes de enviar y una confirmación. Quien no tiene resultados del alumnado o no tiene correo se queda fuera y la vista previa lo dice. Solo administración, en «Informes por persona › Envío al profesorado».
+- **Remitente `encuestas@sfpaula.com`.** Mientras no exista, el envío está en **modo de pruebas**: solo a correos de Niage (@niage.es o @niage.eu), con «[PRUEBA]» en el asunto y el docente al que iría; **no se envía nada al profesorado**. Doble cerrojo: la base de datos (`privado.configuracion_envio.modo = 'pruebas'`) no crea enlaces a otros correos, y la Edge Function `enviar-informes` exige además `ENVIO_PROFESORADO=activo` y el remitente del Colegio. Pasar a «activo» lo hace Niage en la base de datos cuando el Colegio lo autorice; no hay botón.
+- Seguimiento: «Enlaces enviados», con la fecha de envío, la caducidad, las aperturas y las descargas de cada enlace.
+- RPC y tablas: migración 20261028000032. Tests: `supabase/tests/27_envio_informes.sql`.
 
 ---
 

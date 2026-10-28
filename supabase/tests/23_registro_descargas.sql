@@ -86,7 +86,7 @@ select is((select jsonb_agg(f ->> 'tipo') from jsonb_array_elements(public.admin
 select is((public.admin_descargas('{"objeto": "garcia"}') ->> 'total')::int, (select garcia from antes) + 1, 'persona del informe, sin acentos y también dentro de un ZIP');
 select is((public.admin_descargas('{"tipo": "csv"}') ->> 'total')::int, (select csv from antes) + 2, 'por tipo');
 select is((public.admin_descargas('{"persona": "00000000-0000-0000-0000-00000000000c"}') ->> 'total')::int, 1, 'por persona que descarga');
-select is((public.admin_descargas(jsonb_build_object('desde', to_char(now() + interval '1 day', 'YYYY-MM-DD'))) ->> 'total')::int, 0, 'por fechas');
+select is((public.admin_descargas(jsonb_build_object('desde', to_char((now() at time zone 'Europe/Madrid') + interval '1 day', 'YYYY-MM-DD'))) ->> 'total')::int, 0, 'por fechas');
 select ok(not exists (select 1 from jsonb_array_elements(public.admin_registro(1000)) e where e ->> 'accion' = 'descarga'),
   'la actividad deja fuera las descargas');
 

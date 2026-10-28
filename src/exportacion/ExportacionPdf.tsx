@@ -20,6 +20,7 @@ const s = StyleSheet.create({
   num: { paddingLeft: 4 },
   der: { textAlign: "right" },
   oculto: { color: C.muted, fontWeight: 600, fontSize: 7.5 },
+  marca: { color: C.ink, fontWeight: 700, fontSize: 6.5 },
 });
 
 /** Número como en pantalla: coma decimal y signo menos tipográfico. */
@@ -27,7 +28,7 @@ const numero = (x: number, dec: number) => numeroCsv(x, dec).replace("-", "−")
 
 function Celda({ v, ancho, primera }: { v: Valor; ancho: number; primera: boolean }) {
   const estilo = primera ? s.primera : [{ width: ancho }, s.num, s.der];
-  if ("num" in v) return <Text style={estilo}>{numero(v.num, v.dec)}</Text>;
+  if ("num" in v) return <Text style={estilo}>{numero(v.num, v.dec)}{v.marca && <Text style={s.marca}>{`\n${v.marca}`}</Text>}</Text>;
   if ("oculto" in v) return <Text style={[...[estilo].flat(), s.oculto]}>{v.oculto}</Text>;
   if ("enunciado" in v) return <Text style={estilo}>{mayusculaInicial(v.enunciado)}</Text>;
   return <Text style={estilo}>{sinCortes(v.texto)}</Text>;
@@ -41,7 +42,7 @@ const PRIMERA_MIN = 150;
 const CAR = 4.7;   // ancho medio de un carácter de Raleway a 8 pt
 const medida = (x: string) => x.length * CAR + 8;
 const palabraMasLarga = (x: string) => Math.max(...x.split(/[ \t\n]+/).map(medida));
-const textoCelda = (v: Valor) => sinCortes("num" in v ? numero(v.num, v.dec) : "oculto" in v ? v.oculto : "enunciado" in v ? v.enunciado : v.texto);
+const textoCelda = (v: Valor) => sinCortes("num" in v ? (v.marca && v.marca.length > numero(v.num, v.dec).length ? v.marca : numero(v.num, v.dec)) : "oculto" in v ? v.oculto : "enunciado" in v ? v.enunciado : v.texto);
 
 export function anchosColumnas(tabla: Tabla): number[] {
   const cols = tabla.columnas.map((c, j) => {

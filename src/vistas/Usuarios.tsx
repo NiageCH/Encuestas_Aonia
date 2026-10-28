@@ -261,7 +261,21 @@ function describir(e: EntradaRegistro): string {
       const despues = d.despues as Record<string, string>;
       return t.reg_cambio_rol(e.usuario, quien, t.roles[despues.rol as Rol] ?? despues.rol);
     }
-    case "informe_profesor": return d.lote ? t.reg_informe_lote(e.usuario) : t.reg_informe_profesor(e.usuario);
+    case "informe_profesor": return (d.lote ? t.reg_informe_lote(e.usuario) : t.reg_informe_profesor(e.usuario))
+      + (d.version === "completa" ? ` · ${t.version_completa_corta}` : d.version === "docente" ? ` · ${t.version_docente_corta}` : "");
+    case "envio_informes": return t.reg_envio(e.usuario, Number(d.enlaces ?? 0), d.prueba ? String(d.correo_prueba ?? "") : null);
+    case "apertura_enlace": return t.reg_apertura(String(d.nombre ?? ""), !!d.prueba);
+    case "anular_enlace": return t.reg_anular(e.usuario);
+    case "abiertas_consulta": {
+      const f = (d.filtro ?? {}) as Record<string, unknown>;
+      return t.reg_abiertas(e.usuario, t.panel_colectivo[f.colectivo as "alumnos"] ?? String(f.colectivo ?? ""),
+        t.abi_preguntas[f.pregunta as keyof typeof t.abi_preguntas] ?? String(f.pregunta ?? ""), Number(d.n ?? 0),
+        Object.entries(f).filter(([k]) => !["colectivo", "pregunta"].includes(k)).map(([k, v]) =>
+          k === "docente" ? (v ? t.per_docentes : t.per_no_docentes)
+          : k === "antiguedad" ? (v === "primer_ano" ? t.per_primer_ano : t.per_mas_de_un_ano)
+          : k === "etapa" ? t.etapas[v as keyof typeof t.etapas] ?? String(v)
+          : `${k}: ${v}`).join(", "));
+    }
     case "informe_responsable": return t.reg_informe_responsable(e.usuario, String(d.ambito ?? d.tipo ?? ""));
     case "exportacion": {
       const filtros = Object.entries((d.filtros ?? {}) as Record<string, string>).map(([k, v]) => `${k}: ${v}`).join(" · ");

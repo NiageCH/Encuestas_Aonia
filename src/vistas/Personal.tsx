@@ -20,6 +20,7 @@ import {
 } from "../exportacion/modelo";
 import * as f from "../formato";
 import { t } from "../i18n";
+import { leyendaAnonimato } from "../criterio";
 import { SinResultados, useHayResultados } from "../componentes/SinResultados";
 
 type Segmento =
@@ -274,7 +275,7 @@ function EncuestaPersonal() {
           <p className="sec-lead">{t.per_valorado_lead}</p>
           <div className="card"><Ranking fila={datos.valorado} textos={textos} /></div>
 
-          <p className="notice en-alerta" style={{ marginTop: "1.4rem" }}>{t.per_aviso} {t.leyenda_oculto}</p>
+          <p className="notice en-alerta" style={{ marginTop: "1.4rem" }}>{t.per_aviso} {leyendaAnonimato("direccion")}</p>
         </>
       )}
     </section>

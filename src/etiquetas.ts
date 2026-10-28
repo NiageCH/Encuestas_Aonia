@@ -53,7 +53,8 @@ export function textoAlumnos(m: MediaDepartamentoAlumnos): { texto: string; deta
   if (m.global.suprimido) return { texto: m.global.motivo === "sin_asignacion" ? t.dep_alumnos_pendiente : t.prof_sin_visibles };
   return {
     texto: `${f.media(m.global.media!)} / 6`,
-    detalle: t.dep_alumnos_detalle(m.profesores, m.global.combinaciones!, f.recuento(m.global.n_valoraciones!)),
+    detalle: t.dep_alumnos_detalle(m.profesores, m.global.combinaciones!, f.recuento(m.global.n_valoraciones!))
+      + (m.global.menos_de_5 ? ` · ${t.prof_global_menos5(m.global.menos_de_5)}` : ""),
     nota: m.combinaciones_excluidas > 0 ? t.prof_excluidas(m.combinaciones_excluidas) : undefined,
   };
 }

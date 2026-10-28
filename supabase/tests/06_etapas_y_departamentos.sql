@@ -3,6 +3,9 @@
 begin;
 \ir fixtures/datos_ejemplo.psql
 select plan(35);
+-- Estos tests comprueban el mínimo de 5 y la complementaria, que siguen valiendo para la coordinación y para la versión
+-- docente del informe. Dirección y administración las ven aquí como en esa versión; su criterio está en 25_criterio_direccion.sql.
+set local encuestas.version_docente = 'on';
 
 create function pg_temp.parte(p jsonb, p_clave jsonb) returns jsonb
 language sql as $$ select e from jsonb_array_elements(p -> 'partes') e where e -> 'clave' = p_clave $$;

@@ -2,6 +2,9 @@
 begin;
 \ir fixtures/datos_ejemplo.psql
 select plan(33);
+-- Estos tests comprueban el mínimo de 5 y la complementaria, que siguen valiendo para la coordinación y para la versión
+-- docente del informe. Dirección y administración las ven aquí como en esa versión; su criterio está en 25_criterio_direccion.sql.
+set local encuestas.version_docente = 'on';
 
 create temp table ids as
   select (select id from public.persona_responsable where apellidos = 'Uno') as uno,

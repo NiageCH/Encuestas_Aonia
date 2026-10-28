@@ -5,15 +5,17 @@
 //   #/                                  Inicio (panel general)
 //   #/alumnos · #/familias
 //   #/personal                          Encuesta de personal (no para la coordinación)
-//   #/informes/<nivel>                  Informes por persona: direccion · equipos · departamentos · profesores
+//   #/informes/<nivel>                  Informes por persona: direccion · equipos · departamentos · profesores · envio
+//                                       (envío al profesorado, solo administración)
+//   #/abiertas                          Respuestas abiertas: solo Dirección y administración
 //   #/usuarios[/descargas]              Solo administradores: personas y actividad, o el registro de descargas
 
 export type Rol = "administrador" | "direccion" | "coordinacion";
-export type Seccion = "/" | "/alumnos" | "/familias" | "/personal" | "/informes" | "/usuarios";
-export type Nivel = "direccion" | "equipos" | "departamentos" | "profesores";
+export type Seccion = "/" | "/alumnos" | "/familias" | "/personal" | "/abiertas" | "/informes" | "/usuarios";
+export type Nivel = "direccion" | "equipos" | "departamentos" | "profesores" | "envio";
 
-/** De arriba abajo en la jerarquía del colegio. */
-export const NIVELES: Nivel[] = ["direccion", "equipos", "departamentos", "profesores"];
+/** De arriba abajo en la jerarquía del colegio y, al final, el envío de los informes al profesorado. */
+export const NIVELES: Nivel[] = ["direccion", "equipos", "departamentos", "profesores", "envio"];
 
 export interface Ruta {
   seccion: Seccion;
@@ -29,19 +31,20 @@ export function aHash(r: Ruta): string {
 
 /** Niveles de «Informes por persona» que ve cada rol. */
 export function nivelesPermitidos(rol: Rol): Nivel[] {
-  return rol === "coordinacion" ? ["profesores"] : NIVELES;
+  if (rol === "coordinacion") return ["profesores"];
+  return rol === "administrador" ? NIVELES : NIVELES.filter((n) => n !== "envio");
 }
 
 export function permitida(r: Ruta, rol: Rol): boolean {
   if (r.seccion === "/usuarios") return rol === "administrador";
-  if (r.seccion === "/personal") return rol !== "coordinacion";
+  if (r.seccion === "/personal" || r.seccion === "/abiertas") return rol !== "coordinacion";
   if (r.seccion === "/informes") return !!r.nivel && nivelesPermitidos(rol).includes(r.nivel);
   return true;
 }
 
 /** Secciones del menú de arriba que ve cada rol, en orden. */
 export function menu(rol: Rol): Seccion[] {
-  const todas: Seccion[] = ["/", "/alumnos", "/familias", "/personal", "/informes", "/usuarios"];
+  const todas: Seccion[] = ["/", "/alumnos", "/familias", "/personal", "/abiertas", "/informes", "/usuarios"];
   return todas.filter((s) => s === "/informes" || permitida({ seccion: s }, rol));
 }
 
@@ -65,6 +68,6 @@ export function leerRuta(hash: string, rol: Rol): Ruta {
     return rol === "coordinacion" ? informes("profesores", rol) : { seccion: "/personal" };
   }
   const r: Ruta = partes[0] === "usuarios" && partes[1] === "descargas" ? { seccion: "/usuarios", descargas: true }
-    : ["alumnos", "familias", "usuarios"].includes(partes[0]) ? { seccion: `/${partes[0]}` as Seccion } : { seccion: "/" };
+    : ["alumnos", "familias", "abiertas", "usuarios"].includes(partes[0]) ? { seccion: `/${partes[0]}` as Seccion } : { seccion: "/" };
   return permitida(r, rol) ? r : { seccion: "/" };
 }

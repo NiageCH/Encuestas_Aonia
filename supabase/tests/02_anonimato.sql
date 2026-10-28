@@ -3,6 +3,9 @@
 begin;
 \ir fixtures/datos_ejemplo.psql
 select plan(40);
+-- Estos tests comprueban el mínimo de 5 y la complementaria, que siguen valiendo para la coordinación y para la versión
+-- docente del informe. Dirección y administración las ven aquí como en esa versión; su criterio está en 25_criterio_direccion.sql.
+set local encuestas.version_docente = 'on';
 
 -- Comprueba el invariante de la supresión complementaria en un resultado: en cada línea
 -- con el total visible, el número de partes suprimidas es 0 o al menos 2. Con dos

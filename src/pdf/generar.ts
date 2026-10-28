@@ -11,7 +11,7 @@ import { createElement, type ReactElement } from "react";
 import { registrarDescarga, type TipoDescarga } from "../data/descargas";
 import {
   informeEquipo, informeJefe, informeProfesor, informeResponsable,
-  type GrupoEquipo, type InformeProfesor, type Jefe, type Profesor, type TipoResponsable,
+  type GrupoEquipo, type InformeProfesor, type Jefe, type Profesor, type TipoResponsable, type VersionInforme,
 } from "../data/resultados";
 import { notaReuniones, responsablesEquipo, textoAlumnos, tituloAlumnosJefe, tituloEquipo, tituloReuniones } from "../etiquetas";
 import type { SelloDescarga } from "../exportacion/modelo";
@@ -20,10 +20,11 @@ import { InformeProfesorPdf } from "./InformeProfesorPdf";
 import { InformeNivelPdf, type AlumnosDepartamentoPdf, type DatosNivelPdf, type SeccionPdf } from "./InformeNivelPdf";
 import { protegerPdf } from "./proteger";
 
-/** Informe_2526_Apellidos_Nombre.pdf, sin acentos ni caracteres raros. */
-export function nombreFichero(p: Profesor): string {
+/** Informe_2526_Apellidos_Nombre.pdf (la versión docente, la que recibe el docente) o
+ *  Informe_2526_Apellidos_Nombre_completo.pdf, sin acentos ni caracteres raros. */
+export function nombreFichero(p: Profesor, version: VersionInforme = "docente"): string {
   const limpio = (x: string) => x.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "");
-  return `Informe_2526_${limpio(p.apellidos)}_${limpio(p.nombre)}.pdf`;
+  return `Informe_2526_${limpio(p.apellidos)}_${limpio(p.nombre)}${version === "completa" ? "_completo" : ""}.pdf`;
 }
 
 /** El PDF ya protegido (src/pdf/proteger.ts). */
@@ -52,32 +53,45 @@ function descargar(blob: Blob, nombre: string) {
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
-export async function descargarInforme(p: Profesor): Promise<void> {
-  const informe = await informeProfesor(p.id, false);
-  const sello = await registrarDescarga("informe_profesor", { objeto: nombreDe(p), docente: p.id, archivo: nombreFichero(p) });
-  descargar(await pdfProfesor(p, informe, sello), nombreFichero(p));
+/** La versión que sale es la que dice el servidor: la coordinación siempre recibe la docente. */
+export async function descargarInforme(p: Profesor, version: VersionInforme = "completa"): Promise<void> {
+  const informe = await informeProfesor(p.id, false, version);
+  const archivo = nombreFichero(p, informe.version);
+  const sello = await registrarDescarga("informe_profesor", { objeto: nombreDe(p), docente: p.id, archivo, version: informe.version });
+  descargar(await pdfProfesor(p, informe, sello), archivo);
+}
+
+/** Desde el enlace personal del docente (sin cuenta): la versión docente, anotada a su nombre en el registro. */
+export async function descargarInformeEnlace(token: string, profesor: Omit<Profesor, "id"> & { id?: number }, informe: InformeProfesor): Promise<void> {
+  const { descargaEnlace } = await import("../data/envio");
+  const p = { id: 0, ...profesor } as Profesor;
+  const archivo = nombreFichero(p, "docente");
+  const sello = await descargaEnlace(token, archivo);
+  descargar(await pdfProfesor(p, informe, sello), archivo);
 }
 
 export type FaseLote = "datos" | "pdf";
 
 /** Un PDF por profesor en un ZIP. Primero los datos de todos (se puede cancelar); después se anota el ZIP, con un código
  *  por informe, y se generan los PDF. Llama a alProgresar(hechos, total, fase) tras cada paso. */
-export async function descargarLote(profesores: Profesor[], alProgresar: (hechos: number, total: number, fase: FaseLote) => void,
+export async function descargarLote(profesores: Profesor[], version: VersionInforme,
+                                    alProgresar: (hechos: number, total: number, fase: FaseLote) => void,
                                     cancelado: () => boolean = () => false): Promise<number> {
   const datos: [Profesor, InformeProfesor][] = [];
   for (const p of profesores) {
     if (cancelado()) return 0;
-    datos.push([p, await informeProfesor(p.id, true)]);
+    datos.push([p, await informeProfesor(p.id, true, version)]);
     alProgresar(datos.length, profesores.length, "datos");
   }
   if (datos.length === 0) return 0;
-  const archivo = "Informes_profesorado_2526.zip";
+  const sale = datos[0][1].version;
+  const archivo = `Informes_profesorado_2526${sale === "completa" ? "_completos" : ""}.zip`;
   const zipSello = await registrarDescarga("zip", {
-    objeto: t.desc_zip_objeto(datos.length), archivo, informes: datos.map(([p]) => ({ objeto: nombreDe(p), docente: p.id })),
+    objeto: t.desc_zip_objeto(datos.length), archivo, version: sale, informes: datos.map(([p]) => ({ objeto: nombreDe(p), docente: p.id })),
   });
   const zip = new JSZip();
   for (const [i, [p, informe]] of datos.entries()) {
-    zip.file(nombreFichero(p), await pdfProfesor(p, informe, zipSello.informes[i]));
+    zip.file(nombreFichero(p, informe.version), await pdfProfesor(p, informe, zipSello.informes[i]));
     alProgresar(i + 1, datos.length, "pdf");
   }
   descargar(await zip.generateAsync({ type: "blob" }), archivo);

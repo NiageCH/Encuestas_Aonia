@@ -20,6 +20,7 @@ import {
 } from "../exportacion/modelo";
 import * as f from "../formato";
 import { t } from "../i18n";
+import { leyendaAnonimato } from "../criterio";
 
 const ETAPAS = ["infantil", "primaria", "pai", "bachillerato"] as const;
 type Etapa = (typeof ETAPAS)[number];
@@ -264,7 +265,7 @@ export function Familias({ perfil }: { perfil: Perfil }) {
             </>
           )}
 
-          <p className="notice en-alerta" style={{ marginTop: "1.4rem" }}>{t.fam_aviso_etapas} {t.leyenda_oculto}</p>
+          <p className="notice en-alerta" style={{ marginTop: "1.4rem" }}>{t.fam_aviso_etapas} {leyendaAnonimato(perfil.rol)}</p>
         </>
       )}
     </div>

@@ -6,7 +6,7 @@
 import { useEffect, useState } from "react";
 import { CabeceraPreguntas, FilaPregunta, LeyendaAcuerdo, lineasOculto } from "../componentes/Graficos";
 import { Migas } from "../componentes/Marco";
-import { Oculto } from "../componentes/Oculto";
+import { MarcaMenos5, Oculto } from "../componentes/Oculto";
 import { SinResultados, useHayResultados } from "../componentes/SinResultados";
 import {
   informeEquipo, informeJefe, informeResponsable, listarEquipo, listarJefes,
@@ -19,6 +19,7 @@ import * as f from "../formato";
 import { t } from "../i18n";
 import { aHash, nivelesPermitidos, type Nivel } from "../navegacion";
 import type { SeccionPedida } from "../pdf/generar";
+import { EnvioInformes } from "./Envio";
 import { InformesProfesor } from "./Profesores";
 
 export function InformesPorPersona({ perfil, nivel }: { perfil: Perfil; nivel: Nivel }) {
@@ -41,11 +42,12 @@ export function InformesPorPersona({ perfil, nivel }: { perfil: Perfil; nivel: N
           ))}
         </nav>
       )}
-      {nivel !== "profesores" && !hayPersonal && <SinResultados colectivo="personal" />}
+      {nivel !== "profesores" && nivel !== "envio" && !hayPersonal && <SinResultados colectivo="personal" />}
       {nivel === "direccion" && hayPersonal && <NivelDireccion />}
       {nivel === "equipos" && hayPersonal && <NivelEquipos />}
       {nivel === "departamentos" && hayPersonal && <NivelDepartamentos />}
       {nivel === "profesores" && (hayAlumnos ? <InformesProfesor perfil={perfil} /> : <SinResultados colectivo="alumnos" />)}
+      {nivel === "envio" && (hayAlumnos ? <EnvioInformes /> : <SinResultados colectivo="alumnos" />)}
     </div>
   );
 }
@@ -199,7 +201,7 @@ function AlumnosDepartamento({ titulo, m }: { titulo: string; m: MediaDepartamen
       <div className="v">{m.global.suprimido && m.global.motivo === "solo_compartidas" ? <span className="en-sin-media">{t.dep_solo_compartidas_corto}</span>
         : m.global.suprimido ? <span className="en-oculto">{m.global.motivo === "sin_asignacion" ? t.dep_alumnos_pendiente_corto : t.prof_sin_visibles}</span>
         : <>{f.media(m.global.media!)} <small>/ 6</small></>}</div>
-      <div className="d">{m.global.suprimido ? "" : x.detalle}{x.nota && <><br />{x.nota}</>}</div>
+      <div className="d">{m.global.suprimido ? "" : x.detalle}{m.global.menos_de_5 ? <><br />{t.prof_global_menos5(m.global.menos_de_5)} <MarcaMenos5 fila={{ menos_de_5: true }} /></> : null}{x.nota && <><br />{x.nota}</>}</div>
     </div>
   );
 }
@@ -259,7 +261,7 @@ function DatosSeccion({ titulo, subtitulo, nota, etiquetas, datos }: {
         <div className="card en-kpi hl">
           <div className="l">{t.resp_media_bloque}</div>
           <div className="v">{tot.suprimido ? <Oculto fila={tot} /> : <>{f.media(tot.media!)} <small>/ 6</small></>}</div>
-          <div className="d">{tot.suprimido ? lineasOculto(tot) : t.tip_personas(f.recuento(tot.n!))}</div>
+          <div className="d">{tot.suprimido ? lineasOculto(tot) : t.tip_personas(f.recuento(tot.n!))} <MarcaMenos5 fila={tot} /></div>
         </div>
       </div>
       {nota && <p className="notice en-alerta" style={{ marginTop: ".9rem" }}>{nota}</p>}

@@ -6,8 +6,9 @@ import type { Fila } from "../data/resultados";
 import { t } from "../i18n";
 
 /** Una celda: texto, enunciado de una pregunta u opción (tal como está guardado: el CSV lo copia igual y el PDF le pone
- *  mayúscula inicial), número (con sus decimales) o resultado oculto. Nunca hay celdas en blanco. */
-export type Valor = { texto: string } | { enunciado: string } | { num: number; dec: number } | { oculto: string };
+ *  mayúscula inicial), número (con sus decimales y, si tiene menos de 5 respuestas, la marca «menos de 5») o resultado
+ *  oculto. Nunca hay celdas en blanco. */
+export type Valor = { texto: string } | { enunciado: string } | { num: number; dec: number; marca?: string } | { oculto: string };
 
 export interface Tabla {
   titulo: string;
@@ -16,7 +17,7 @@ export interface Tabla {
   notas?: string[];
 }
 
-export type VistaExportable = "inicio" | "alumnos" | "familias" | "personal" | "descargas";
+export type VistaExportable = "inicio" | "alumnos" | "familias" | "personal" | "descargas" | "abiertas";
 
 /** Quién descargó, cuándo y con qué código: lo pone el servidor (registrar_descarga) y va en el pie de cada página del PDF
  *  y en la cabecera del CSV. */
@@ -51,24 +52,38 @@ export type Campo =
   | "rec_media" | "si" | "neutral" | "no" | "indice"
   | "d1" | "d2" | "d3" | "d4" | "d5" | "d6";
 
-/** Las celdas de una fila de resultados. Si está oculta, cada celda dice por qué. */
+const RECUENTOS: Campo[] = ["n", "personas", "valoraciones"];
+
+/** Las celdas de una fila de resultados. Si está oculta, cada celda dice por qué. Si se ve con menos de 5 respuestas
+ *  (Dirección y administración), la cifra de respuestas lleva la marca «menos de 5». */
 export function celdas(fila: Fila, campos: Campo[]): Valor[] {
   if (fila.suprimido) return campos.map(() => ({ oculto: textoOculto(fila) }));
-  return campos.map((c): Valor => {
-    switch (c) {
-      case "n": return num(fila.n ?? 0);
-      case "personas": return num(fila.n_personas ?? fila.n ?? 0);
-      case "valoraciones": return num(fila.n_valoraciones ?? fila.n ?? 0);
-      case "media": return num(fila.media ?? 0, 2);
-      case "nsnc": return num(fila.ns_nc ?? 0);
-      case "rec_media": return num(fila.media ?? 0, 1);
-      case "si": return num(fila.promotores_pct ?? 0);
-      case "neutral": return num(fila.neutros_pct ?? 0);
-      case "no": return num(fila.detractores_pct ?? 0);
-      case "indice": return num(fila.nps ?? 0);
-      default: return num(fila.distribucion?.[c.slice(1)] ?? 0);
-    }
+  const marcada = fila.menos_de_5 ? Math.max(0, campos.findIndex((c) => RECUENTOS.includes(c))) : -1;
+  return campos.map((c, i): Valor => {
+    const v = valorCampo(fila, c);
+    return i === marcada && "num" in v ? { ...v, marca: t.marca_menos5 } : v;
   });
+}
+
+function valorCampo(fila: Fila, c: Campo): Valor {
+  switch (c) {
+    case "n": return num(fila.n ?? 0);
+    case "personas": return num(fila.n_personas ?? fila.n ?? 0);
+    case "valoraciones": return num(fila.n_valoraciones ?? fila.n ?? 0);
+    case "media": return num(fila.media ?? 0, 2);
+    case "nsnc": return num(fila.ns_nc ?? 0);
+    case "rec_media": return num(fila.media ?? 0, 1);
+    case "si": return num(fila.promotores_pct ?? 0);
+    case "neutral": return num(fila.neutros_pct ?? 0);
+    case "no": return num(fila.detractores_pct ?? 0);
+    case "indice": return num(fila.nps ?? 0);
+    default: return num(fila.distribucion?.[c.slice(1)] ?? 0);
+  }
+}
+
+/** ¿Alguna cifra de la exportación lleva la marca «menos de 5»? Entonces va su nota. */
+export function hayMenos5(e: Pick<Exportacion, "tablas">): boolean {
+  return e.tablas.some((tb) => tb.filas.some((f) => f.some((v) => "num" in v && !!v.marca)));
 }
 
 /** Notas comunes a todas las exportaciones. */
@@ -129,7 +144,7 @@ export function tablaValorado(titulo: string, fila: Fila, textos: Record<string,
   const ops = [...(fila.opciones ?? [])].filter((o) => o.n > 0).sort((a, b) => b.n - a.n);
   return {
     titulo, columnas,
-    filas: ops.map((o) => [enunciado(textos[o.codigo] ?? o.codigo), num(o.n), num(o.pct)]),
+    filas: ops.map((o) => [enunciado(textos[o.codigo] ?? o.codigo), { ...num(o.n), ...(fila.menos_de_5 ? { marca: t.marca_menos5 } : {}) }, num(o.pct)]),
     notas: [t.exp_nota_valorado(fila.n ?? 0)],
   };
 }

@@ -17,6 +17,7 @@ import {
 } from "../exportacion/modelo";
 import * as f from "../formato";
 import { t } from "../i18n";
+import { leyendaAnonimato } from "../criterio";
 
 interface Datos {
   personas: Fila;
@@ -146,7 +147,7 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
             <option value="">{t.todos_grupos}</option>
             {datos?.grupos.map((g) => (
               <option key={g.clave.grupo} value={g.clave.grupo}>
-                {g.clave.grupo}{g.suprimido ? ` (${g.motivo === "menos_de_5" ? t.oculto_menos5 : t.oculto_compl})` : ""}
+                {g.clave.grupo}{g.suprimido ? ` (${g.motivo === "menos_de_5" ? t.oculto_menos5 : t.oculto_compl})` : g.menos_de_5 ? ` (${g.n}, ${t.marca_menos5})` : ""}
               </option>
             ))}
           </select>
@@ -213,7 +214,7 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
           <p className="sec-lead">{t.recomendacion_lead(escalaRec)}</p>
           <Recomendacion fila={datos.recomendacion} desde={actual?.etapa === "primaria" ? 1 : 0} />
 
-          <p className="notice en-alerta" style={{ marginTop: "1.4rem" }}>{t.leyenda_oculto} {t.aviso_cierre}</p>
+          <p className="notice en-alerta" style={{ marginTop: "1.4rem" }}>{leyendaAnonimato(perfil.rol)}</p>
         </>
       )}
     </div>

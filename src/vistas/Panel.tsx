@@ -7,7 +7,7 @@ import { useAyuda } from "../componentes/Ayuda";
 import { BarraReparto, lineasOculto, textoReparto } from "../componentes/Graficos";
 import { Exportar } from "../componentes/Exportar";
 import { Migas } from "../componentes/Marco";
-import { Oculto } from "../componentes/Oculto";
+import { MarcaMenos5, Oculto } from "../componentes/Oculto";
 import {
   comparacionRecomendacion, opciones, preguntasComunes, puntosColectivo, resultados,
   type BloqueComparado, type Colectivo, type Fila, type Filtro, type PreguntaComun, type Punto,
@@ -19,6 +19,7 @@ import {
 } from "../exportacion/modelo";
 import * as f from "../formato";
 import { t } from "../i18n";
+import { leyendaAnonimato } from "../criterio";
 
 // Series de la paleta (src/paleta.ts), en orden: alumnos, familias y personal.
 const CLASE: Record<Colectivo, string> = { alumnos: "en-serie-1", familias: "en-serie-2", personal: "en-serie-3" };
@@ -110,7 +111,7 @@ export function Panel({ perfil }: { perfil: Perfil }) {
       },
     ];
     const columnasPuntos = [t.exp_col_pregunta, t.exp_col_valoraciones, t.exp_col_media, t.exp_col_pct_bajo];
-    const filaPunto = (p: Punto): Valor[] => [enunciado(p.texto), num(p.n), num(p.media, 2), num(p.pct_bajo)];
+    const filaPunto = (p: Punto): Valor[] => [enunciado(p.texto), { ...num(p.n), ...(p.n < 5 ? { marca: t.marca_menos5 } : {}) }, num(p.media, 2), num(p.pct_bajo)];
     for (const c of colectivos.filter((x) => puntos[x])) {
       tablas.push({ titulo: `${t.panel_fuertes}: ${t.panel_colectivo[c]}`, columnas: columnasPuntos, filas: puntos[c]!.fuertes.map(filaPunto) });
       tablas.push({ titulo: `${t.panel_mejora}: ${t.panel_colectivo[c]}`, columnas: columnasPuntos, filas: puntos[c]!.mejora.map(filaPunto),
@@ -179,7 +180,7 @@ export function Panel({ perfil }: { perfil: Perfil }) {
                 <span className="t-b">
                   <strong>{t.panel_colectivo[c]}</strong>
                   <small>
-                    {indicadores[c]!.personas.suprimido ? <Oculto fila={indicadores[c]!.personas} /> : `${f.recuento(indicadores[c]!.personas.n!)} ${t.respuestas}`}
+                    {indicadores[c]!.personas.suprimido ? <Oculto fila={indicadores[c]!.personas} /> : <>{f.recuento(indicadores[c]!.personas.n!)} {t.respuestas}<MarcaMenos5 fila={indicadores[c]!.personas} /></>}
                     {" · "}{indicadores[c]!.etiquetaPrincipal}{" "}
                     {indicadores[c]!.principal.suprimido ? <Oculto fila={indicadores[c]!.principal} /> : <b className="en-sin-partir">{f.media(indicadores[c]!.principal.media!)} / 6</b>}
                   </small>
@@ -268,7 +269,7 @@ export function Panel({ perfil }: { perfil: Perfil }) {
           </div>
           <p className="notice en-alerta">{t.panel_menos_nota}</p>
 
-          <p className="notice en-alerta" style={{ marginTop: "1.4rem" }}>{t.leyenda_oculto} {t.aviso_cierre}</p>
+          <p className="notice en-alerta" style={{ marginTop: "1.4rem" }}>{leyendaAnonimato(perfil.rol)}</p>
         </>
       )}
     </div>
@@ -282,7 +283,7 @@ function FilaReparto({ etiqueta, fila, escala }: FilaRec) {
       <div className="en-rep-cab">
         <strong>{etiqueta}</strong>
         {fila.suprimido ? <Oculto fila={fila} />
-          : <span className="en-con-ayuda" {...ayuda([t.indice, t.indice_explicacion])}>{t.indice} <b>{f.nps(fila.nps!)}</b> · {f.recuento(fila.n!)} {t.respuestas} · {t.escala_de(escala)}</span>}
+          : <span className="en-con-ayuda" {...ayuda([t.indice, t.indice_explicacion])}>{t.indice} <b>{f.nps(fila.nps!)}</b> · {f.recuento(fila.n!)} {t.respuestas} · {t.escala_de(escala)}<MarcaMenos5 fila={fila} /></span>}
       </div>
       {fila.suprimido ? <p className="en-hint">{lineasOculto(fila)}</p> : (
         <>
@@ -309,7 +310,7 @@ function PreguntaComparada({ comun, colectivos }: { comun: Comun; colectivos: Co
                    : [f.mayusculaInicial(comun.pregunta.texto), t.panel_colectivo[c], t.tip_media(f.media(v.media!)), t.tip_valoraciones(f.recuento(v.n!))])}>
               <span className="en-serie-etq">{t.panel_colectivo[c]}</span>
               <span className="en-track" aria-hidden="true"><span className={`en-fill ${CLASE[c]}`} style={{ width: `${ancho}%` }} /></span>
-              <span className="en-val">{v.suprimido ? <Oculto fila={v} /> : f.media(v.media!)}</span>
+              <span className="en-val">{v.suprimido ? <Oculto fila={v} /> : <>{f.media(v.media!)}<MarcaMenos5 fila={v} /></>}</span>
             </div>
           );
         })}
@@ -364,7 +365,7 @@ function ListaPuntos({ titulo, puntos, clase }: { titulo: string; puntos: Punto[
         {puntos.map((p, i) => (
           <li key={p.codigo}>
             <span className="en-orden" aria-hidden="true">{i + 1}.</span>
-            <span>{f.mayusculaInicial(p.texto)}<small>{t.panel_pct_bajo(f.porcentaje(p.pct_bajo))} · {t.tip_valoraciones(f.recuento(p.n))}</small></span>
+            <span>{f.mayusculaInicial(p.texto)}<small>{t.panel_pct_bajo(f.porcentaje(p.pct_bajo))} · {t.tip_valoraciones(f.recuento(p.n))}<MarcaMenos5 fila={{ menos_de_5: p.n < 5 }} /></small></span>
             <b>{f.media(p.media)}</b>
           </li>
         ))}
@@ -387,7 +388,7 @@ function BloqueDif({ b }: { b: BloqueComparado }) {
           <div key={k} className="en-comun-fila">
             <span className="en-serie-etq">{k === "recomienda" ? t.panel_dif_si_corto : t.panel_dif_no_corto}</span>
             <span className="en-track" aria-hidden="true"><span className={`en-fill ${clase}`} style={{ width: `${ancho(b[k])}%` }} /></span>
-            <span className="en-val">{b[k].suprimido ? <Oculto fila={b[k]} /> : f.media(b[k].media!)}</span>
+            <span className="en-val">{b[k].suprimido ? <Oculto fila={b[k]} /> : <>{f.media(b[k].media!)}<MarcaMenos5 fila={b[k]} /></>}</span>
           </div>
         ))}
       </div>

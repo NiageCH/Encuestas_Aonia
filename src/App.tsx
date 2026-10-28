@@ -11,6 +11,8 @@ import { colectivosCargados, type Colectivo } from "./data/resultados";
 import { t } from "./i18n";
 import { aHash, leerRuta, menu, type Seccion } from "./navegacion";
 import { Acceso } from "./vistas/Acceso";
+import { InformeEnlacePagina } from "./vistas/InformeEnlace";
+import { Abiertas } from "./vistas/Abiertas";
 import { Alumnos } from "./vistas/Alumnos";
 import { DobleFactor } from "./vistas/DobleFactor";
 import { Familias } from "./vistas/Familias";
@@ -22,7 +24,7 @@ import { Usuarios } from "./vistas/Usuarios";
 
 const TEXTO_MENU: Record<Seccion, string> = {
   "/": t.nav_inicio, "/alumnos": t.nav_alumnos, "/familias": t.nav_familias, "/personal": t.nav_personal,
-  "/informes": t.nav_informes, "/usuarios": t.nav_usuarios,
+  "/informes": t.nav_informes, "/abiertas": t.nav_abiertas, "/usuarios": t.nav_usuarios,
 };
 
 export function App() {
@@ -64,6 +66,12 @@ export function App() {
     return () => { vigente = false; };
   }, [listo, sesion?.user.id]);
 
+  // Enlace personal de un docente (§7.10): sin cuenta, antes de cualquier comprobación de sesión.
+  const enlace = /^#\/informe\/([A-Za-z0-9_-]{40,})$/.exec(hash);
+  if (enlace) {
+    return <Marco ruta="" enlaces={[]}><ProveedorAyuda><InformeEnlacePagina token={enlace[1]} /></ProveedorAyuda></Marco>;
+  }
+
   if (sesion === undefined || (sesion && (perfil === undefined || mfaObligatorio === undefined))) {
     return <Marco ruta="" enlaces={[]}><div className="page"><p className="en-cargando">{t.cargando}</p></div></Marco>;
   }
@@ -104,6 +112,7 @@ export function App() {
     : ruta.seccion === "/alumnos" ? (hay("alumnos") ? <Alumnos perfil={perfil} /> : vacia(t.nav_alumnos, "alumnos"))
     : ruta.seccion === "/familias" ? (hay("familias") ? <Familias perfil={perfil} /> : vacia(t.nav_familias, "familias"))
     : ruta.seccion === "/personal" ? <Personal />
+    : ruta.seccion === "/abiertas" ? <Abiertas />
     : ruta.seccion === "/informes" ? <InformesPorPersona perfil={perfil} nivel={ruta.nivel ?? "profesores"} />
     : <Usuarios perfil={perfil} descargas={!!ruta.descargas} />;
   return (

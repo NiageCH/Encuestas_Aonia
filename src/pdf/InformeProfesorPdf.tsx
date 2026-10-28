@@ -25,12 +25,24 @@ const s = StyleSheet.create({
   colBarra: { flex: 1, height: 7, backgroundColor: C.bg, borderRadius: 4 },
   relleno: { height: 7, backgroundColor: C.grafico1, borderRadius: 4 },
   colValor: { width: 46, textAlign: "right", fontWeight: 700 },
-  colN: { width: 40, textAlign: "right", color: C.muted, fontSize: 8 },
+  colN: { width: 74, textAlign: "right", color: C.muted, fontSize: 8 },
   thFila: { flexDirection: "row", paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: C.navy },
   th: { fontSize: 7.5, fontWeight: 700, color: C.muted, textTransform: "uppercase" },
   colPregunta: { flex: 1, paddingRight: 6 },
   colNum: { width: 66, textAlign: "right" },
+  version: { marginTop: 6, paddingVertical: 4, paddingHorizontal: 8, borderLeftWidth: 3, borderLeftColor: C.neutro, backgroundColor: C.neutroSuave,
+             fontSize: 8.5, fontWeight: 700, color: C.ink },
+  marca: { fontSize: 6.5, fontWeight: 700, color: C.ink },
+  claseTit: { fontSize: 9.5, fontWeight: 700, color: C.navy, marginTop: 10, marginBottom: 2 },
 });
+
+/** «menos de 5» junto a una cifra (versión completa). */
+function Marca({ fila }: { fila?: { menos_de_5?: boolean | number } }) {
+  return fila?.menos_de_5 ? <Text style={s.marca}>{` ${t.marca_menos5}`}</Text> : null;
+}
+
+const mismaClase = (a: CeldaProfesor, b: CeldaProfesor) =>
+  a.clave.cuestionario === b.clave.cuestionario && a.clave.grupo === b.clave.grupo && a.clave.asignatura === b.clave.asignatura;
 
 function Media({ fila, estilo }: { fila?: Fila; estilo?: Style }) {
   if (!fila) return <Text style={estilo}>·</Text>;
@@ -45,7 +57,7 @@ function FilaClase({ c }: { c: CeldaProfesor }) {
         {!c.suprimido && <View style={[s.relleno, { width: `${((c.media! - 1) / 5) * 100}%` }]} />}
       </View>
       <Media fila={c} estilo={s.colValor} />
-      <Text style={s.colN}>{c.suprimido ? "" : `n ${f.recuento(c.n!)}`}</Text>
+      <Text style={s.colN}>{c.suprimido ? "" : `n ${f.recuento(c.n!)}`}<Marca fila={c} /></Text>
     </View>
   );
 }
@@ -64,23 +76,29 @@ export function InformeProfesorPdf({ profesor, informe, sello }: DatosInformePdf
   const propias = celdas.filter((c) => c.tipo !== "compartida");
   const compartidas = celdas.filter((c) => c.tipo === "compartida");
   const hayComplementaria = celdas.some((c) => c.motivo === "complementaria");
+  const completa = informe.version === "completa";
+  const version = completa ? t.version_completa : t.version_docente;
 
   return (
     <Document title={`${t.prof_informe} · ${profesor.nombre} ${profesor.apellidos}`} author="Colegio Internacional de Sevilla, San Francisco de Paula" subject={t.desc_asunto} language="es">
       <Page size="A4" style={base.pagina}>
         <MarcaAgua />
-        <Cabecera subtitulo={t.pdf_cab_sub} />
+        <Cabecera subtitulo={`${t.pdf_cab_sub} · ${completa ? t.version_completa_corta : t.version_docente_corta}`} />
 
         <View style={base.cuerpo}>
           <Text style={base.eyebrow}>{t.prof_informe}</Text>
           <Text style={base.titulo}>{profesor.nombre} {profesor.apellidos}</Text>
           {profesor.departamento && <Text style={base.muted}>{t.prof_departamento}: {profesor.departamento}</Text>}
+          <Text style={s.version}>{version}{completa ? ` · ${t.pdf_version_completa_nota}` : ""}</Text>
 
           <View style={s.kpis}>
             <View style={[s.kpi, s.kpiHl]}>
               <Text style={[s.kpiL, s.kpiLHl]}>{t.prof_media_global}</Text>
               <Text style={[s.kpiV, s.kpiVHl]}>{g.suprimido ? t.prof_sin_visibles : `${f.media(g.media!)} / 6`}</Text>
               {!g.suprimido && <Text style={[s.kpiD, s.kpiDHl]}>{t.prof_global_d(g.combinaciones!, f.recuento(g.n_valoraciones!))}</Text>}
+              {!g.suprimido && g.menos_de_5 ? <Text style={[s.kpiD, s.kpiDHl]}>{t.prof_global_menos5(g.menos_de_5)}</Text> : null}
+              {informe.global_docente && g.menos_de_5 ? <Text style={[s.kpiD, s.kpiDHl]}>
+                {t.prof_global_docente(informe.global_docente.suprimido ? t.prof_sin_visibles : f.media(informe.global_docente.media!))}</Text> : null}
             </View>
             {etapas.map((e) => (
               <View key={e} style={s.kpi}>
@@ -122,17 +140,49 @@ export function InformeProfesorPdf({ profesor, informe, sello }: DatosInformePdf
             <View key={p.codigo} style={s.fila} wrap={false}>
               <Text style={s.colPregunta}>{p.texto}</Text>
               <Text style={[s.colNum, { fontWeight: 700 }]}>
-                {p.resultado.global.suprimido ? t.oculto_menos5 : f.media(p.resultado.global.media!)}
+                {p.resultado.global.suprimido ? t.oculto_menos5 : f.media(p.resultado.global.media!)}<Marca fila={p.resultado.global} />
               </Text>
               {etapas.map((e) => <Media key={e} fila={p.resultado.comparacion[e]} estilo={s.colNum} />)}
               {informe.comparacion.colegio && <Media fila={p.resultado.comparacion.colegio} estilo={s.colNum} />}
             </View>
           ))}
 
+          {completa && (
+            <>
+              <Text style={base.h2} break>{t.prof_por_clase}</Text>
+              <Text style={base.lead}>{t.prof_por_clase_lead}</Text>
+              {celdas.map((c) => (
+                <View key={`${c.clave.cuestionario}-${c.clave.grupo}-${c.clave.asignatura}`}>
+                  <View wrap={false}>
+                    <Text style={s.claseTit}>
+                      {etiquetaClase(c)}{c.tipo === "compartida" ? ` · ${t.prof_compartida_corto}` : ""}
+                      {" · "}{c.suprimido ? textoOculto(c) : `${f.media(c.media!)} · n ${f.recuento(c.n!)}`}<Marca fila={c} />
+                    </Text>
+                    <View style={s.thFila}>
+                      <Text style={[s.th, s.colPregunta]}>{t.pregunta}</Text>
+                      <Text style={[s.th, s.colNum]}>{t.media}</Text>
+                      <Text style={[s.th, s.colNum]}>n</Text>
+                    </View>
+                  </View>
+                  {informe.preguntas.filter((p) => p.resultado.celdas.some((y) => mismaClase(y, c))).map((p) => {
+                    const x = p.resultado.celdas.find((y) => mismaClase(y, c));
+                    return (
+                      <View key={p.codigo} style={s.fila} wrap={false}>
+                        <Text style={s.colPregunta}>{p.texto}</Text>
+                        {x ? <Media fila={x} estilo={{ ...s.colNum, fontWeight: 700 }} /> : <Text style={s.colNum}>·</Text>}
+                        <Text style={[s.colNum, { color: C.muted }]}>{x && !x.suprimido ? f.recuento(x.n!) : ""}<Marca fila={x} /></Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              ))}
+            </>
+          )}
+
           <Text style={[base.nota, { marginTop: 14 }]}>{t.pdf_nota_escala}</Text>
-          <Text style={base.nota}>{t.pdf_nota_oculto}</Text>
+          {completa ? <Text style={base.nota}>{t.leyenda_menos5}</Text> : <Text style={base.nota}>{t.pdf_nota_oculto}</Text>}
           {hayComplementaria && <Text style={base.nota}>{t.pdf_nota_asterisco}</Text>}
-          <Text style={base.nota}>{t.aviso_cierre}</Text>
+          <Text style={base.nota}>{completa ? t.aviso_cierre_direccion : t.aviso_cierre}</Text>
         </View>
 
         <Pie sello={sello} />

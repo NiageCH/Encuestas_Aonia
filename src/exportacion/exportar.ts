@@ -5,7 +5,8 @@
 import { AVISO_VALIDACION } from "../ajustes";
 import { registrarDescarga } from "../data/descargas";
 import { aCsv, nombreArchivo } from "./csv";
-import type { Exportacion } from "./modelo";
+import { hayMenos5, type Exportacion } from "./modelo";
+import { t } from "../i18n";
 
 function descargar(blob: Blob, nombre: string) {
   const url = URL.createObjectURL(blob);
@@ -18,7 +19,11 @@ function descargar(blob: Blob, nombre: string) {
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
-export async function exportar(e: Exportacion, formato: "csv" | "pdf"): Promise<void> {
+export async function exportar(exp: Exportacion, formato: "csv" | "pdf"): Promise<void> {
+  // Con cifras de menos de 5 (Dirección y administración), la nota que explica la marca.
+  const e = hayMenos5(exp)
+    ? { ...exp, notas: [...exp.notas.map((n) => (n === t.aviso_cierre ? t.aviso_cierre_direccion : n)), t.leyenda_menos5] }
+    : exp;
   const archivo = e.sinCurso ? `${e.archivo.join("_")}.${formato}` : nombreArchivo(e.archivo, formato);
   const sello = await registrarDescarga(formato === "csv" ? "csv" : "vista_pdf", {
     objeto: e.titulo, vista: e.vista, filtros: Object.fromEntries(e.filtros), archivo,

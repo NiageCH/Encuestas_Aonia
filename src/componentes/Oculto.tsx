@@ -16,3 +16,8 @@ export function Oculto({ fila }: { fila: Fila }) {
     </span>
   );
 }
+
+/** Marca de un resultado que se ve con menos de 5 respuestas (solo Dirección y administración, §5.0). */
+export function MarcaMenos5({ fila }: { fila: Pick<Fila, "menos_de_5"> }) {
+  return fila.menos_de_5 ? <span className="en-menos5" title={t.tip_menos5}>{t.marca_menos5}</span> : null;
+}

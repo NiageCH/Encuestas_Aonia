@@ -96,6 +96,33 @@ Textos fijos de la marca de agua, el pie de los PDF y la cabecera de los CSV (§
 
 En Accesos, la pestaña se llama «Descargas» y la otra «Personas y actividad». Tipos de descarga: «Informe de profesor/a», «Informe de jefatura», «Informe de equipo», «Informe de dirección», «Vista en PDF», «CSV» y «ZIP de informes». El código se escribe siempre así: «Código 7KQ2-M9XD».
 
+## Criterio de anonimato según el rol
+
+Confirmado por escrito por Mark el (fecha pendiente) (§5.0 de la especificación):
+
+| Término | Uso |
+|---|---|
+| «menos de 5» (marca) | Junto a la cifra de respuestas de un resultado que se ve con menos de 5 respuestas. Solo lo ven Dirección y administración. En CSV: «3 (menos de 5)». |
+| «menos de 5» (oculto) | Para la coordinación y en la versión docente: el resultado no se muestra. Mismo texto, sin cifra. |
+| Versión completa | Informe del profesor/a para Dirección y administración: todo, con la marca, y el detalle de cada pregunta en cada clase. Bajo el nombre: «Versión completa (Dirección y administración) · no entregar al docente». |
+| Versión docente | Informe que recibe el docente, con el mínimo de 5: «Versión docente (la que recibe el docente)». |
+| Detalle por clase | Sección de la versión completa: cada pregunta en cada clase (asignatura y grupo). |
+
+## Respuestas abiertas y envío de informes
+
+| Término | Uso |
+|---|---|
+| Respuestas abiertas | Entrada del menú y título de la pantalla. Lo que cada persona escribió, «tal cual». |
+| «¿Qué echa en falta en el Colegio?» · «Comentarios» | Nombres comunes de las preguntas abiertas en la pantalla; cada cuestionario guarda su texto exacto. |
+| Plan de Igualdad: necesidades que debería contener · medidas para promover la igualdad de oportunidades · otras sugerencias | Las tres preguntas abiertas del Plan de Igualdad (personal). |
+| Envío al profesorado | Pestaña de Informes por persona (solo administración). |
+| Enlace personal | El que recibe cada docente por correo; «caduca» a los 7 días; se puede «anular». |
+| Apertura · descarga | Lo que se registra de cada enlace. |
+| Modo de pruebas | Mientras no exista `encuestas@sfpaula.com`: los correos van a un correo de Niage, con «[PRUEBA]» en el asunto. |
+| Destinatarios | Vista previa antes de enviar: «Se envía» o «Fuera: no tiene resultados del alumnado» / «Fuera: no tiene correo». |
+
+Al docente se le trata de usted (correo y página del enlace).
+
 ## Tablas
 
 Ninguna celda se parte palabra a palabra:

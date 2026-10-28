@@ -7,14 +7,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAyuda } from "../componentes/Ayuda";
 import { Barra } from "../componentes/Graficos";
 import type { Perfil } from "../data/sesion";
-import { Oculto } from "../componentes/Oculto";
+import { MarcaMenos5, Oculto } from "../componentes/Oculto";
 import {
   listarProfesores, preguntasProfesorado, resultadosProfesor,
-  type PreguntaBloque, type Profesor, type ResultadoProfesor,
+  type CeldaProfesor, type PreguntaBloque, type Profesor, type ResultadoProfesor, type VersionInforme,
 } from "../data/resultados";
 import { etiquetaClase, ordenarClases } from "../etiquetas";
 import * as f from "../formato";
 import { t } from "../i18n";
+import { leyendaAnonimato, veMenos5 } from "../criterio";
 
 export function InformesProfesor({ perfil }: { perfil: Perfil }) {
   const [lista, setLista] = useState<Profesor[] | null>(null);
@@ -55,9 +56,9 @@ export function InformesProfesor({ perfil }: { perfil: Perfil }) {
               ))}
             </ul>
             {filtrados.length > 60 && <p className="en-hint">{t.prof_mas(filtrados.length - 60)}</p>}
-            <Lote profesores={lista} />
+            <Lote profesores={lista} completa={veMenos5(perfil.rol)} />
           </div>
-          <div>{elegido ? <Informe profesor={elegido} /> : <p className="en-hint">{t.prof_elige}</p>}</div>
+          <div>{elegido ? <Informe profesor={elegido} perfil={perfil} /> : <p className="en-hint">{t.prof_elige}</p>}</div>
         </div>
       )}
     </section>
@@ -68,7 +69,8 @@ function normal(s: string) {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 }
 
-function Informe({ profesor }: { profesor: Profesor }) {
+function Informe({ profesor, perfil }: { profesor: Profesor; perfil: Perfil }) {
+  const completa = veMenos5(perfil.rol);
   const ayuda = useAyuda();
   const [datos, setDatos] = useState<ResultadoProfesor | null>(null);
   const [preguntas, setPreguntas] = useState<{ p: PreguntaBloque; r: ResultadoProfesor }[] | null>(null);
@@ -104,12 +106,17 @@ function Informe({ profesor }: { profesor: Profesor }) {
         <p className="eyebrow">{t.prof_informe}</p>
         <h3 className="en-prof-nombre">{profesor.nombre} {profesor.apellidos}</h3>
         {profesor.departamento && <p className="en-hint">{t.prof_departamento}: {profesor.departamento}</p>}
-        <BotonPdf profesor={profesor} />
+        {completa && <p className="en-version">{t.prof_version_completa_pantalla}</p>}
+        <BotonPdf profesor={profesor} completa={completa} />
         <div className="en-kpis en-kpis3">
           <div className="card en-kpi hl en-con-ayuda" {...ayuda([t.prof_media_global, t.prof_media_global_tip])}>
             <div className="l">{t.prof_media_global}</div>
             <div className="v">{g.suprimido ? <span className="en-oculto">{t.prof_sin_visibles}</span> : <>{f.media(g.media!)} <small>/ 6</small></>}</div>
-            <div className="d">{g.suprimido ? "" : t.prof_global_d(g.combinaciones!, f.recuento(g.n_valoraciones!))}</div>
+            <div className="d">
+              {g.suprimido ? "" : t.prof_global_d(g.combinaciones!, f.recuento(g.n_valoraciones!))}
+              {g.menos_de_5 ? <><br />{t.prof_global_menos5(g.menos_de_5)} <MarcaMenos5 fila={{ menos_de_5: true }} /></> : null}
+              {datos.global_docente && g.menos_de_5 ? <><br />{t.prof_global_docente(datos.global_docente.suprimido ? t.prof_sin_visibles : f.media(datos.global_docente.media!))}</> : null}
+            </div>
           </div>
           {etapas.map((e) => (
             <div key={e} className="card en-kpi en-con-ayuda" {...ayuda([t.prof_media_etapa(t.etapas[e as keyof typeof t.etapas]), t.prof_comparacion_tip])}>
@@ -162,6 +169,7 @@ function Informe({ profesor }: { profesor: Profesor }) {
                     <td className="n en-con-ayuda" data-etiqueta={t.prof_col_profesor} {...ayuda(r.global.suprimido ? [p.texto, t.prof_sin_visibles]
                       : [p.texto, t.tip_media(f.media(r.global.media!)), t.tip_valoraciones(f.recuento(r.global.n_valoraciones!))])}>
                       {r.global.suprimido ? <span className="en-oculto">{t.oculto_menos5}</span> : <strong>{f.media(r.global.media!)}</strong>}
+                      {!r.global.suprimido && r.global.menos_de_5 ? <MarcaMenos5 fila={{ menos_de_5: true }} /> : null}
                     </td>
                     {etapas.map((e) => <td key={e} className="n" data-etiqueta={t.etapas[e as keyof typeof t.etapas]}>{celda(r.comparacion[e])}</td>)}
                     {datos.comparacion.colegio && <td className="n" data-etiqueta={t.prof_col_colegio}>{celda(r.comparacion.colegio)}</td>}
@@ -172,7 +180,8 @@ function Informe({ profesor }: { profesor: Profesor }) {
           </div>
         )}
       </div>
-      <p className="notice en-alerta" style={{ marginTop: ".9rem" }}>{t.leyenda_oculto}</p>
+      {completa && preguntas && <DetallePorClase celdas={celdas} preguntas={preguntas} />}
+      <p className="notice en-alerta" style={{ marginTop: ".9rem" }}>{leyendaAnonimato(perfil.rol)}</p>
     </div>
   );
 
@@ -182,29 +191,74 @@ function Informe({ profesor }: { profesor: Profesor }) {
   }
 }
 
-function BotonPdf({ profesor }: { profesor: Profesor }) {
+/** Versión completa (Dirección y administración): cada pregunta en cada clase, con la marca «menos de 5». */
+function DetallePorClase({ celdas, preguntas }: { celdas: CeldaProfesor[]; preguntas: { p: PreguntaBloque; r: ResultadoProfesor }[] }) {
+  const mismaClase = (a: CeldaProfesor, b: CeldaProfesor) =>
+    a.clave.cuestionario === b.clave.cuestionario && a.clave.grupo === b.clave.grupo && a.clave.asignatura === b.clave.asignatura;
+  return (
+    <div className="card" style={{ marginTop: ".9rem" }}>
+      <h3>{t.prof_por_clase}</h3>
+      <p className="en-hint">{t.prof_por_clase_lead}</p>
+      {celdas.map((c) => (
+        <details key={`${c.clave.cuestionario}-${c.clave.grupo}-${c.clave.asignatura}`} className="en-clase-detalle">
+          <summary>
+            <strong>{etiquetaClase(c)}</strong>
+            {c.tipo === "compartida" && <small> · {t.prof_compartida_corto}</small>}
+            {" · "}{c.suprimido ? <Oculto fila={c} /> : <>{f.media(c.media!)} · n {f.recuento(c.n!)}</>}
+            <MarcaMenos5 fila={c} />
+          </summary>
+          <div className="tbl-wrap">
+            <table className="doc-table en-tabla-prof">
+              <thead><tr><th>{t.pregunta}</th><th>{t.media}</th><th>n</th></tr></thead>
+              <tbody>
+                {preguntas.filter(({ r }) => r.celdas.some((y) => mismaClase(y, c))).map(({ p, r }) => {
+                  const x = r.celdas.find((y) => mismaClase(y, c));
+                  return (
+                    <tr key={p.codigo}>
+                      <td>{p.texto}</td>
+                      <td className="n" data-etiqueta={t.media}>{!x ? "·" : x.suprimido ? <Oculto fila={x} /> : <strong>{f.media(x.media!)}</strong>}</td>
+                      <td className="n" data-etiqueta="n">{x && !x.suprimido ? <>{f.recuento(x.n!)}<MarcaMenos5 fila={x} /></> : ""}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      ))}
+    </div>
+  );
+}
+
+function BotonPdf({ profesor, completa }: { profesor: Profesor; completa: boolean }) {
   const [estado, setEstado] = useState<"" | "generando" | "error">("");
-  async function generar() {
+  async function generar(version: VersionInforme) {
     setEstado("generando");
     try {
       const { descargarInforme } = await import("../pdf/generar");
-      await descargarInforme(profesor);
+      await descargarInforme(profesor, version);
       setEstado("");
     } catch {
       setEstado("error");
     }
   }
   return (
-    <p className="en-noprint">
-      <button type="button" className="btn primary" onClick={generar} disabled={estado === "generando"}>
-        📄 {estado === "generando" ? t.pdf_generando : t.pdf_descargar}
+    <p className="en-noprint en-botonera">
+      <button type="button" className="btn primary" onClick={() => generar(completa ? "completa" : "docente")} disabled={estado === "generando"}>
+        📄 {estado === "generando" ? t.pdf_generando : completa ? t.pdf_descargar_completa : t.pdf_descargar}
       </button>
+      {completa && (
+        <button type="button" className="btn" onClick={() => generar("docente")} disabled={estado === "generando"}>
+          📄 {t.pdf_descargar_docente}
+        </button>
+      )}
       {estado === "error" && <span className="en-error" role="alert"> {t.pdf_error}</span>}
     </p>
   );
 }
 
-function Lote({ profesores }: { profesores: Profesor[] }) {
+function Lote({ profesores, completa }: { profesores: Profesor[]; completa: boolean }) {
+  const [version, setVersion] = useState<VersionInforme>(completa ? "completa" : "docente");
   const [progreso, setProgreso] = useState<[number, number, "datos" | "pdf"] | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const cancelar = useRef(false);
@@ -214,7 +268,7 @@ function Lote({ profesores }: { profesores: Profesor[] }) {
     setProgreso([0, profesores.length, "datos"]);
     try {
       const { descargarLote } = await import("../pdf/generar");
-      const hechos = await descargarLote(profesores, (n, total, fase) => setProgreso([n, total, fase]), () => cancelar.current);
+      const hechos = await descargarLote(profesores, version, (n, total, fase) => setProgreso([n, total, fase]), () => cancelar.current);
       setMensaje(hechos > 0 ? t.pdf_lote_hecho(hechos) : null);
     } catch {
       setMensaje(t.pdf_error);
@@ -232,6 +286,15 @@ function Lote({ profesores }: { profesores: Profesor[] }) {
         </>
       ) : (
         <>
+          {completa && (
+            <fieldset className="en-version-lote">
+              <legend>{t.pdf_lote_version}</legend>
+              {(["completa", "docente"] as const).map((v) => (
+                <label key={v}><input type="radio" name="version-lote" checked={version === v} onChange={() => setVersion(v)} />
+                  {v === "completa" ? t.version_completa : t.version_docente}</label>
+              ))}
+            </fieldset>
+          )}
           <button type="button" className="btn" onClick={generar}>🗂️ {t.pdf_lote}</button>
           <p className="en-hint">{mensaje ?? t.pdf_lote_ayuda(profesores.length)}</p>
         </>
