@@ -222,13 +222,13 @@ Orden de carga: `cargar_2526.py` → `convertir_alexia_2526.py` → `cargar_asig
 - Propuestas aprobadas y aplicadas (27/10/2026): notas sin interpretaciones, jefaturas, persona responsable directa, rol «Administración», menú «Accesos», «Te damos la bienvenida», «Colegio» con mayúscula, «Mayor valoración» primero, rangos sin partir también en la web, plantilla Excel de asignación, mensajes del servidor (migración 20261027000028, que solo cambia textos, y Edge Function `admin-usuarios`), especificación, README y documentos de despliegue. 337 tests de base y 44 del frontend; validación de 2025/26 sin diferencias.
 - Desplegada el 27/10/2026: copia previa de la nube, migración 20261027000028, función `admin-usuarios`, 337 tests en la nube, validación y recuento sin diferencias, web publicada desde `b743c86` (el commit `705998c` solo arregla un test).
 
-## Protección de PDF y CSV y registro de descargas (rama `proteccion-descargas`, 27/10/2026, pendiente del visto bueno)
+## Protección de PDF y CSV y registro de descargas (rama `proteccion-descargas`, 27/10/2026, aprobada el 28/10/2026)
 
 - Marca de agua en todas las páginas de todos los PDF, pie con «Descargado por… · Código…», propiedades (título, autor, asunto «Confidencial») y restricción de copia y edición (AES-256 con `@cantoo/pdf-lib` 2.11.1, dependencia nueva). CSV con «Confidencial · Uso exclusivo del Colegio», quién, cuándo y el código.
 - Registro de descargas (migración 20261027000029): un código único por descarga y por cada informe de un ZIP, inalterable (trigger), pestaña «Descargas» en Accesos con filtros, búsqueda por código y exportación. Detalle en `docs/ESPECIFICACION.md` §7.7.
 - 371 tests de base y 49 del frontend. Capturas en `datos_locales/capturas_descargas/`.
-- Propuesta de conservación para el encargo de tratamiento: dos años desde cada descarga y borrado después. El borrado periódico se construye cuando se apruebe (hoy el registro no deja borrar nada).
-- Pendiente: visto bueno, despliegue (copia previa, migración, web) y llevarlo a `fase2`.
+- Conservación del registro de descargas: dos años desde cada descarga y borrado después (aprobada el 28/10/2026; va en el encargo de tratamiento, `docs/DESPLIEGUE.md`). Pendiente: construir el borrado periódico (hoy el registro no deja borrar nada).
+- Despliegue: en curso el 28/10/2026 (copia previa `datos_locales/copias/nube_2026-10-28_0830`).
 
 ## Bloqueos
 

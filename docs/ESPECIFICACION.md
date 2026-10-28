@@ -303,7 +303,7 @@ Funciones del mockup `referencia/mockups/Mockup_Encuestas_5_admin_usuarios.png`;
 - **Registro de descargas** (`registrar_descarga`, migración 20261027000029): una entrada del registro de actividad por descarga, con fecha y hora, persona, tipo (informe de profesor/a, de jefatura, de equipo, de dirección, vista en PDF, CSV o ZIP), de quién o de qué vista es, filtros, archivo y código; en un ZIP, la lista de informes con el código de cada uno. Primero se piden los datos (con los permisos de siempre), después se anota y por último se crea el archivo: si la anotación falla, no hay descarga.
 - **Pestaña «Descargas» en Accesos** (`#/usuarios/descargas`, `admin_descargas`): filtros por persona, tipo, fechas y persona del informe (también dentro de un ZIP) y búsqueda por código (también el de cada informe de un ZIP); exportación a CSV de lo filtrado, con la misma cabecera, que también queda anotada. Solo administración. La actividad de la otra pestaña deja fuera las descargas.
 - **Inalterable:** nadie desde la aplicación escribe en el registro, y un trigger impide cambiar o borrar una descarga a cualquier rol de la base de datos. Solo se permite lo que ya hacía eliminar una cuenta (guardar su nombre y correo).
-- **Conservación (propuesta para el encargo de tratamiento):** dos años desde cada descarga y, después, borrado (ver PROGRESO).
+- **Conservación (aprobada el 28/10/2026, para el encargo de tratamiento):** dos años desde cada descarga y, después, borrado. Cubre dos campañas, por si un documento aparece fuera del Colegio meses después. El borrado periódico está por construir: hoy el registro no deja borrar nada.
 - Tests: `supabase/tests/23_registro_descargas.sql`, `src/pdf/proteger.test.ts` y `src/exportacion/csv.test.ts`.
 
 ---

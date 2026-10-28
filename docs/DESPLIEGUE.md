@@ -8,7 +8,7 @@ en la nube lo autoriza Rodrigo antes de hacerlo.
 | Qué | Quién | Por qué |
 |---|---|---|
 | Confirmación de sistemas del Colegio de que aceptan Supabase (§10, pregunta 4) | Rodrigo con sistemas | Su guía técnica dice que las herramientas con servidor, base de datos o usuarios las alojan ellos. Si no aceptan, el frontend no cambia (todo el acceso a datos está en `src/data/`), pero hay que rehacer el backend en su infraestructura. |
-| Contratos de tratamiento de datos (RGPD) | Rodrigo (Niage) con el Colegio y Aonia | Niage actúa como encargado del tratamiento. Supabase y Brevo tienen sus propios acuerdos de tratamiento (DPA) que hay que aceptar al crear las cuentas. |
+| Contratos de tratamiento de datos (RGPD) | Rodrigo (Niage) con el Colegio y Aonia | Niage actúa como encargado del tratamiento. Supabase y Brevo tienen sus propios acuerdos de tratamiento (DPA) que hay que aceptar al crear las cuentas. Incluir en el encargo: el registro de descargas (quién descargó qué PDF, CSV o ZIP, cuándo y con qué código) se conserva **dos años desde cada descarga** y después se borra (aprobado el 28/10/2026; especificación §7.7). |
 
 ## 1. Lo que necesito de Rodrigo
 
