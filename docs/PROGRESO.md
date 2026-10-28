@@ -232,7 +232,7 @@ Orden de carga: `cargar_2526.py` → `convertir_alexia_2526.py` → `cargar_asig
 
 ## Tareas con fecha
 
-- **Eliminar las cuentas de demo y borrar `datos_locales/demo_accesos.txt`** (Rodrigo), el día de la demo, al terminar: fecha por confirmar. Son «Demo Dirección» (demo.direccion@demo.invalid) y «Demo Coordinación» (demo.coordinacion@demo.invalid), en producción y creadas con `datos_locales/scripts/crear_cuentas_demo.py`. Se eliminan en Accesos y el registro de actividad conserva su alta y su eliminación.
+- **Eliminar las cuentas de demo y borrar `datos_locales/demo_accesos.txt`** (Rodrigo): **29/10/2026** (la demo es el 28/10/2026). Son «Demo Dirección» (demo.direccion@demo.invalid) y «Demo Coordinación» (demo.coordinacion@demo.invalid), en producción y creadas con `datos_locales/scripts/crear_cuentas_demo.py`. Se eliminan en Accesos y el registro de actividad conserva su alta y su eliminación.
 - Borrar las copias de la nube con la numeración antigua de migraciones: 02/11/2026.
 
 ## Bloqueos
