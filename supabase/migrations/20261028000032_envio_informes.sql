@@ -16,7 +16,7 @@ create table privado.configuracion_envio (
   modo    text not null default 'pruebas' check (modo in ('pruebas', 'activo')),
   dias    smallint not null default 7 check (dias between 1 and 30),
   -- Límite de intentos fallidos con el enlace (tokens que no existen o anulados), en todo el servidor y por minuto.
-  intentos_por_minuto smallint not null default 20 check (intentos_por_minuto between 1 and 1000)
+  intentos_por_minuto smallint not null default 300 check (intentos_por_minuto between 1 and 5000)
 );
 insert into privado.configuracion_envio default values;
 
@@ -58,7 +58,9 @@ create table privado.apertura_enlace (
 create index on privado.apertura_enlace (enlace_id);
 
 -- Intentos fallidos de abrir un enlace (token inventado, alterado o anulado). Sin IP ni token: solo la hora y el motivo.
--- Sirven para limitar los intentos al azar: pasado el límite por minuto, ningún enlace se abre durante ese minuto.
+-- Sirven para limitar los intentos al azar: pasado el límite por minuto (300; con tokens de 256 bits no hace falta más
+-- bajo, y uno bajo dejaría bloquear los enlaces con poco esfuerzo), ningún enlace se abre durante ese minuto, y queda
+-- una alerta en el registro de actividad para administración.
 create table privado.intento_enlace (
   id      bigint generated always as identity primary key,
   fecha   timestamptz not null default now(),
@@ -74,10 +76,18 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 create or replace function privado.fallo_enlace(p_motivo text) returns void
-language sql volatile security definer set search_path = '' as $$
+language plpgsql volatile security definer set search_path = '' as $$
+declare
+  v_limite integer := (select intentos_por_minuto from privado.configuracion_envio);
+begin
   delete from privado.intento_enlace where fecha < now() - interval '1 day';
   insert into privado.intento_enlace (motivo) values (p_motivo);
-$$;
+  -- Al llegar al límite (una vez por corte: después ya no se anotan más intentos), alerta para administración.
+  if (select count(*) from privado.intento_enlace where fecha > now() - interval '1 minute') = v_limite then
+    insert into public.registro_actividad (usuario_id, accion, detalle)
+      values (null, 'alerta_enlaces', jsonb_build_object('intentos', v_limite, 'minutos', 1));
+  end if;
+end $$;
 
 create or replace function privado.huella(p_token text) returns text
 language sql immutable set search_path = '' as $$

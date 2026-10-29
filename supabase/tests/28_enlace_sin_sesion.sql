@@ -3,10 +3,10 @@
 -- limitados.
 begin;
 \ir fixtures/datos_ejemplo.psql
-select plan(42);
+select plan(45);
 
 set local role postgres;
-update privado.configuracion_envio set modo = 'pruebas', intentos_por_minuto = 20;
+update privado.configuracion_envio set modo = 'pruebas';
 delete from privado.intento_enlace;
 create temp table ids as select (select id from public.persona_responsable where apellidos = 'Uno') as uno,
                                 (select id from public.persona_responsable where apellidos = 'Dos') as dos;
@@ -92,17 +92,26 @@ select is(public.informe_enlace($$x' or '1'='1$$) ->> 'estado', 'no_valido', 'te
 select is(public.descarga_enlace('inventado-pero-largo-0123456789012345678901234567890', 'x.pdf') ->> 'estado', 'no_valido',
   'un token inventado tampoco descarga');
 
--- 4. Los intentos al azar quedan limitados ---------------------------------------------------------------------------
-set local role postgres; delete from privado.intento_enlace; set local role anon;
-select is((select count(*)::int from generate_series(1, 19) g, lateral (select public.informe_enlace(md5(g::text) || md5(g::text)) as r) x
-           where x.r ->> 'estado' = 'no_valido'), 19, '19 intentos al azar en un minuto: rechazados uno a uno');
+-- 4. Los intentos al azar quedan limitados (300 por minuto en todo el servidor, con alerta) -----------------------------
+set local role postgres; delete from privado.intento_enlace;
+select is((select intentos_por_minuto from privado.configuracion_envio)::int, 300, 'el límite es de 300 intentos fallidos por minuto');
+create temp table alertas_antes as select count(*)::int as n from public.registro_actividad where accion = 'alerta_enlaces';
+set local role anon;
+select is((select count(*)::int from generate_series(1, 299) g, lateral (select public.informe_enlace(md5(g::text) || md5(g::text)) as r) x
+           where x.r ->> 'estado' = 'no_valido'), 299, '299 intentos al azar en un minuto: rechazados uno a uno');
 select is(public.informe_enlace(pg_temp.t('Uno')) ->> 'estado', 'ok', 'por debajo del límite, el enlace bueno sigue abriendo');
-select is(public.informe_enlace(md5('veinte') || md5('veinte')) ->> 'estado', 'no_valido', 'el intento 20');
-select is(public.informe_enlace(md5('veintiuno') || md5('veintiuno')) ->> 'estado', 'limitado', 'pasado el límite, se corta');
+set local role postgres;
+select is((select count(*)::int from public.registro_actividad where accion = 'alerta_enlaces') - (select n from alertas_antes), 0,
+  'por debajo del límite, sin alerta');
+set local role anon;
+select is(public.informe_enlace(md5('trescientos') || md5('trescientos')) ->> 'estado', 'no_valido', 'el intento 300');
+select is(public.informe_enlace(md5('trescientos uno') || md5('trescientos uno')) ->> 'estado', 'limitado', 'pasado el límite, se corta');
 select is(public.informe_enlace(pg_temp.t('Uno')) ->> 'estado', 'limitado', 'durante ese minuto no se abre ningún enlace, ni el bueno');
 select is(public.descarga_enlace(pg_temp.t('Uno'), 'x.pdf') ->> 'estado', 'limitado', 'ni se descarga');
 set local role postgres;
-select is((select count(*)::int from privado.intento_enlace), 20, 'se anotan los intentos fallidos (los cortados no cuentan)');
+select is((select count(*)::int from public.registro_actividad where accion = 'alerta_enlaces') - (select n from alertas_antes), 1,
+  'al llegar al límite queda una alerta en el registro de actividad, una sola vez');
+select is((select count(*)::int from privado.intento_enlace), 300, 'se anotan los intentos fallidos (los cortados no cuentan)');
 select is((select array_agg(column_name::text order by column_name) from information_schema.columns
            where table_schema = 'privado' and table_name = 'intento_enlace'), array['fecha', 'id', 'motivo'],
   '... sin IP ni token: solo la hora y el motivo');

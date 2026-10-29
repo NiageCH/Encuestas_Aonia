@@ -584,6 +584,8 @@ export const I18N = {
     reg_envio: (quien: string, n: number, prueba: string | null) =>
       `${quien} ha enviado ${n} ${n === 1 ? "enlace" : "enlaces"} de informes del profesorado${prueba ? ` (prueba, a ${prueba})` : ""}`,
     reg_apertura: (docente: string, prueba: boolean) => `Se ha abierto el enlace del informe de ${docente}${prueba ? " (prueba)" : ""}`,
+    reg_alerta_enlaces: (n: number) =>
+      `⚠️ Alerta: ${n} intentos fallidos de abrir enlaces de informes en un minuto. Durante ese minuto no se abre ningún enlace. Si se repite, avisa a Niage.`,
     reg_anular: (quien: string) => `${quien} ha anulado un enlace de informe del profesorado`,
     reg_abiertas: (quien: string, colectivo: string, pregunta: string, n: number, filtros: string) =>
       `${quien} ha consultado las respuestas abiertas de ${colectivo}: «${pregunta}» (${n})${filtros ? `, ${filtros}` : ""}`,

@@ -266,6 +266,7 @@ function describir(e: EntradaRegistro): string {
     case "envio_informes": return t.reg_envio(e.usuario, Number(d.enlaces ?? 0), d.prueba ? String(d.correo_prueba ?? "") : null);
     case "apertura_enlace": return t.reg_apertura(String(d.nombre ?? ""), !!d.prueba);
     case "anular_enlace": return t.reg_anular(e.usuario);
+    case "alerta_enlaces": return t.reg_alerta_enlaces(Number(d.intentos ?? 0));
     case "abiertas_consulta": {
       const f = (d.filtro ?? {}) as Record<string, unknown>;
       return t.reg_abiertas(e.usuario, t.panel_colectivo[f.colectivo as "alumnos"] ?? String(f.colectivo ?? ""),
