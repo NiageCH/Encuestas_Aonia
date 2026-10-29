@@ -164,6 +164,9 @@ def main() -> None:
         cur.execute("insert into public.usuario_perfil (id, nombre, rol) values (%s, 'Validación', 'direccion')", (USUARIO,))
         cur.execute("select set_config('request.jwt.claims', %s, true)",
                     (json.dumps({"sub": USUARIO, "role": "authenticated", "aal": "aal1"}),))
+        # El prototipo aplica el mínimo de 5 y la complementaria: se compara con ese mismo criterio, el de la versión docente
+        # y la coordinación. Dirección ve además lo de menos de 5 (especificación §5.0), que el prototipo no tiene.
+        cur.execute("set local encuestas.version_docente = 'on'")
         cur.execute("set local role authenticated")
         rpc = Rpc(cur)
 
