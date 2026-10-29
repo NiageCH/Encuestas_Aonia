@@ -239,8 +239,9 @@ Confirmado por escrito por Mark el 28/10/2026. Hecho en local, con tests; **pend
 - **Informes de jefatura en dos versiones** (decisión del 28/10/2026): completa («no entregar a la jefatura») y para la jefatura, con el mínimo de 5.
 - **Envío al profesorado y a las jefaturas** (§7.10, migración 32, Edge Function `enviar-informes`): enlace personal de 7 días a la versión docente o a la versión para la jefatura, aperturas y descargas registradas, envío individual o por departamento, etapa o tramo con vista previa. En **modo de pruebas**: solo a correos de Niage.
 - Respuestas abiertas: 15 preguntas y 730 respuestas; las tres del Plan de Igualdad no se cargan hasta que el Colegio decida quién puede verlas. Nombres de las preguntas de familias, provisionales.
-- Conservación para el encargo: abiertas, como el resto de respuestas (plazo sin fijar); envíos y aperturas, dos años.
-- Tests: 466 pgTAP (25, 26 y 27 nuevos) y 51 de vitest.
+- Conservación para el encargo: respuestas (también las abiertas), propuesta de 5 cursos y borrado después, pendiente de confirmar por el Colegio; envíos y aperturas, dos años.
+- Enlace sin sesión: caducado o anulado, aislamiento entre personas y funciones, tokens alterados o inventados y límite de 20 intentos fallidos por minuto (`28_enlace_sin_sesion.sql`).
+- Tests: 509 pgTAP (25 a 28 nuevos) y 51 de vitest.
 - Pendiente del Colegio: quién puede ver las preguntas abiertas del Plan de Igualdad; los textos de las preguntas abiertas de familias.
 
 ## Tareas con fecha

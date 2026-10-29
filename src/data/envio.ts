@@ -73,6 +73,8 @@ export async function anularEnlace(id: string): Promise<void> {
 type Persona = { nombre: string; apellidos: string; departamento: string | null };
 export type InformeEnlace =
   | { estado: "caducado"; caduca: string }
+  | { estado: "no_valido" }
+  | { estado: "limitado" }
   | { estado: "ok"; caduca: string; curso: string; tipo: "profesor"; profesor: Persona; informe: InformeProfesor }
   | { estado: "ok"; caduca: string; curso: string; tipo: "jefatura_departamento"; profesor: Persona; informe: InformeJefe }
   | { estado: "ok"; caduca: string; curso: string; tipo: "jefatura_equipo"; profesor: Persona; informe: InformeEquipo };
@@ -87,5 +89,6 @@ export async function informeEnlace(token: string): Promise<InformeEnlace> {
 export async function descargaEnlace(token: string, archivo: string): Promise<SelloDescarga> {
   const { data, error } = await supabase.rpc("descarga_enlace", { p_token: token, p_archivo: archivo });
   if (error) throw error;
+  if (!data?.codigo) throw new Error(String(data?.estado ?? "no_valido"));
   return { codigo: data.codigo, nombre: data.nombre, fecha: new Date(data.fecha) };
 }

@@ -335,7 +335,7 @@ Funciones del mockup `referencia/mockups/Mockup_Encuestas_5_admin_usuarios.png`;
 - **Registro:** cada consulta queda en el registro de actividad (colectivo, pregunta, filtros y número de respuestas; nunca el texto). La exportación (CSV y PDF) lleva la marca de confidencialidad, su código y queda en el registro de descargas.
 - **Plan de Igualdad (decisión del 28/10/2026):** sus tres preguntas abiertas (20 respuestas) **no se cargan** hasta que el Colegio decida quién puede verlas. La carga las cuenta aparte. Quedan 15 preguntas y 730 respuestas.
 - **Preguntas de familias:** los nombres «¿Qué echa en falta en el Colegio?» y «Comentarios» son provisionales hasta que lo confirme el Colegio.
-- **Conservación (28/10/2026, para el encargo de tratamiento):** el mismo plazo que el resto de respuestas.
+- **Conservación (28/10/2026, para el encargo de tratamiento):** el mismo plazo que el resto de respuestas. Propuesta, pendiente de confirmar por el Colegio: **5 cursos y después se borran**.
 - RPC: `abiertas_preguntas`, `abiertas`, `abiertas_grupos` (migración 20261028000031). Tests: `supabase/tests/26_respuestas_abiertas.sql`.
 
 ### 7.10 Envío de informes al profesorado y a las jefaturas (confirmado por Mark el 28/10/2026)
@@ -343,6 +343,11 @@ Funciones del mockup `referencia/mockups/Mockup_Encuestas_5_admin_usuarios.png`;
 - **Jefaturas (decisión del 28/10/2026):** cada jefatura recibe su enlace a la **versión para la jefatura**, siempre: la de departamento, con todos sus departamentos, y la del Equipo de Individuación, con su tramo (o con los tramos que salen juntos). Se eligen en «Informes de jefatura», una a una o todas. Una persona que es docente y jefatura recibe un enlace por informe.
 - **Envío individual o por departamento, etapa o tramo** (Y1 a Y5, Y6 a Y9, Y10 a Y12), o a todo el profesorado, siempre con **vista previa de destinatarios** antes de enviar y una confirmación. Quien no tiene resultados del alumnado o no tiene correo se queda fuera y la vista previa lo dice. Solo administración, en «Informes por persona › Envío al profesorado».
 - **Remitente `encuestas@sfpaula.com`.** Mientras no exista, el envío está en **modo de pruebas**: solo a correos de Niage (@niage.es o @niage.eu), con «[PRUEBA]» en el asunto y el docente al que iría; **no se envía nada al profesorado**. Doble cerrojo: la base de datos (`privado.configuracion_envio.modo = 'pruebas'`) no crea enlaces a otros correos, y la Edge Function `enviar-informes` exige además `ENVIO_PROFESORADO=activo` y el remitente del Colegio. Pasar a «activo» lo hace Niage en la base de datos cuando el Colegio lo autorice; no hay botón.
+- **Seguridad del enlace sin sesión** (tests en `supabase/tests/28_enlace_sin_sesion.sql`):
+  - caducado o anulado no abre nada ni descarga el PDF, y no cuenta como apertura;
+  - las funciones del enlace solo reciben el token: no se puede pedir el informe de otra persona, y abrirlo no deja ningún permiso abierto para otras funciones (resultados, otros informes, respuestas abiertas, registros, tablas);
+  - un token alterado (una letra, recortado, alargado, en mayúsculas), inventado, vacío o la propia huella guardada no da acceso;
+  - **límite de intentos:** más de 20 intentos fallidos en un minuto, en todo el servidor, cortan durante ese minuto la apertura de cualquier enlace (también los buenos). Los intentos se anotan sin IP ni token, solo con la hora y el motivo, y se borran al día. El límite se cambia en `privado.configuracion_envio.intentos_por_minuto`. Con tokens de 256 bits, adivinar uno ya es imposible; el límite es una defensa más y, como mucho, retrasa un minuto a quien abre su enlace en ese momento.
 - Seguimiento: «Enlaces enviados», con la fecha de envío, la caducidad, las aperturas y las descargas de cada enlace.
 - **Conservación (28/10/2026, para el encargo de tratamiento):** los envíos, los enlaces y sus aperturas, **dos años**, como el registro de descargas, y después borrado. El borrado periódico está por construir, junto con el de las descargas.
 - RPC y tablas: migración 20261028000032. Tests: `supabase/tests/27_envio_informes.sql`.

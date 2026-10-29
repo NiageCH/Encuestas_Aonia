@@ -23,7 +23,8 @@ export function InformeEnlacePagina({ token }: { token: string }) {
     informeEnlace(token).then(setDatos).catch(() => setError(true));
   }, [token]);
 
-  if (error) return <div className="page"><h1>{t.enl_titulo}</h1><p className="notice en-alerta">{t.enl_no_valido}</p></div>;
+  if (error || datos?.estado === "no_valido") return <div className="page"><h1>{t.enl_titulo}</h1><p className="notice en-alerta">{t.enl_no_valido}</p></div>;
+  if (datos?.estado === "limitado") return <div className="page"><h1>{t.enl_titulo}</h1><p className="notice en-alerta">{t.enl_limitado}</p></div>;
   if (!datos) return <div className="page"><p className="en-cargando">{t.cargando}</p></div>;
   if (datos.estado === "caducado") {
     return <div className="page"><h1>{t.enl_titulo}</h1><p className="notice en-alerta">{t.enl_caducado(fechaHora(datos.caduca))}</p></div>;

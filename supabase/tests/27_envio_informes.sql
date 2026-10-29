@@ -78,7 +78,7 @@ select is((select r ->> 'estado' from abre), 'ok', 'el enlace abre el informe si
 select is((select r -> 'informe' ->> 'version' from abre), 'docente', 'siempre la versión docente');
 select ok((select r -> 'informe' -> 'celdas' @? '$[*] ? (@.motivo == "menos_de_5")' from abre),
   '... con el mínimo de 5');
-select throws_ok($$ select public.informe_enlace('no-es-un-token-valido-pero-es-bastante-largo-xxxxxxxxxxxx') $$, 'P0002', null, 'un token inventado no abre nada');
+select is(public.informe_enlace('no-es-un-token-valido-pero-es-bastante-largo-xxxxxxxxxxxx') ->> 'estado', 'no_valido', 'un token inventado no abre nada');
 select ok((public.descarga_enlace((select token from tok), 'Informe.pdf') ->> 'codigo') ~ '^[2-9A-HJKMNP-Z]{4}-[2-9A-HJKMNP-Z]{4}$',
   'la descarga del PDF da su código');
 set local role postgres;
@@ -96,7 +96,7 @@ update privado.enlace_informe set caduca = now() + interval '1 day' where token_
 select pg_temp.como('admin', 'aal2'); set local role authenticated;
 select public.admin_enlace_anular((select (e ->> 'id')::bigint from jsonb_array_elements(public.admin_envios('2000/01')) e limit 1));
 set local role anon;
-select throws_ok($$ select public.informe_enlace((select token from tok)) $$, 'P0002', null, 'un enlace anulado ya no abre');
+select is(public.informe_enlace((select token from tok)) ->> 'estado', 'no_valido', 'un enlace anulado ya no abre');
 
 
 -- Jefaturas: siempre la versión para la jefatura

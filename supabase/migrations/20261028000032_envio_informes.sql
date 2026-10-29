@@ -14,7 +14,9 @@
 create table privado.configuracion_envio (
   id      boolean primary key default true check (id),
   modo    text not null default 'pruebas' check (modo in ('pruebas', 'activo')),
-  dias    smallint not null default 7 check (dias between 1 and 30)
+  dias    smallint not null default 7 check (dias between 1 and 30),
+  -- Límite de intentos fallidos con el enlace (tokens que no existen o anulados), en todo el servidor y por minuto.
+  intentos_por_minuto smallint not null default 20 check (intentos_por_minuto between 1 and 1000)
 );
 insert into privado.configuracion_envio default values;
 
@@ -54,6 +56,28 @@ create table privado.apertura_enlace (
 );
 
 create index on privado.apertura_enlace (enlace_id);
+
+-- Intentos fallidos de abrir un enlace (token inventado, alterado o anulado). Sin IP ni token: solo la hora y el motivo.
+-- Sirven para limitar los intentos al azar: pasado el límite por minuto, ningún enlace se abre durante ese minuto.
+create table privado.intento_enlace (
+  id      bigint generated always as identity primary key,
+  fecha   timestamptz not null default now(),
+  motivo  text not null
+);
+
+create index on privado.intento_enlace (fecha);
+
+create or replace function privado.enlace_limitado() returns boolean
+language sql stable security definer set search_path = '' as $$
+  select count(*) >= (select intentos_por_minuto from privado.configuracion_envio)
+  from privado.intento_enlace where fecha > now() - interval '1 minute';
+$$;
+
+create or replace function privado.fallo_enlace(p_motivo text) returns void
+language sql volatile security definer set search_path = '' as $$
+  delete from privado.intento_enlace where fecha < now() - interval '1 day';
+  insert into privado.intento_enlace (motivo) values (p_motivo);
+$$;
 
 create or replace function privado.huella(p_token text) returns text
 language sql immutable set search_path = '' as $$
@@ -445,18 +469,27 @@ end $$;
 
 -- Lo que abre el docente o la jefatura con su enlace, sin cuenta: la versión docente o la versión para la jefatura de su
 -- informe (mínimo de 5 y complementaria, siempre). Cada apertura queda registrada.
+-- Sin excepciones en los fallos, para que el intento fallido quede anotado (una excepción lo desharía):
+--   limitado:  demasiados intentos fallidos en el último minuto (no se mira el token);
+--   no_valido: token inventado, alterado o de un enlace anulado (cuenta como intento fallido);
+--   caducado:  el enlace existe pero han pasado sus días.
 create or replace function public.informe_enlace(p_token text)
 returns jsonb
 language plpgsql volatile security definer set search_path = '' as $$
 declare
-  v_e       privado.enlace_informe := privado.enlace_valido(p_token);
+  v_e       privado.enlace_informe;
   v_pr      public.persona_responsable;
   v_dep     text;
   v_curso   text;
   v_informe jsonb;
 begin
+  if privado.enlace_limitado() then
+    return jsonb_build_object('estado', 'limitado');
+  end if;
+  v_e := privado.enlace_valido(p_token);
   if v_e.id is null then
-    raise exception 'Enlace no válido' using errcode = 'P0002';
+    perform privado.fallo_enlace('no_valido');
+    return jsonb_build_object('estado', 'no_valido');
   end if;
   if v_e.caduca < now() then
     return jsonb_build_object('estado', 'caducado', 'caduca', v_e.caduca);
@@ -486,14 +519,22 @@ create or replace function public.descarga_enlace(p_token text, p_archivo text)
 returns jsonb
 language plpgsql volatile security definer set search_path = '' as $$
 declare
-  v_e      privado.enlace_informe := privado.enlace_valido(p_token);
+  v_e      privado.enlace_informe;
   v_pr     public.persona_responsable;
   v_nombre text;
   v_codigo text;
   v_fecha  timestamptz := now();
 begin
-  if v_e.id is null or v_e.caduca < now() then
-    raise exception 'Enlace no válido o caducado' using errcode = 'P0002';
+  if privado.enlace_limitado() then
+    return jsonb_build_object('estado', 'limitado');
+  end if;
+  v_e := privado.enlace_valido(p_token);
+  if v_e.id is null then
+    perform privado.fallo_enlace('no_valido');
+    return jsonb_build_object('estado', 'no_valido');
+  end if;
+  if v_e.caduca < now() then
+    return jsonb_build_object('estado', 'caducado');
   end if;
   select * into v_pr from public.persona_responsable where id = v_e.persona_id;
   v_nombre := v_pr.nombre || ' ' || v_pr.apellidos;
@@ -510,6 +551,7 @@ begin
   return jsonb_build_object('codigo', v_codigo, 'nombre', v_nombre, 'fecha', v_fecha, 'informes', '[]'::jsonb);
 end $$;
 
+revoke execute on function privado.enlace_limitado(), privado.fallo_enlace(text) from public, anon, authenticated;
 revoke execute on function privado.huella(text), privado.correo_niage(text), privado.docentes_seleccion(smallint, jsonb),
   privado.tiene_informe(smallint, integer), privado.destinatarios(smallint, jsonb, text), privado.enlace_valido(text)
   from public, anon, authenticated;

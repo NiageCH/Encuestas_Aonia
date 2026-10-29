@@ -279,6 +279,7 @@ export const I18N = {
     enl_caducado: (f: string) => `Este enlace caducó el ${f}. Pida uno nuevo a Dirección.`,
     enl_lead: (f: string) => `Su informe con los resultados de las encuestas del alumnado sobre sus clases. Este enlace es personal y caduca el ${f}: no lo reenvíe.`,
     enl_descargar: "Descargar el informe (PDF)",
+    enl_limitado: "Se han hecho demasiados intentos con enlaces que no valen. Vuelva a probar dentro de unos minutos.",
     enl_lead_jefatura: (f: string) => `Su informe de jefatura con los resultados de las encuestas de personal. Este enlace es personal y caduca el ${f}: no lo reenvíe.`,
     enl_jefatura_pdf: "El detalle de cada pregunta está en el PDF.",
     enl_pie: "Cada apertura de este enlace y cada descarga quedan registradas.",
