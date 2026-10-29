@@ -47,18 +47,25 @@ const fecha = (iso: string) =>
 
 interface Pendiente {
   enlace: string; token: string; destinatario: string; prueba: boolean; caduca: string;
+  tipo: "profesor" | "jefatura_departamento" | "jefatura_equipo"; tramo: string | null;
   nombre: string; apellidos: string; correo_docente: string | null; curso: string; modo: string;
 }
 
+const TRAMOS: Record<string, string> = { infantil: "Infantil", y1_y5: "Y1 a Y5", y6_y9: "Y6 a Y9", y10_y12: "Y10 a Y12" };
+
 function correo(p: Pendiente, sitio: string) {
   const enlace = `${sitio.replace(/\/$/, "")}/#/informe/${p.token}`;
-  const asunto = `${p.prueba ? "[PRUEBA] " : ""}Su informe de las encuestas del alumnado ${p.curso}`;
+  const jefatura = p.tipo !== "profesor";
+  const que = p.tipo === "profesor" ? `su informe de las encuestas de satisfacción del alumnado del curso ${p.curso}, con los resultados de sus clases`
+    : p.tipo === "jefatura_departamento" ? `el informe de su jefatura de departamento del curso ${p.curso}, con los resultados de las encuestas de personal`
+    : `el informe del Equipo de Individuación (${TRAMOS[p.tramo ?? ""] ?? p.tramo}) del curso ${p.curso}, con los resultados de las encuestas de personal`;
+  const asunto = `${p.prueba ? "[PRUEBA] " : ""}${jefatura ? "Su informe de jefatura" : "Su informe de las encuestas del alumnado"} ${p.curso}`;
   const prueba = p.prueba
-    ? `ESTO ES UNA PRUEBA. Este correo no se ha enviado al docente: iría a ${p.nombre} ${p.apellidos} (${p.correo_docente ?? "sin correo"}).\n\n`
+    ? `ESTO ES UNA PRUEBA. Este correo no se ha enviado a ${jefatura ? "la jefatura" : "el docente"}: iría a ${p.nombre} ${p.apellidos} (${p.correo_docente ?? "sin correo"}).\n\n`
     : "";
   const texto = `${prueba}Hola, ${p.nombre}:
 
-El Colegio le envía su informe de las encuestas de satisfacción del alumnado del curso ${p.curso}, con los resultados de sus clases.
+El Colegio le envía ${que}.
 
 Ábralo con este enlace personal:
 ${enlace}

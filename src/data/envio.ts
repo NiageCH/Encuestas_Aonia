@@ -5,15 +5,19 @@
 
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { CURSO, supabase } from "./cliente";
-import type { InformeProfesor } from "./resultados";
+import type { InformeEquipo, InformeJefe, InformeProfesor } from "./resultados";
 import { textosConMayuscula } from "../formato";
 import type { SelloDescarga } from "../exportacion/modelo";
 
-export type TipoSeleccion = "docente" | "departamento" | "etapa" | "tramo" | "todos";
+export type TipoSeleccion = "docente" | "departamento" | "etapa" | "tramo" | "todos" | "jefaturas";
+export type TipoInforme = "profesor" | "jefatura_departamento" | "jefatura_equipo";
 export interface Seleccion { tipo: TipoSeleccion; valores?: string[] }
 
 export interface Destinatario {
-  docente_id: number; nombre: string; apellidos: string; departamento: string | null; correo: string | null;
+  persona_id: number; tipo: TipoInforme; tramo: string | null;
+  /** Jefatura de departamento: sus departamentos; del equipo: su tramo. */
+  informe: string | null;
+  nombre: string; apellidos: string; departamento: string | null; correo: string | null;
   destinatario: string;
   /** Se queda fuera: sin resultados del alumnado o sin correo. */
   aviso: "sin_resultados" | "sin_correo" | null;
@@ -40,8 +44,16 @@ export async function enviar(seleccion: Seleccion, correoPrueba: string): Promis
   return { enlaces: creado.enlaces, ...(r.data as { enviados: number; errores: number }) };
 }
 
+export interface Jefatura { id: number; nombre: string; apellidos: string; departamentos: string[]; tramos: string[] }
+
+export async function jefaturas(): Promise<Jefatura[]> {
+  const { data, error } = await supabase.rpc("admin_jefaturas", { p_curso: CURSO });
+  if (error) throw error;
+  return (data ?? []) as Jefatura[];
+}
+
 export interface EnlaceEnviado {
-  id: string; docente: string; destinatario: string; prueba: boolean; creado: string; enviado: string | null; error: string | null;
+  id: string; docente: string; tipo: TipoInforme; tramo: string | null; destinatario: string; prueba: boolean; creado: string; enviado: string | null; error: string | null;
   caduca: string; anulado: string | null; pendiente: boolean; aperturas: number; descargas: number; ultima: string | null;
 }
 
@@ -58,15 +70,18 @@ export async function anularEnlace(id: string): Promise<void> {
 
 // Página del enlace (sin cuenta) ---------------------------------------------------------------------------------------
 
+type Persona = { nombre: string; apellidos: string; departamento: string | null };
 export type InformeEnlace =
   | { estado: "caducado"; caduca: string }
-  | { estado: "ok"; caduca: string; curso: string; profesor: { nombre: string; apellidos: string; departamento: string | null }; informe: InformeProfesor };
+  | { estado: "ok"; caduca: string; curso: string; tipo: "profesor"; profesor: Persona; informe: InformeProfesor }
+  | { estado: "ok"; caduca: string; curso: string; tipo: "jefatura_departamento"; profesor: Persona; informe: InformeJefe }
+  | { estado: "ok"; caduca: string; curso: string; tipo: "jefatura_equipo"; profesor: Persona; informe: InformeEquipo };
 
 export async function informeEnlace(token: string): Promise<InformeEnlace> {
   const { data, error } = await supabase.rpc("informe_enlace", { p_token: token });
   if (error) throw error;
   const d = data as InformeEnlace;
-  return d.estado === "ok" ? { ...d, informe: textosConMayuscula(d.informe) } : d;
+  return d.estado === "ok" ? ({ ...d, informe: textosConMayuscula(d.informe) } as InformeEnlace) : d;
 }
 
 export async function descargaEnlace(token: string, archivo: string): Promise<SelloDescarga> {

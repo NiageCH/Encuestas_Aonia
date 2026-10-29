@@ -10,8 +10,9 @@ import JSZip from "jszip";
 import { createElement, type ReactElement } from "react";
 import { registrarDescarga, type TipoDescarga } from "../data/descargas";
 import {
-  informeEquipo, informeJefe, informeProfesor, informeResponsable,
-  type GrupoEquipo, type InformeProfesor, type Jefe, type Profesor, type TipoResponsable, type VersionInforme,
+  informeEquipo, informeJefe, informeProfesor, informeResponsable, listarEquipo,
+  type GrupoEquipo, type InformeEquipo, type InformeJefe, type InformeProfesor, type Jefe, type Profesor, type TipoResponsable,
+  type VersionInforme, type VersionJefatura,
 } from "../data/resultados";
 import { notaReuniones, responsablesEquipo, textoAlumnos, tituloAlumnosJefe, tituloEquipo, tituloReuniones } from "../etiquetas";
 import type { SelloDescarga } from "../exportacion/modelo";
@@ -99,7 +100,7 @@ export async function descargarLote(profesores: Profesor[], version: VersionInfo
 }
 
 /** Lo que se anota de un informe de responsables: tipo y de quién es. */
-interface RegistroNivel { tipo: TipoDescarga; objeto: string; persona?: number; tramos?: string[] }
+interface RegistroNivel { tipo: TipoDescarga; objeto: string; persona?: number; tramos?: string[]; version?: VersionJefatura }
 
 export interface SeccionPedida {
   tipo: TipoResponsable; ambito: string | null; titulo: string; subtitulo: string; nota?: string; etiquetas: string[];
@@ -108,7 +109,7 @@ export interface SeccionPedida {
 const limpio = (x: string) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "");
 
 async function descargarNivel(nombre: string, datos: Omit<DatosNivelPdf, "sello">, registro: RegistroNivel): Promise<void> {
-  const archivo = `Informe_2526_${limpio(nombre)}.pdf`;
+  const archivo = `Informe_2526_${limpio(nombre)}${datos.version === "completa" ? "_completo" : ""}.pdf`;
   const sello = await registrarDescarga(registro.tipo, { ...registro, archivo });
   const doc = createElement(InformeNivelPdf, { ...datos, sello });
   descargar(await pdfProtegido(doc, `${datos.eyebrow} · ${datos.titulo}`), archivo);
@@ -126,29 +127,55 @@ export async function descargarInformeNivel(opciones: {
     { tipo: opciones.nombre === "Direccion" ? "informe_direccion" : "informe_equipo", objeto: opciones.titulo });
 }
 
-/** PDF de un jefe de departamento con todos sus departamentos (queda en el registro). */
-export async function descargarInformeJefe(jefe: Jefe): Promise<void> {
-  const inf = await informeJefe(jefe.id, true);
+/** Lo que va en el PDF de una jefatura de departamento (también desde su enlace personal). */
+export function datosJefe(inf: InformeJefe, nombre: string): Omit<DatosNivelPdf, "sello"> {
   const secciones: SeccionPdf[] = inf.reuniones.map((r) => ({
     titulo: tituloReuniones(r), subtitulo: t.resp_departamento_sub,
     nota: notaReuniones(r, inf.departamentos, inf.reuniones.length), etiquetas: t.escala_acuerdo_dep, informe: r,
   }));
   const alumnos: AlumnosDepartamentoPdf[] = [{ titulo: tituloAlumnosJefe(inf.alumnos.departamentos), ...textoAlumnos(inf.alumnos.media) }];
-  await descargarNivel(`Departamentos_${jefe.apellidos}_${jefe.nombre}`, {
-    eyebrow: t.resp_informe, titulo: `${jefe.nombre} ${jefe.apellidos}`, subtitulo: t.jefe_departamentos(inf.departamentos),
-    secciones, alumnos, sinSecciones: t.jefe_sin_reuniones,
-  }, { tipo: "informe_jefatura", objeto: `${jefe.nombre} ${jefe.apellidos}`, persona: jefe.id });
+  return {
+    eyebrow: t.resp_informe, titulo: nombre, subtitulo: t.jefe_departamentos(inf.departamentos),
+    secciones, alumnos, sinSecciones: t.jefe_sin_reuniones, version: inf.version,
+  };
 }
 
-/** PDF del Equipo de Individuación de un tramo o de varios juntos (queda en el registro). */
-export async function descargarInformeEquipo(g: GrupoEquipo): Promise<void> {
-  const inf = await informeEquipo(g.tramos, true);
-  await descargarNivel(`Equipo_Individuacion_${g.tramos.join("_")}`, {
-    eyebrow: t.resp_informe, titulo: tituloEquipo(g.tramos),
-    subtitulo: g.responsables.length ? `${t.eq_responsables}: ${responsablesEquipo(g)}` : t.resp_equipo,
+/** Lo que va en el PDF de una jefatura del Equipo de Individuación (también desde su enlace personal). */
+export function datosEquipo(inf: InformeEquipo, responsables?: GrupoEquipo["responsables"]): Omit<DatosNivelPdf, "sello"> {
+  return {
+    eyebrow: t.resp_informe, titulo: tituloEquipo(inf.tramos),
+    subtitulo: responsables?.length ? `${t.eq_responsables}: ${responsablesEquipo({ tramos: inf.tramos, responsables })}` : t.resp_equipo,
     secciones: [{
       titulo: t.resp_equipo, subtitulo: t.eq_sub_tramo, etiquetas: t.escala_acuerdo_per, informe: inf,
-      nota: g.tramos.length > 1 ? t.eq_compartido_nota : undefined,
+      nota: inf.tramos.length > 1 ? t.eq_compartido_nota : undefined,
     }],
-  }, { tipo: "informe_equipo", objeto: tituloEquipo(g.tramos), tramos: g.tramos });
+    version: inf.version,
+  };
+}
+
+/** PDF de un jefe de departamento con todos sus departamentos (queda en el registro). */
+export async function descargarInformeJefe(jefe: Jefe, version: VersionJefatura = "completa"): Promise<void> {
+  const inf = await informeJefe(jefe.id, true, version);
+  await descargarNivel(`Departamentos_${jefe.apellidos}_${jefe.nombre}`, datosJefe(inf, `${jefe.nombre} ${jefe.apellidos}`),
+    { tipo: "informe_jefatura", objeto: `${jefe.nombre} ${jefe.apellidos}`, persona: jefe.id, version });
+}
+
+/** PDF del Equipo de Individuación de un tramo o de varios juntos (queda en el registro). En la versión para la jefatura,
+ *  con los tramos de su grupo según el mínimo de 5. */
+export async function descargarInformeEquipo(g: GrupoEquipo, version: VersionJefatura = "completa"): Promise<void> {
+  const inf = await informeEquipo(g.tramos, true, version);
+  const responsables = version === "jefatura"
+    ? (await listarEquipo("jefatura")).find((x) => x.tramos.join() === inf.tramos.join())?.responsables
+    : g.responsables;
+  await descargarNivel(`Equipo_Individuacion_${inf.tramos.join("_")}`, datosEquipo(inf, responsables),
+    { tipo: "informe_equipo", objeto: tituloEquipo(inf.tramos), tramos: inf.tramos, version });
+}
+
+/** Desde el enlace personal de una jefatura (sin cuenta): la versión para la jefatura, anotada a su nombre. */
+export async function descargarJefaturaEnlace(token: string, nombre: string, datos: Omit<DatosNivelPdf, "sello">, archivoBase: string): Promise<void> {
+  const { descargaEnlace } = await import("../data/envio");
+  const archivo = `Informe_2526_${limpio(archivoBase)}.pdf`;
+  const sello = await descargaEnlace(token, archivo);
+  const doc = createElement(InformeNivelPdf, { ...datos, sello });
+  descargar(await pdfProtegido(doc, `${datos.eyebrow} · ${nombre}`), archivo);
 }

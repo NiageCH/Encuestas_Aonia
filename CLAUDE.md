@@ -8,10 +8,10 @@ La especificación completa está en `docs/ESPECIFICACION.md`. Léela antes de e
 
 ## Reglas que no se rompen
 
-1. **Mínimo de 5 respuestas según el rol** (criterio confirmado por escrito por Mark el (fecha pendiente); especificación §5.0), aplicado siempre en el servidor:
+1. **Mínimo de 5 respuestas según el rol** (criterio confirmado por escrito por Mark el 28/10/2026; especificación §5.0), aplicado siempre en el servidor:
    - **Coordinación y el informe que recibe cada docente** (versión docente, también por su enlace personal): mínimo de 5 en todo resultado agregado **con supresión complementaria** (§5). Las combinaciones de filtros también lo cumplen.
    - **Dirección y administración:** ven todos los resultados, también los de menos de 5, con la marca «menos de 5» y su número de respuestas, sin supresión complementaria. En vistas, informes, CSV y PDF.
-2. **Sin datos identificativos:** no se cargan IPs, identificadores de Encuesta Fácil, fechas de respuesta ni **sexo**. Las **respuestas abiertas** se cargan tal cual (desde el (fecha pendiente), §7.9), **solo para Dirección y administración**, nunca para la coordinación ni en los informes del profesorado, sin enlace con las respuestas cerradas de la misma persona; cada consulta y exportación queda en el registro.
+2. **Sin datos identificativos:** no se cargan IPs, identificadores de Encuesta Fácil, fechas de respuesta ni **sexo**. Las **respuestas abiertas** se cargan tal cual (desde el 28/10/2026, §7.9), **solo para Dirección y administración**, nunca para la coordinación ni en los informes del profesorado, sin enlace con las respuestas cerradas de la misma persona; cada consulta y exportación queda en el registro.
 3. **Las respuestas individuales nunca se leen desde el cliente.** Solo RPC (`security definer`) que aplican permisos y el criterio de anonimato de cada rol. Única excepción: los textos de las respuestas abiertas, sueltos, para Dirección y administración (§7.9). Las exportaciones CSV y los PDF salen de esas mismas RPC.
 4. **Nada de datos del colegio ni secretos en git.** Ni ficheros de encuestas, ni resultados agregados reales, ni claves. Todo eso vive en `datos_locales/` (ignorado) y en variables de entorno.
 5. **Sin inicio de sesión con Microsoft.** Acceso con correo y contraseña. El correo puede salir por el servidor de correo del colegio (Microsoft 365). De SharePoint solo se leen ficheros.

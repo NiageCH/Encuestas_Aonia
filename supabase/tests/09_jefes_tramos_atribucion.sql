@@ -3,7 +3,7 @@
 -- y atribuidas por nombre en el informe del profesor.
 begin;
 \ir fixtures/datos_ejemplo.psql
-select plan(53);
+select plan(61);
 -- Estos tests comprueban el mínimo de 5 y la complementaria, que siguen valiendo para la coordinación y para la versión
 -- docente del informe. Dirección y administración las ven aquí como en esa versión; su criterio está en 25_criterio_direccion.sql.
 set local encuestas.version_docente = 'on';
@@ -245,6 +245,23 @@ select throws_ok($$ select public.listar_jefes('2000/01') $$, '42501', 'Sin acce
 select throws_ok($$ select public.informe_equipo('2000/01', '{y6_y9}') $$, '42501', 'Sin acceso a los informes de responsables', 'ni el Equipo de Individuación');
 select throws_ok($$ select public.resultados_profesor('2000/01', (select cinco from ids)) $$, '42501', 'Sin acceso a este profesor/a',
   'ni profesores de Bachillerato');
+
+
+-- Informes de jefatura en dos versiones (28/10/2026): completa para Dirección y la de la jefatura, con el mínimo de 5 ---
+set local role postgres; set local encuestas.version_docente = ''; select pg_temp.como('direccion'); set local role authenticated;
+select is(jsonb_array_length(public.listar_equipo('2000/01')), 4, 'versión completa: cada tramo por separado, también los de menos de 5');
+select is(public.listar_equipo('2000/01', 'jefatura') -> 0 -> 'tramos', '["infantil", "y1_y5"]'::jsonb,
+  'versión para la jefatura: los tramos ocultos van juntos, como antes');
+select is(public.informe_equipo('2000/01', '{y1_y5}') -> 'total' ->> 'menos_de_5', 'true', 'completa: Y1 a Y5 solo, con la marca');
+create temp table eq_jef as select public.informe_equipo('2000/01', '{y1_y5}', false, 'jefatura') as r;
+select is((select r -> 'tramos' from eq_jef), '["infantil", "y1_y5"]'::jsonb, 'jefatura de Y1 a Y5: sale con su grupo (Infantil y Y1 a Y5)');
+select is((select (r -> 'total' ->> 'n')::int from eq_jef), 6, '... visible, con 6 respuestas');
+create temp table dep_comp as select public.informe_jefe_departamento('2000/01', (select id from public.persona_responsable where apellidos = 'Dos')) as r;
+create temp table dep_jef as select public.informe_jefe_departamento('2000/01', (select id from public.persona_responsable where apellidos = 'Dos'), false, 'jefatura') as r;
+select ok((select r @? '$.** ? (@.menos_de_5 == true)' and r ->> 'version' = 'completa' from dep_comp), 'jefatura de departamento, completa: con lo de menos de 5');
+select ok((select not (r @? '$.** ? (@.suprimido == false && @.n < 5)') and r ->> 'version' = 'jefatura' from dep_jef),
+  'versión para la jefatura: nada visible con menos de 5');
+select throws_ok($$ select public.informe_equipo('2000/01', '{y1_y5}', false, 'docente') $$, '22023', null, 'versión desconocida');
 
 select * from finish();
 rollback;

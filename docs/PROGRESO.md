@@ -232,13 +232,16 @@ Orden de carga: `cargar_2526.py` → `convertir_alexia_2526.py` → `cargar_asig
 
 ## Criterio de anonimato de Dirección, respuestas abiertas y envío al profesorado (rama `anonimato-direccion`, 28/10/2026, sin subir)
 
-Confirmado por escrito por Mark el (fecha pendiente). Hecho en local, con tests; **pendiente del visto bueno de Rodrigo**:
+Confirmado por escrito por Mark el 28/10/2026. Hecho en local, con tests; **pendiente del visto bueno de Rodrigo**:
 - **Criterio según el rol** (§5.0, migración 30): Dirección y administración ven también lo de menos de 5, marcado «menos de 5» con su número, sin complementaria, en vistas, informes, CSV y PDF. La coordinación y la versión docente, como antes.
 - **Informe del profesor/a en dos versiones** (§7.2): la completa añade el detalle de cada pregunta en cada clase; la cabecera del PDF dice la versión; en lote se elige.
-- **Respuestas abiertas** (§7.9, migración 31, `etl/cargar_abiertas_2526.py`): 18 preguntas y 750 respuestas, cargadas solo en local. Pantalla «Respuestas abiertas» para Dirección y administración, con filtros, registro de cada consulta y exportación con código.
-- **Envío al profesorado** (§7.10, migración 32, Edge Function `enviar-informes`): enlace personal de 7 días a la versión docente, aperturas y descargas registradas, envío individual o por departamento, etapa o tramo con vista previa. En **modo de pruebas**: solo a correos de Niage.
-- Tests: 454 pgTAP (25, 26 y 27 nuevos) y 51 de vitest.
-- Pendiente de decidir: si los informes de jefatura y de equipo necesitan también una versión con el mínimo de 5 (§5.0); cuánto se guardan las respuestas abiertas y los enlaces; si se cargan en la nube las tres preguntas abiertas del Plan de Igualdad; el texto exacto de las dos preguntas abiertas de familias.
+- **Respuestas abiertas** (§7.9, migración 31, `etl/cargar_abiertas_2526.py`): 15 preguntas y 730 respuestas, cargadas solo en local. Pantalla «Respuestas abiertas» para Dirección y administración, con filtros, registro de cada consulta y exportación con código.
+- **Informes de jefatura en dos versiones** (decisión del 28/10/2026): completa («no entregar a la jefatura») y para la jefatura, con el mínimo de 5.
+- **Envío al profesorado y a las jefaturas** (§7.10, migración 32, Edge Function `enviar-informes`): enlace personal de 7 días a la versión docente o a la versión para la jefatura, aperturas y descargas registradas, envío individual o por departamento, etapa o tramo con vista previa. En **modo de pruebas**: solo a correos de Niage.
+- Respuestas abiertas: 15 preguntas y 730 respuestas; las tres del Plan de Igualdad no se cargan hasta que el Colegio decida quién puede verlas. Nombres de las preguntas de familias, provisionales.
+- Conservación para el encargo: abiertas, como el resto de respuestas (plazo sin fijar); envíos y aperturas, dos años.
+- Tests: 466 pgTAP (25, 26 y 27 nuevos) y 51 de vitest.
+- Pendiente del Colegio: quién puede ver las preguntas abiertas del Plan de Igualdad; los textos de las preguntas abiertas de familias.
 
 ## Tareas con fecha
 

@@ -309,11 +309,16 @@ export interface InformeJefe {
   reuniones: SeccionReuniones[];
   /** Una sola media por jefe, con las clases propias visibles de todos sus departamentos. */
   alumnos: { departamentos: string[]; media: MediaDepartamentoAlumnos };
+  version: VersionJefatura;
 }
 
 /** Informe de un jefe de departamento con todos sus departamentos (§7.3). */
-export async function informeJefe(persona: number, registrar = false): Promise<InformeJefe> {
-  const { data, error } = await supabase.rpc("informe_jefe_departamento", { p_curso: CURSO, p_persona: persona, p_registrar: registrar });
+/** completa: Dirección y administración, con lo de menos de 5 («no entregar a la jefatura»). jefatura: con el mínimo de 5
+ *  y la complementaria; es la que se envía siempre a la jefatura (28/10/2026). */
+export type VersionJefatura = "completa" | "jefatura";
+
+export async function informeJefe(persona: number, registrar = false, version: VersionJefatura = "completa"): Promise<InformeJefe> {
+  const { data, error } = await supabase.rpc("informe_jefe_departamento", { p_curso: CURSO, p_persona: persona, p_registrar: registrar, p_version: version });
   if (error) throw error;
   return textosConMayuscula(data as InformeJefe);
 }
@@ -324,16 +329,17 @@ export interface GrupoEquipo {
 }
 
 /** Resultados del Equipo de Individuación por tramo: los visibles por separado y los ocultos juntos. */
-export async function listarEquipo(): Promise<GrupoEquipo[]> {
-  const { data, error } = await supabase.rpc("listar_equipo", { p_curso: CURSO });
+export async function listarEquipo(version: VersionJefatura = "completa"): Promise<GrupoEquipo[]> {
+  const { data, error } = await supabase.rpc("listar_equipo", { p_curso: CURSO, p_version: version });
   if (error) throw error;
   return (data ?? []) as GrupoEquipo[];
 }
 
-export interface InformeEquipo { tramos: string[]; total: Fila; preguntas: DetallePregunta[] }
+/** tramos: con los que ha salido el informe (en la versión para la jefatura, los de su grupo). */
+export interface InformeEquipo { tramos: string[]; total: Fila; preguntas: DetallePregunta[]; version: VersionJefatura }
 
-export async function informeEquipo(tramos: string[], registrar = false): Promise<InformeEquipo> {
-  const { data, error } = await supabase.rpc("informe_equipo", { p_curso: CURSO, p_tramos: tramos, p_registrar: registrar });
+export async function informeEquipo(tramos: string[], registrar = false, version: VersionJefatura = "completa"): Promise<InformeEquipo> {
+  const { data, error } = await supabase.rpc("informe_equipo", { p_curso: CURSO, p_tramos: tramos, p_registrar: registrar, p_version: version });
   if (error) throw error;
   return textosConMayuscula(data as InformeEquipo);
 }

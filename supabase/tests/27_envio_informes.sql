@@ -2,7 +2,7 @@
 -- Niage; enlace personal a la versión docente, con caducidad y cada apertura y descarga registradas.
 begin;
 \ir fixtures/datos_ejemplo.psql
-select plan(29);
+select plan(34);
 
 set local role postgres;
 create temp table ids as select (select id from public.persona_responsable where apellidos = 'Uno') as uno,
@@ -70,7 +70,8 @@ set local role postgres;
 select ok((select token is null and enviado is not null from privado.enlace_informe where token_hash = privado.huella((select token from tok))),
   'enviado el correo, el token en claro desaparece');
 
--- El docente abre el enlace, sin cuenta
+-- El docente abre el enlace, sin cuenta (sin ninguna sesión)
+set local role postgres; select set_config('request.jwt.claims', '', true);
 set local role anon;
 create temp table abre as select public.informe_enlace((select token from tok)) as r;
 select is((select r ->> 'estado' from abre), 'ok', 'el enlace abre el informe sin cuenta');
@@ -96,6 +97,25 @@ select pg_temp.como('admin', 'aal2'); set local role authenticated;
 select public.admin_enlace_anular((select (e ->> 'id')::bigint from jsonb_array_elements(public.admin_envios('2000/01')) e limit 1));
 set local role anon;
 select throws_ok($$ select public.informe_enlace((select token from tok)) $$, 'P0002', null, 'un enlace anulado ya no abre');
+
+
+-- Jefaturas: siempre la versión para la jefatura
+set local role postgres; select pg_temp.como('admin', 'aal2'); set local role authenticated;
+select is(public.admin_envio_destinatarios('2000/01', '{"tipo":"jefaturas"}', 'rodrigo@niage.es') -> 'destinatarios' -> 0 ->> 'tipo',
+  'jefatura_departamento', 'las jefaturas también se envían, con su informe de jefatura');
+create temp table env_j as select public.admin_envio_crear('2000/01', '{"tipo":"jefaturas"}', 'rodrigo@niage.es') as r;
+grant select on env_j to service_role;
+set local role service_role;
+create temp table tok_j as select p ->> 'token' as token, p ->> 'tipo' as tipo
+  from env_j, jsonb_array_elements(public.envio_pendientes((select (r ->> 'envio')::bigint from env_j))) p;
+grant select on tok_j to anon;
+select is((select tipo from tok_j limit 1), 'jefatura_departamento', 'el correo sabe que es un informe de jefatura');
+set local role anon;
+create temp table abre_j as select public.informe_enlace((select token from tok_j limit 1)) as r;
+select is((select r -> 'informe' ->> 'version' from abre_j), 'jefatura', 'el enlace abre la versión para la jefatura');
+select ok((select not (r @? '$.** ? (@.suprimido == false && @.n < 5)') from abre_j), '... sin nada visible de menos de 5');
+select throws_ok($$ select public.resultados('{"curso":"2000/01","colectivo":"personal"}', '{"tipo":"personas"}') $$, '42501', null,
+  'fuera del enlace, sin sesión no se ve ningún resultado');
 
 select * from finish();
 rollback;

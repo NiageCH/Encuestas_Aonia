@@ -39,8 +39,10 @@ def resumen(preguntas, descartadas) -> list:
     for p in preguntas:
         por_col[p.colectivo] += len(p.respuestas)
     lineas += ["", "Por colectivo: " + ", ".join(f"{c} {n}" for c, n in sorted(por_col.items())), "",
-               "No se cargan (piden un nombre, no una opinión; solo sirven para atribuir valoraciones, §7.2):", ""]
-    lineas += [f"- {d.cuestionario}: «{d.texto}» ({d.n} respuestas)" for d in descartadas]
+               "No se cargan hasta que el Colegio decida quién puede verlas (Plan de Igualdad, 28/10/2026):", ""]
+    lineas += [f"- {d.cuestionario}: «{d.texto}» ({d.n} respuestas)" for d in descartadas if d.pendiente]
+    lineas += ["", "No se cargan (piden un nombre, no una opinión; solo sirven para atribuir valoraciones, §7.2):", ""]
+    lineas += [f"- {d.cuestionario}: «{d.texto}» ({d.n} respuestas)" for d in descartadas if not d.pendiente]
     return lineas
 
 

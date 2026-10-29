@@ -8,7 +8,7 @@ en la nube lo autoriza Rodrigo antes de hacerlo.
 | Qué | Quién | Por qué |
 |---|---|---|
 | Confirmación de sistemas del Colegio de que aceptan Supabase (§10, pregunta 4) | Rodrigo con sistemas | Su guía técnica dice que las herramientas con servidor, base de datos o usuarios las alojan ellos. Si no aceptan, el frontend no cambia (todo el acceso a datos está en `src/data/`), pero hay que rehacer el backend en su infraestructura. |
-| Contratos de tratamiento de datos (RGPD) | Rodrigo (Niage) con el Colegio y Aonia | Niage actúa como encargado del tratamiento. Supabase y Brevo tienen sus propios acuerdos de tratamiento (DPA) que hay que aceptar al crear las cuentas. Incluir en el encargo: el registro de descargas (quién descargó qué PDF, CSV o ZIP, cuándo y con qué código) se conserva **dos años desde cada descarga** y después se borra (aprobado el 28/10/2026; especificación §7.7). Incluir también (criterio confirmado por Mark el (fecha pendiente)): Dirección y administración ven resultados de menos de 5 respuestas (§5.0); se tratan las **respuestas abiertas** tal cual, que pueden contener datos personales de terceros (§7.9); y se envían por correo **enlaces personales al profesorado**, con registro de cada apertura (§7.10). Falta fijar cuánto tiempo se guardan las respuestas abiertas y los enlaces con sus aperturas. |
+| Contratos de tratamiento de datos (RGPD) | Rodrigo (Niage) con el Colegio y Aonia | Niage actúa como encargado del tratamiento. Supabase y Brevo tienen sus propios acuerdos de tratamiento (DPA) que hay que aceptar al crear las cuentas. Incluir en el encargo: el registro de descargas (quién descargó qué PDF, CSV o ZIP, cuándo y con qué código) se conserva **dos años desde cada descarga** y después se borra (aprobado el 28/10/2026; especificación §7.7). Incluir también (criterio confirmado por Mark el 28/10/2026): Dirección y administración ven resultados de menos de 5 respuestas (§5.0); se tratan las **respuestas abiertas** tal cual, que pueden contener datos personales de terceros (§7.9); y se envían por correo **enlaces personales al profesorado**, con registro de cada apertura (§7.10). Conservación (28/10/2026): las respuestas abiertas, el mismo plazo que el resto de respuestas (plazo aún sin fijar en el encargo); los envíos de informes, los enlaces y sus aperturas, dos años, como las descargas. |
 
 ## 1. Lo que necesito de Rodrigo
 
@@ -199,7 +199,7 @@ Clever Cloud y volviendo a desplegar.
 
 ## 6. Criterio de anonimato de Dirección, respuestas abiertas y envío al profesorado (rama `anonimato-direccion`)
 
-Confirmado por escrito por Mark el (fecha pendiente). **No se sube nada hasta el visto bueno de Rodrigo.** Orden, como siempre:
+Confirmado por escrito por Mark el 28/10/2026. **No se sube nada hasta el visto bueno de Rodrigo.** Orden, como siempre:
 
 1. Copia de la nube (`copia_nube.py`) y recuento de 2025/26 (`etl/borrar_2526.py --remoto`, sin `--confirmar`).
 2. Merge a `main`, comprobación de que no entra ningún fichero de datos, y push (Rodrigo).
@@ -212,6 +212,6 @@ Confirmado por escrito por Mark el (fecha pendiente). **No se sube nada hasta el
    - `SITIO_URL` (la de la web), `REMITENTE` (por ahora `encuestas@niage.eu`), `SMTP_HOST`, `SMTP_PORT=465`, `SMTP_USER`, `SMTP_PASS` (los de Brevo: Supabase no deja salir correo por los puertos 25 y 587).
    - **No** poner `ENVIO_PROFESORADO` hasta que exista `encuestas@sfpaula.com` y el Colegio lo autorice.
 6. Web: `npx clever-tools deploy`.
-7. **Respuestas abiertas en la nube, solo después del visto bueno a la lista de preguntas:** `etl/cargar_abiertas_2526.py --ensayo` (recuento) y `etl/cargar_abiertas_2526.py --remoto`. Ojo: `cargar_2526.py` borra las abiertas al recargar el curso; hay que volver a cargarlas después.
-8. Comprobaciones en la web publicada (Rodrigo, con su cuenta): un resultado de menos de 5 marcado como Dirección; la versión completa y la docente de un informe; la pantalla de respuestas abiertas y su registro; un envío de prueba a un correo de Niage, abrir el enlace y ver la apertura en «Enlaces enviados».
+7. **Respuestas abiertas en la nube, solo después del visto bueno a la lista de preguntas** (15 preguntas y 730 respuestas; las del Plan de Igualdad no se cargan hasta que el Colegio decida quién puede verlas): `etl/cargar_abiertas_2526.py --ensayo` (recuento) y `etl/cargar_abiertas_2526.py --remoto`. Ojo: `cargar_2526.py` borra las abiertas al recargar el curso; hay que volver a cargarlas después.
+8. Comprobaciones en la web publicada (Rodrigo, con su cuenta): un resultado de menos de 5 marcado como Dirección; la versión completa y la docente de un informe; las dos versiones de un informe de jefatura; la pantalla de respuestas abiertas y su registro; un envío de prueba a un correo de Niage, abrir el enlace y ver la apertura en «Enlaces enviados».
 9. **Para enviar de verdad al profesorado** (más adelante): dominio `sfpaula.com` en Brevo, `REMITENTE=encuestas@sfpaula.com`, `ENVIO_PROFESORADO=activo` y, en la base de datos, `update privado.configuracion_envio set modo = 'activo'`. Las dos cosas a la vez; si falta una, no sale nada al profesorado.

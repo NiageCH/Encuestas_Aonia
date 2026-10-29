@@ -430,3 +430,223 @@ begin
                         || case when v_menos5 > 0 then jsonb_build_object('menos_de_5', v_menos5) else '{}'::jsonb end end,
     'combinaciones_excluidas', v_excluidas);
 end $$;
+
+-- Informes de jefatura (decisión del 28/10/2026): como el del profesor/a, dos versiones.
+--   completa: la de Dirección y administración (todo, con la marca «menos de 5»), «no entregar a la jefatura»;
+--   jefatura: la que recibe la jefatura (mínimo de 5 y complementaria). Es la que se envía siempre.
+-- Lo que cambia entre versiones lo decide el mismo ajuste que la versión docente (encuestas.version_docente).
+
+create or replace function privado.informe_jefatura_departamento(p_curso text, p_persona integer)
+returns jsonb
+language plpgsql volatile security definer set search_path = '' as $$
+declare
+  v_curso    smallint;
+  v_pr       public.persona_responsable;
+  v_deps     text[];
+  v_unidades text[];
+  v_ocultas  boolean := true;
+  v_u        text;
+  v_sec      jsonb := '[]';
+  v_inf      jsonb;
+  v_alu      jsonb;
+  v_d        text;
+  v_conjunto jsonb;
+begin
+  select id into v_curso from public.curso where nombre = p_curso;
+  select * into v_pr from public.persona_responsable where id = p_persona;
+  select array_agg(ca.ambito order by ca.ambito) into v_deps
+  from public.cargo ca where ca.persona_id = p_persona and ca.curso_id = v_curso and ca.tipo = 'jefe_departamento';
+  if v_pr.id is null or v_deps is null then
+    raise exception 'Jefatura de departamento no encontrada' using errcode = 'P0002';
+  end if;
+
+  -- Unidades de la encuesta que corresponden a sus departamentos (con equivalencia o por nombre).
+  select array_agg(distinct u.nombre order by u.nombre) into v_unidades
+  from public.departamento o
+  join lateral (
+    select de.nombre from public.departamento_equivalencia eq
+    join public.departamento de on de.id = eq.departamento_encuesta_id
+    where eq.departamento_id = o.id
+    union
+    select o.nombre where exists (select 1 from privado.respuesta_item i where i.departamento_id = o.id)
+  ) u on true
+  where o.curso_id = v_curso and o.nombre = any(v_deps);
+
+  if v_unidades is not null and cardinality(v_unidades) > 1 then
+    foreach v_u in array v_unidades loop
+      v_inf := privado.informe_partes(p_curso, 'reuniones_departamento', 'departamento', array[v_u]);
+      v_ocultas := v_ocultas and (v_inf -> 'total' ->> 'suprimido')::boolean;
+      v_sec := v_sec || (jsonb_build_object('unidades', jsonb_build_array(v_u), 'conjunto', false) || v_inf);
+    end loop;
+    if v_ocultas then
+      v_conjunto := privado.informe_partes(p_curso, 'reuniones_departamento', 'departamento', v_unidades);
+      if not (v_conjunto -> 'total' ->> 'suprimido')::boolean then
+        v_sec := jsonb_build_array(jsonb_build_object('unidades', to_jsonb(v_unidades), 'conjunto', true) || v_conjunto);
+      end if;
+    end if;
+  elsif v_unidades is not null then
+    v_sec := jsonb_build_array(jsonb_build_object('unidades', to_jsonb(v_unidades), 'conjunto', false)
+             || privado.informe_partes(p_curso, 'reuniones_departamento', 'departamento', v_unidades));
+  end if;
+
+  -- Una sola media por jefe: todas las clases propias visibles de sus departamentos.
+  v_alu := jsonb_build_object('departamentos', to_jsonb(v_deps),
+                              'media', privado.media_alumnos_departamentos(p_curso, v_deps));
+
+  return jsonb_build_object(
+    'persona', jsonb_build_object('id', v_pr.id, 'nombre', v_pr.nombre, 'apellidos', v_pr.apellidos),
+    'departamentos', to_jsonb(v_deps),
+    'reuniones', v_sec,
+    'alumnos', v_alu);
+end $$;
+
+revoke execute on function privado.informe_jefatura_departamento(text, integer) from public, anon, authenticated;
+
+drop function if exists public.informe_jefe_departamento(text, integer, boolean);
+create or replace function public.informe_jefe_departamento(p_curso text, p_persona integer, p_registrar boolean default false,
+                                                             p_version text default 'completa')
+returns jsonb
+language plpgsql volatile security definer set search_path = '' as $$
+declare
+  v_previo text := current_setting('encuestas.version_docente', true);
+  v_inf    jsonb;
+begin
+  perform permisos.exigir();
+  if not permisos.ve_todo() then
+    raise exception 'Sin acceso a los informes de responsables' using errcode = '42501';
+  end if;
+  if p_version is null or p_version not in ('completa', 'jefatura') then
+    raise exception 'Versión del informe no válida' using errcode = '22023';
+  end if;
+  if p_version = 'jefatura' then perform set_config('encuestas.version_docente', 'on', true); end if;
+  v_inf := privado.informe_jefatura_departamento(p_curso, p_persona);
+  perform set_config('encuestas.version_docente', coalesce(v_previo, ''), true);
+  if p_registrar then
+    perform privado.registrar('informe_responsable', jsonb_build_object('curso', p_curso, 'tipo', 'jefe_departamento',
+      'ambito', array_to_string(array(select jsonb_array_elements_text(v_inf -> 'departamentos')), ', '), 'version', p_version));
+  end if;
+  return v_inf || jsonb_build_object('version', p_version);
+end $$;
+
+revoke execute on function public.informe_jefe_departamento(text, integer, boolean, text) from public, anon;
+grant execute on function public.informe_jefe_departamento(text, integer, boolean, text) to authenticated;
+
+-- Tramos del Equipo de Individuación que van juntos según el criterio vigente: cada tramo visible solo y los ocultos
+-- juntos (§5.15). Con el criterio de Dirección, todos van solos.
+create or replace function privado.grupos_equipo(p_curso text)
+returns jsonb
+language plpgsql volatile security definer set search_path = '' as $$
+declare
+  v_r      jsonb := public.resultados(jsonb_build_object('curso', p_curso, 'colectivo', 'personal'),
+                                      '{"tipo": "bloque", "codigo": "equipo_individualizacion"}', '{tramo}');
+  v_vis    text[] := '{}';
+  v_ocu    text[] := '{}';
+  v_p      jsonb;
+  v_grupos jsonb := '[]';
+  v_t      text;
+begin
+  for v_p in select * from jsonb_array_elements(v_r -> 'partes') loop
+    continue when v_p -> 'clave' ->> 'tramo' = '(sin dato)';
+    if (v_p ->> 'suprimido')::boolean then v_ocu := v_ocu || (v_p -> 'clave' ->> 'tramo');
+    else v_vis := v_vis || (v_p -> 'clave' ->> 'tramo'); end if;
+  end loop;
+  foreach v_t in array v_vis loop
+    v_grupos := v_grupos || jsonb_build_object('tramos', jsonb_build_array(v_t));
+  end loop;
+  if cardinality(v_ocu) > 0 then
+    v_grupos := v_grupos || jsonb_build_object('tramos', to_jsonb(v_ocu));
+  end if;
+  return v_grupos;
+end $$;
+
+revoke execute on function privado.grupos_equipo(text) from public, anon, authenticated;
+
+-- Tramos con los que sale el informe de la jefatura de unos tramos: en la versión para la jefatura, los de su grupo.
+create or replace function privado.tramos_jefatura(p_curso text, p_tramos text[])
+returns text[]
+language sql volatile security definer set search_path = '' as $$
+  select coalesce(array_agg(distinct t order by t), p_tramos)
+  from jsonb_array_elements(privado.grupos_equipo(p_curso)) g, jsonb_array_elements_text(g -> 'tramos') t
+  where exists (select 1 from jsonb_array_elements_text(g -> 'tramos') x where x = any(p_tramos));
+$$;
+
+revoke execute on function privado.tramos_jefatura(text, text[]) from public, anon, authenticated;
+
+drop function if exists public.listar_equipo(text);
+create or replace function public.listar_equipo(p_curso text, p_version text default 'completa')
+returns jsonb
+language plpgsql volatile security definer set search_path = '' as $$
+declare
+  v_previo text := current_setting('encuestas.version_docente', true);
+  v_grupos jsonb;
+begin
+  perform permisos.exigir();
+  if not permisos.ve_todo() then
+    raise exception 'Sin acceso a los informes de responsables' using errcode = '42501';
+  end if;
+  if p_version = 'jefatura' then perform set_config('encuestas.version_docente', 'on', true); end if;
+  v_grupos := privado.grupos_equipo(p_curso);
+  perform set_config('encuestas.version_docente', coalesce(v_previo, ''), true);
+  return coalesce((
+    select jsonb_agg(g || jsonb_build_object('responsables', coalesce((
+             select jsonb_agg(jsonb_build_object('nombre', pr.nombre, 'apellidos', pr.apellidos, 'tramo', ca.ambito)
+                              order by array_position(array['infantil', 'y1_y5', 'y6_y9', 'y10_y12'], ca.ambito))
+             from public.cargo ca
+             join public.curso cu on cu.id = ca.curso_id
+             join public.persona_responsable pr on pr.id = ca.persona_id
+             where cu.nombre = p_curso and ca.tipo = 'jefe_equipo'
+               and ca.ambito in (select jsonb_array_elements_text(g -> 'tramos'))), '[]'))
+           order by array_position(array['infantil', 'y1_y5', 'y6_y9', 'y10_y12'], g -> 'tramos' ->> 0))
+    from jsonb_array_elements(v_grupos) g
+  ), '[]');
+end $$;
+
+revoke execute on function public.listar_equipo(text, text) from public, anon;
+grant execute on function public.listar_equipo(text, text) to authenticated;
+
+-- Informe del Equipo de Individuación de unos tramos. Con p_agrupar (versión para la jefatura) sale con los tramos de
+-- su grupo (si su tramo queda oculto solo, junto con los demás ocultos), y devuelve los tramos con los que ha salido.
+create or replace function privado.informe_jefatura_equipo(p_curso text, p_tramos text[], p_agrupar boolean)
+returns jsonb
+language plpgsql volatile security definer set search_path = '' as $$
+declare
+  v_tramos text[] := case when p_agrupar then privado.tramos_jefatura(p_curso, p_tramos) else p_tramos end;
+begin
+  return jsonb_build_object('tramos', to_jsonb(v_tramos))
+         || privado.informe_partes(p_curso, 'equipo_individualizacion', 'tramo', v_tramos);
+end $$;
+
+revoke execute on function privado.informe_jefatura_equipo(text, text[], boolean) from public, anon, authenticated;
+
+drop function if exists public.informe_equipo(text, text[], boolean);
+create or replace function public.informe_equipo(p_curso text, p_tramos text[], p_registrar boolean default false,
+                                                  p_version text default 'completa')
+returns jsonb
+language plpgsql volatile security definer set search_path = '' as $$
+declare
+  v_previo text := current_setting('encuestas.version_docente', true);
+  v_inf    jsonb;
+begin
+  perform permisos.exigir();
+  if not permisos.ve_todo() then
+    raise exception 'Sin acceso a los informes de responsables' using errcode = '42501';
+  end if;
+  if p_tramos is null or cardinality(p_tramos) = 0
+     or not p_tramos <@ array['infantil', 'y1_y5', 'y6_y9', 'y10_y12'] then
+    raise exception 'Tramos no válidos';
+  end if;
+  if p_version is null or p_version not in ('completa', 'jefatura') then
+    raise exception 'Versión del informe no válida' using errcode = '22023';
+  end if;
+  if p_version = 'jefatura' then perform set_config('encuestas.version_docente', 'on', true); end if;
+  v_inf := privado.informe_jefatura_equipo(p_curso, p_tramos, p_version = 'jefatura');
+  perform set_config('encuestas.version_docente', coalesce(v_previo, ''), true);
+  if p_registrar then
+    perform privado.registrar('informe_responsable', jsonb_build_object('curso', p_curso, 'tipo', 'equipo_individuacion',
+      'ambito', array_to_string(array(select jsonb_array_elements_text(v_inf -> 'tramos')), ', '), 'version', p_version));
+  end if;
+  return v_inf || jsonb_build_object('version', p_version);
+end $$;
+
+revoke execute on function public.informe_equipo(text, text[], boolean, text) from public, anon;
+grant execute on function public.informe_equipo(text, text[], boolean, text) to authenticated;

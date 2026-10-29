@@ -225,7 +225,7 @@ begin
     'codigo', v_codigo, 'tipo', p_tipo, 'curso', v_datos ->> 'curso', 'objeto', btrim(v_datos ->> 'objeto'),
     'docente', v_datos -> 'docente', 'persona', v_datos -> 'persona', 'tramos', v_datos -> 'tramos', 'vista', v_datos ->> 'vista',
     'filtros', nullif(coalesce(v_datos -> 'filtros', '{}'), '{}'), 'archivo', v_datos ->> 'archivo',
-    'version', case when v_datos ->> 'version' in ('completa', 'docente') then v_datos ->> 'version' end,
+    'version', case when v_datos ->> 'version' in ('completa', 'docente', 'jefatura') then v_datos ->> 'version' end,
     'informes', case when p_tipo = 'zip' then v_informes end,
     'nombre', v_perfil.nombre)));
   return jsonb_build_object('codigo', v_codigo, 'nombre', v_perfil.nombre, 'fecha', v_fecha, 'informes', v_informes);

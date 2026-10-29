@@ -276,7 +276,8 @@ function describir(e: EntradaRegistro): string {
           : k === "etapa" ? t.etapas[v as keyof typeof t.etapas] ?? String(v)
           : `${k}: ${v}`).join(", "));
     }
-    case "informe_responsable": return t.reg_informe_responsable(e.usuario, String(d.ambito ?? d.tipo ?? ""));
+    case "informe_responsable": return t.reg_informe_responsable(e.usuario, String(d.ambito ?? d.tipo ?? ""))
+      + (d.version === "completa" ? ` · ${t.version_completa_corta}` : d.version === "jefatura" ? ` · ${t.version_jefatura_corta}` : "");
     case "exportacion": {
       const filtros = Object.entries((d.filtros ?? {}) as Record<string, string>).map(([k, v]) => `${k}: ${v}`).join(" · ");
       return t.reg_exportacion(e.usuario, t.exp_vistas[String(d.vista)] ?? String(d.vista), String(d.formato).toUpperCase(), filtros);

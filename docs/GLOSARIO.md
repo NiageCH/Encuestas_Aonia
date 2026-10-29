@@ -98,7 +98,7 @@ En Accesos, la pestaña se llama «Descargas» y la otra «Personas y actividad�
 
 ## Criterio de anonimato según el rol
 
-Confirmado por escrito por Mark el (fecha pendiente) (§5.0 de la especificación):
+Confirmado por escrito por Mark el 28/10/2026 (§5.0 de la especificación):
 
 | Término | Uso |
 |---|---|
@@ -107,6 +107,7 @@ Confirmado por escrito por Mark el (fecha pendiente) (§5.0 de la especificació
 | Versión completa | Informe del profesor/a para Dirección y administración: todo, con la marca, y el detalle de cada pregunta en cada clase. Bajo el nombre: «Versión completa (Dirección y administración) · no entregar al docente». |
 | Versión docente | Informe que recibe el docente, con el mínimo de 5: «Versión docente (la que recibe el docente)». |
 | Detalle por clase | Sección de la versión completa: cada pregunta en cada clase (asignatura y grupo). |
+| Versión para la jefatura | Informe de jefatura (de departamento o del Equipo de Individuación) con el mínimo de 5: «Versión para la jefatura (la que recibe la jefatura)». La completa lleva «no entregar a la jefatura». Botones: «Descargar PDF completo» y «PDF versión para la jefatura». |
 
 ## Respuestas abiertas y envío de informes
 
@@ -114,8 +115,8 @@ Confirmado por escrito por Mark el (fecha pendiente) (§5.0 de la especificació
 |---|---|
 | Respuestas abiertas | Entrada del menú y título de la pantalla. Lo que cada persona escribió, «tal cual». |
 | «¿Qué echa en falta en el Colegio?» · «Comentarios» | Nombres comunes de las preguntas abiertas en la pantalla; cada cuestionario guarda su texto exacto. |
-| Plan de Igualdad: necesidades que debería contener · medidas para promover la igualdad de oportunidades · otras sugerencias | Las tres preguntas abiertas del Plan de Igualdad (personal). |
-| Envío al profesorado | Pestaña de Informes por persona (solo administración). |
+| Plan de Igualdad: necesidades que debería contener · medidas para promover la igualdad de oportunidades · otras sugerencias | Las tres preguntas abiertas del Plan de Igualdad (personal). Nombres reservados: no se cargan hasta que el Colegio decida quién puede verlas. |
+| Envío al profesorado | Pestaña de Informes por persona (solo administración). Dentro, «Informes del profesorado» e «Informes de jefatura». |
 | Enlace personal | El que recibe cada docente por correo; «caduca» a los 7 días; se puede «anular». |
 | Apertura · descarga | Lo que se registra de cada enlace. |
 | Modo de pruebas | Mientras no exista `encuestas@sfpaula.com`: los correos van a un correo de Niage, con «[PRUEBA]» en el asunto. |

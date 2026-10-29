@@ -114,7 +114,10 @@ function NivelEquipos() {
                   <p className="eyebrow">{t.resp_informe}</p>
                   <h3 className="en-prof-nombre">{tituloEquipo(g.tramos)}</h3>
                   {g.responsables.length > 0 && <p className="en-hint">{t.eq_responsables}: {responsablesEquipo(g)}</p>}
-                  <BotonPdf generar={async () => (await import("../pdf/generar")).descargarInformeEquipo(g)} />
+                  <p className="en-version">{t.jefe_version_pantalla}</p>
+                  <BotonPdf generar={async () => (await import("../pdf/generar")).descargarInformeEquipo(g, "completa")}
+                            jefatura={async () => (await import("../pdf/generar")).descargarInformeEquipo(g, "jefatura")} />
+                  {g.tramos.length === 1 && <p className="en-hint">{t.eq_version_jefatura_nota}</p>}
                 </div>
                 <SeccionDatos key={g.tramos.join("-")} titulo={t.resp_equipo} subtitulo={t.eq_sub_tramo} etiquetas={t.escala_acuerdo_per}
                               nota={g.tramos.length > 1 ? t.eq_compartido_nota : undefined}
@@ -179,7 +182,9 @@ function InformeDeJefe({ jefe }: { jefe: Jefe }) {
         <p className="eyebrow">{t.resp_informe}</p>
         <h3 className="en-prof-nombre">{jefe.nombre} {jefe.apellidos}</h3>
         <p className="en-hint">{t.jefe_departamentos(inf.departamentos)}</p>
-        <BotonPdf generar={async () => (await import("../pdf/generar")).descargarInformeJefe(jefe)} />
+        <p className="en-version">{t.jefe_version_pantalla}</p>
+        <BotonPdf generar={async () => (await import("../pdf/generar")).descargarInformeJefe(jefe, "completa")}
+                  jefatura={async () => (await import("../pdf/generar")).descargarInformeJefe(jefe, "jefatura")} />
         <div className="en-kpis en-kpis3" style={{ marginTop: ".6rem" }}>
           <AlumnosDepartamento titulo={tituloAlumnosJefe(inf.alumnos.departamentos)} m={inf.alumnos.media} />
         </div>
@@ -220,17 +225,23 @@ function SeccionDatos(props: { titulo: string; subtitulo: string; etiquetas: str
   return <DatosSeccion {...props} datos={datos} />;
 }
 
-function BotonPdf({ generar }: { generar: () => Promise<void> }) {
+/** Con jefatura (informes de jefatura): «PDF completo» (Dirección y administración) y «PDF versión para la jefatura». */
+function BotonPdf({ generar, jefatura }: { generar: () => Promise<void>; jefatura?: () => Promise<void> }) {
   const [estado, setEstado] = useState<"" | "generando" | "error">("");
-  async function pulsar() {
+  async function pulsar(f: () => Promise<void>) {
     setEstado("generando");
-    try { await generar(); setEstado(""); } catch { setEstado("error"); }
+    try { await f(); setEstado(""); } catch { setEstado("error"); }
   }
   return (
-    <p className="en-noprint">
-      <button type="button" className="btn primary" onClick={pulsar} disabled={estado === "generando"}>
-        📄 {estado === "generando" ? t.pdf_generando : t.pdf_descargar}
+    <p className="en-noprint en-botonera">
+      <button type="button" className="btn primary" onClick={() => pulsar(generar)} disabled={estado === "generando"}>
+        📄 {estado === "generando" ? t.pdf_generando : jefatura ? t.pdf_descargar_completa : t.pdf_descargar}
       </button>
+      {jefatura && (
+        <button type="button" className="btn" onClick={() => pulsar(jefatura)} disabled={estado === "generando"}>
+          📄 {t.pdf_descargar_jefatura}
+        </button>
+      )}
       {estado === "error" && <span className="en-error" role="alert"> {t.pdf_error}</span>}
     </p>
   );

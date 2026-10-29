@@ -33,7 +33,7 @@ El detalle está en [`docs/PROGRESO.md`](docs/PROGRESO.md).
 
 ## Principios
 
-1. **Anonimato según el rol** (criterio confirmado por Mark el (fecha pendiente), especificación §5.0). Para la coordinación y en el informe que recibe cada docente, ningún resultado agregado con menos de **5 respuestas**, con **supresión complementaria**: si en un reparto queda una sola parte oculta, se oculta también la siguiente más pequeña para que no se pueda deducir restando. Dirección y administración lo ven todo, con la marca «menos de 5». Se aplica en la base de datos, no en pantalla.
+1. **Anonimato según el rol** (criterio confirmado por Mark el 28/10/2026, especificación §5.0). Para la coordinación y en el informe que recibe cada docente, ningún resultado agregado con menos de **5 respuestas**, con **supresión complementaria**: si en un reparto queda una sola parte oculta, se oculta también la siguiente más pequeña para que no se pueda deducir restando. Dirección y administración lo ven todo, con la marca «menos de 5». Se aplica en la base de datos, no en pantalla.
 2. **Sin datos identificativos.** No se cargan IPs, identificadores de Encuesta Fácil, fechas de respuesta ni sexo. Las respuestas abiertas, tal cual, solo para Dirección y administración y sin enlace con las respuestas cerradas (§7.9).
 3. **Las respuestas individuales nunca llegan al cliente.** Solo funciones (RPC) que aplican permisos y el criterio de cada rol; la única excepción son los textos de las respuestas abiertas, sueltos. Las exportaciones y los PDF salen de esas mismas funciones.
 4. **Nada de datos del Colegio ni secretos en git.**

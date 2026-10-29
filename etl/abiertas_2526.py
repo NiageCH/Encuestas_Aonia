@@ -7,7 +7,8 @@ personal), pero sin ningún enlace con las respuestas cerradas de la misma perso
 Qué columnas son preguntas abiertas:
 - las de «Respuesta abierta» de Encuesta Fácil, salvo las que piden el nombre de un docente o de la optativa (sirven
   solo para atribuir valoraciones, §7.2, y no se cargan);
-- en personal, las tres de «respuesta libre» del bloque del Plan de Igualdad.
+- en personal, las tres de «respuesta libre» del bloque del Plan de Igualdad, que de momento NO se cargan: el Colegio
+  tiene que decidir quién puede verlas (decisión del 28/10/2026). Se cuentan aparte.
 
 Este módulo solo extrae: no imprime ningún texto de respuesta. La carga está en cargar_abiertas_2526.py.
 """
@@ -31,6 +32,9 @@ CODIGOS = [
     (r"medidas podría adoptar el Colegio para promover la igualdad", "igualdad_medidas", None),
     (r"^Otras sugerencias", "igualdad_sugerencias", None),
 ]
+
+# Preguntas que no se cargan hasta que el Colegio decida quién puede verlas (28/10/2026).
+PENDIENTES = {"igualdad_necesidades", "igualdad_medidas", "igualdad_sugerencias"}
 
 # Columnas que piden un nombre (docente u optativa): no son opiniones y no se cargan.
 NOMBRES = re.compile(r"nombre de (tu|la) (profesora?|OPTATIVA)", re.IGNORECASE)
@@ -69,6 +73,7 @@ class Descartada:
     cuestionario: str
     texto: str
     n: int
+    pendiente: bool = False   # True: se cargará cuando el Colegio lo decida (Plan de Igualdad)
 
 
 def _codigo(texto: str) -> tuple:
@@ -116,6 +121,9 @@ def extraer(carpeta: Path) -> tuple:
                 p = PreguntaAbierta(d.codigo, d.colectivo, 0, codigo, texto, NOTA_FAMILIAS)
             else:
                 codigo, _ = _codigo(texto_col)
+                if codigo in PENDIENTES:
+                    descartadas.append(Descartada(d.codigo, texto_col, sum(1 for f in t.filas if t.valor(f, col.col)), True))
+                    continue
                 p = PreguntaAbierta(d.codigo, d.colectivo, 0, codigo, texto_col)
             propias.append((col, p))
         for fila in t.filas:

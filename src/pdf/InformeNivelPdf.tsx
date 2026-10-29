@@ -78,6 +78,9 @@ export interface DatosNivelPdf {
   alumnos?: AlumnosDepartamentoPdf[];
   /** Texto en lugar de las secciones cuando no hay ninguna (departamento sin datos de reuniones). */
   sinSecciones?: string;
+  /** Informes de jefatura: completa (Dirección y administración) o la de la jefatura, con el mínimo de 5. Sin versión, el de
+   *  Dirección y el de todo el equipo, que solo descargan Dirección y administración. */
+  version?: "completa" | "jefatura";
   sello: SelloDescarga;
 }
 
@@ -119,18 +122,25 @@ function Seccion({ seccion, primera }: { seccion: SeccionPdf; primera: boolean }
   );
 }
 
-export function InformeNivelPdf({ eyebrow, titulo, subtitulo, secciones, alumnos, sinSecciones, sello }: DatosNivelPdf) {
+export function InformeNivelPdf({ eyebrow, titulo, subtitulo, secciones, alumnos, sinSecciones, version, sello }: DatosNivelPdf) {
+  const conMinimo = version === "jefatura";
   const hayComplementaria = secciones.some((x) => x.informe.preguntas.some((p) => p.resultado.total.motivo === "complementaria")
     || x.informe.total.motivo === "complementaria");
   return (
     <Document title={`${eyebrow} · ${titulo}`} author="Colegio Internacional de Sevilla, San Francisco de Paula" subject={t.desc_asunto} language="es">
       <Page size="A4" style={base.pagina}>
         <MarcaAgua />
-        <Cabecera subtitulo={t.pdf_cab_resp} />
+        <Cabecera subtitulo={version ? `${t.pdf_cab_resp} · ${conMinimo ? t.version_jefatura_corta : t.version_completa_corta}` : t.pdf_cab_resp} />
         <View style={base.cuerpo}>
           <Text style={base.eyebrow}>{eyebrow}</Text>
           <Text style={base.titulo}>{titulo}</Text>
           <Text style={base.muted}>{subtitulo}</Text>
+          {version && (
+            <Text style={{ marginTop: 6, paddingVertical: 4, paddingHorizontal: 8, borderLeftWidth: 3, borderLeftColor: C.neutro,
+                           backgroundColor: C.neutroSuave, fontSize: 8.5, fontWeight: 700, color: C.ink }}>
+              {conMinimo ? t.version_jefatura : `${t.version_completa} · ${t.pdf_version_completa_jefatura}`}
+            </Text>
+          )}
 
           {secciones.length === 0 && sinSecciones && <Text style={[base.aviso, { marginTop: 14 }]}>{sinSecciones}</Text>}
           {secciones.map((x, i) => <Seccion key={i} seccion={x} primera={i === 0} />)}
@@ -151,10 +161,10 @@ export function InformeNivelPdf({ eyebrow, titulo, subtitulo, secciones, alumnos
           ))}
 
           <Text style={[base.nota, { marginTop: 14 }]}>{t.pdf_nota_escala}</Text>
-          {/* Solo los descargan Dirección y administración: con su criterio (§5.0). */}
-          <Text style={base.nota}>{t.leyenda_menos5}</Text>
+          {/* La versión para la jefatura, con el mínimo de 5; las demás, con el criterio de Dirección (§5.0). */}
+          <Text style={base.nota}>{conMinimo ? t.pdf_nota_oculto : t.leyenda_menos5}</Text>
           {hayComplementaria && <Text style={base.nota}>{t.pdf_nota_asterisco}</Text>}
-          <Text style={base.nota}>{t.aviso_cierre_direccion}</Text>
+          <Text style={base.nota}>{conMinimo ? t.aviso_cierre : t.aviso_cierre_direccion}</Text>
         </View>
         <Pie sello={sello} />
       </Page>
