@@ -230,9 +230,16 @@ Orden de carga: `cargar_2526.py` → `convertir_alexia_2526.py` → `cargar_asig
 - Conservación del registro de descargas: dos años desde cada descarga y borrado después (aprobada el 28/10/2026; va en el encargo de tratamiento, `docs/DESPLIEGUE.md`). Pendiente: construir el borrado periódico (hoy el registro no deja borrar nada).
 - Desplegada el 28/10/2026: copia previa `datos_locales/copias/nube_2026-10-28_0830` (comprobada), migración 20261027000029, 371 tests en la nube, validación y recuento sin diferencias, web publicada desde `f2dd38c`. Pendiente: que Rodrigo haga una descarga real en la web publicada y la busque por su código en Accesos › Descargas.
 
-## Criterio de anonimato de Dirección, respuestas abiertas y envío al profesorado (rama `anonimato-direccion`, 28/10/2026, sin subir)
+## Criterio de anonimato de Dirección, respuestas abiertas y envío al profesorado (rama `anonimato-direccion`, 28/10/2026, desplegada el 29/10/2026)
 
-Confirmado por escrito por Mark el 28/10/2026. Hecho en local, con tests; **pendiente del visto bueno de Rodrigo**:
+Confirmado por escrito por Mark el 28/10/2026. Visto bueno de Rodrigo el 29/10/2026. **Desplegado el 29/10/2026:**
+- copia previa `datos_locales/copias/nube_2026-10-29_0935`, restaurada y comprobada; recuento de 2025/26 idéntico antes y después;
+- migraciones 30, 31 y 32 en la nube; 512 tests en la nube en verde; validación sin diferencias (el validador compara ahora con el criterio de la versión docente, el del prototipo);
+- Edge Function `enviar-informes` con el remitente provisional `encuestas@niage.eu`, en **modo de pruebas** (sin `ENVIO_PROFESORADO`): no se envía nada al profesorado. **Faltan los datos SMTP de Brevo** (`SMTP_HOST`, `SMTP_PORT=465`, `SMTP_USER`, `SMTP_PASS`): hasta ponerlos, el envío de prueba da «Falta configurar el servidor de correo»;
+- web desplegada (`d426edf`);
+- respuestas abiertas en la nube: 15 preguntas y 730 respuestas (alumnado 616, familias 79, personal 35), sin el Plan de Igualdad.
+
+Lo construido:
 - **Criterio según el rol** (§5.0, migración 30): Dirección y administración ven también lo de menos de 5, marcado «menos de 5» con su número, sin complementaria, en vistas, informes, CSV y PDF. La coordinación y la versión docente, como antes.
 - **Informe del profesor/a en dos versiones** (§7.2): la completa añade el detalle de cada pregunta en cada clase; la cabecera del PDF dice la versión; en lote se elige.
 - **Respuestas abiertas** (§7.9, migración 31, `etl/cargar_abiertas_2526.py`): 15 preguntas y 730 respuestas, cargadas solo en local. Pantalla «Respuestas abiertas» para Dirección y administración, con filtros, registro de cada consulta y exportación con código.
