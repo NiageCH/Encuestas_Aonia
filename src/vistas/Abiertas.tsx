@@ -74,7 +74,9 @@ export function Abiertas() {
   }, [clave]);
 
   const nombreEtapa = (e: string) => t.etapas[e as keyof typeof t.etapas] ?? e;
-  const tituloPregunta = (c: string) => t.abi_preguntas[c as keyof typeof t.abi_preguntas] ?? delColectivo.find((p) => p.codigo === c)?.texto ?? c;
+  // Familias tiene un solo cuestionario: se ve el texto oficial de su pregunta. Alumnado y personal, el nombre común.
+  const tituloPregunta = (c: string) => (colectivo === "familias" ? delColectivo.find((p) => p.codigo === c)?.texto : undefined)
+    ?? t.abi_preguntas[c as keyof typeof t.abi_preguntas] ?? delColectivo.find((p) => p.codigo === c)?.texto ?? c;
   const titulos = Object.fromEntries((preguntas ?? []).map((p) => [p.cuestionario, p.cuestionario_titulo]));
   const varios = new Set(datos?.respuestas.map((r) => r.cuestionario)).size > 1;
 

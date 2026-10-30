@@ -7,8 +7,8 @@ personal), pero sin ningún enlace con las respuestas cerradas de la misma perso
 Qué columnas son preguntas abiertas:
 - las de «Respuesta abierta» de Encuesta Fácil, salvo las que piden el nombre de un docente o de la optativa (sirven
   solo para atribuir valoraciones, §7.2, y no se cargan);
-- en personal, las tres de «respuesta libre» del bloque del Plan de Igualdad, que de momento NO se cargan: el Colegio
-  tiene que decidir quién puede verlas (decisión del 28/10/2026). Se cuentan aparte.
+- en personal, las tres de «respuesta libre» del bloque del Plan de Igualdad (se cargan desde el 30/10/2026, decisión de
+  Mark: solo para Dirección y administración, como el resto).
 
 Este módulo solo extrae: no imprime ningún texto de respuesta. La carga está en cargar_abiertas_2526.py.
 """
@@ -33,19 +33,15 @@ CODIGOS = [
     (r"^Otras sugerencias", "igualdad_sugerencias", None),
 ]
 
-# Preguntas que no se cargan hasta que el Colegio decida quién puede verlas (28/10/2026).
-PENDIENTES = {"igualdad_necesidades", "igualdad_medidas", "igualdad_sugerencias"}
-
 # Columnas que piden un nombre (docente u optativa): no son opiniones y no se cargan.
 NOMBRES = re.compile(r"nombre de (tu|la) (profesora?|OPTATIVA)", re.IGNORECASE)
 
 # Familias: la exportación no trae el texto de sus dos preguntas abiertas (la cabecera es la del bloque). Se reconocen por
-# su orden y se les da el texto del mismo cuestionario en alumnado y personal, con una nota.
+# su orden y llevan el texto oficial del cuestionario, confirmado por Mark el 30/10/2026.
 FAMILIAS = [
-    ("echa_en_falta", "¿Qué echa en falta en el Colegio?"),
-    ("comentario", "Comentarios"),
+    ("echa_en_falta", "¿Qué es lo que echa en falta en el Colegio?"),
+    ("comentario", "Si desea añadir algún comentario, hágalo aquí por favor"),
 ]
-NOTA_FAMILIAS = "La exportación de Encuesta Fácil no trae el texto de esta pregunta: se deduce por su posición en el cuestionario."
 
 
 @dataclass
@@ -73,7 +69,6 @@ class Descartada:
     cuestionario: str
     texto: str
     n: int
-    pendiente: bool = False   # True: se cargará cuando el Colegio lo decida (Plan de Igualdad)
 
 
 def _codigo(texto: str) -> tuple:
@@ -118,12 +113,9 @@ def extraer(carpeta: Path) -> tuple:
             if d.colectivo == "familias":
                 codigo, texto = FAMILIAS[n_familias]
                 n_familias += 1
-                p = PreguntaAbierta(d.codigo, d.colectivo, 0, codigo, texto, NOTA_FAMILIAS)
+                p = PreguntaAbierta(d.codigo, d.colectivo, 0, codigo, texto)
             else:
                 codigo, _ = _codigo(texto_col)
-                if codigo in PENDIENTES:
-                    descartadas.append(Descartada(d.codigo, texto_col, sum(1 for f in t.filas if t.valor(f, col.col)), True))
-                    continue
                 p = PreguntaAbierta(d.codigo, d.colectivo, 0, codigo, texto_col)
             propias.append((col, p))
         for fila in t.filas:

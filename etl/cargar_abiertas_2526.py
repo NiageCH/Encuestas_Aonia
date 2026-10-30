@@ -31,18 +31,15 @@ from cuestionarios_2526 import CURSO  # noqa: E402
 def resumen(preguntas, descartadas) -> list:
     lineas = ["| Cuestionario | Pregunta | Respuestas |", "|---|---|---:|"]
     for p in preguntas:
-        nota = " (texto deducido: no viene en la exportación)" if p.nota else ""
-        lineas.append(f"| {p.cuestionario} | {p.texto}{nota} | {len(p.respuestas)} |")
+        lineas.append(f"| {p.cuestionario} | {p.texto} | {len(p.respuestas)} |")
     total = sum(len(p.respuestas) for p in preguntas)
     lineas.append(f"| **Total** | {len(preguntas)} preguntas | **{total}** |")
     por_col = Counter()
     for p in preguntas:
         por_col[p.colectivo] += len(p.respuestas)
     lineas += ["", "Por colectivo: " + ", ".join(f"{c} {n}" for c, n in sorted(por_col.items())), "",
-               "No se cargan hasta que el Colegio decida quién puede verlas (Plan de Igualdad, 28/10/2026):", ""]
-    lineas += [f"- {d.cuestionario}: «{d.texto}» ({d.n} respuestas)" for d in descartadas if d.pendiente]
-    lineas += ["", "No se cargan (piden un nombre, no una opinión; solo sirven para atribuir valoraciones, §7.2):", ""]
-    lineas += [f"- {d.cuestionario}: «{d.texto}» ({d.n} respuestas)" for d in descartadas if not d.pendiente]
+               "No se cargan (piden un nombre, no una opinión; solo sirven para atribuir valoraciones, §7.2):", ""]
+    lineas += [f"- {d.cuestionario}: «{d.texto}» ({d.n} respuestas)" for d in descartadas]
     return lineas
 
 
