@@ -114,8 +114,9 @@ Confirmado por escrito por Mark el 28/10/2026 (§5.0 de la especificación):
 | Término | Uso |
 |---|---|
 | Respuestas abiertas | Entrada del menú y título de la pantalla. Lo que cada persona escribió, «tal cual». |
-| «¿Qué echa en falta en el Colegio?» · «Comentarios» | Nombres comunes de las preguntas abiertas en la pantalla; cada cuestionario guarda su texto exacto. |
-| Plan de Igualdad: necesidades que debería contener · medidas para promover la igualdad de oportunidades · otras sugerencias | Las tres preguntas abiertas del Plan de Igualdad (personal). Nombres reservados: no se cargan hasta que el Colegio decida quién puede verlas. |
+| «¿Qué echa en falta en el Colegio?» · «Comentarios» | Nombres comunes de las preguntas abiertas en la pantalla de alumnado y personal; cada cuestionario guarda su texto exacto. |
+| «¿Qué es lo que echa en falta en el Colegio?» · «Si desea añadir algún comentario, hágalo aquí por favor» | Textos oficiales de las dos preguntas abiertas de familias (confirmados el 30/10/2026); la pantalla de familias los muestra tal cual. |
+| Plan de Igualdad: necesidades que debería contener · medidas para promover la igualdad de oportunidades · otras sugerencias | Nombres comunes de las tres preguntas abiertas del Plan de Igualdad (personal). Se cargan desde el 30/10/2026, solo para Dirección y administración. |
 | Envío al profesorado | Pestaña de Informes por persona (solo administración). Dentro, «Informes del profesorado» e «Informes de jefatura». |
 | Enlace personal | El que recibe cada docente por correo; «caduca» a los 7 días; se puede «anular». |
 | Apertura · descarga | Lo que se registra de cada enlace. |

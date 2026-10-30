@@ -2,7 +2,7 @@
 -- filtros de su colectivo, cada consulta en el registro y la exportación en el registro de descargas.
 begin;
 \ir fixtures/datos_ejemplo.psql
-select plan(24);
+select plan(26);
 
 set local role postgres;
 do $$
@@ -12,17 +12,19 @@ declare
   c_per integer := (select id from public.cuestionario where codigo = 'PER_T');
   g_a integer := (select id from public.grupo where nombre = 'Y7 A' and curso_id = (select id from public.curso where nombre = '2000/01'));
   g_b integer := (select id from public.grupo where nombre = 'Y7 B' and curso_id = (select id from public.curso where nombre = '2000/01'));
-  p1 integer; p2 integer; p3 integer;
+  p1 integer; p2 integer; p3 integer; p4 integer;
 begin
   insert into public.pregunta_abierta (cuestionario_id, orden, codigo, texto) values (c_pai, 1, 'echa_en_falta', '¿Qué echas en falta?') returning id into p1;
   insert into public.pregunta_abierta (cuestionario_id, orden, codigo, texto) values (c_fam, 1, 'comentario', 'Comentarios') returning id into p2;
   insert into public.pregunta_abierta (cuestionario_id, orden, codigo, texto) values (c_per, 1, 'comentario', 'Comentarios') returning id into p3;
+  insert into public.pregunta_abierta (cuestionario_id, orden, codigo, texto) values (c_per, 2, 'igualdad_medidas', '¿Qué medidas…?') returning id into p4;
   insert into privado.respuesta_abierta (pregunta_id, grupo_id, texto) values
     (p1, g_a, 'Más deporte'), (p1, g_a, 'Una biblioteca más grande'), (p1, g_b, 'Nada');
   insert into privado.respuesta_abierta (pregunta_id, etapas, texto) values
     (p2, '{pai}', 'Gracias'), (p2, '{pai,bachillerato}', 'Más comunicación');
   insert into privado.respuesta_abierta (pregunta_id, docente, antiguedad, texto) values
-    (p3, true, 'mas_de_un_ano', 'Comentario de un docente'), (p3, false, 'primer_ano', 'Comentario de no docente');
+    (p3, true, 'mas_de_un_ano', 'Comentario de un docente'), (p3, false, 'primer_ano', 'Comentario de no docente'),
+    (p4, true, 'mas_de_un_ano', 'Medida del Plan de Igualdad');
 end $$;
 create temp table antes as select (select count(*) from public.registro_actividad where accion = 'abiertas_consulta')::int as n;
 grant select on antes to authenticated;
@@ -39,10 +41,12 @@ select throws_ok($$ select public.abiertas('{"curso":"2000/01","colectivo":"alum
   'la coordinación no ve las respuestas abiertas, ni de su etapa');
 select throws_ok($$ select public.registrar_descarga('csv', '{"objeto": "Respuestas abiertas", "vista": "abiertas", "archivo": "a.csv"}') $$,
   '42501', null, 'la coordinación no puede exportarlas');
+select throws_ok($$ select public.abiertas('{"curso":"2000/01","colectivo":"personal","pregunta":"igualdad_medidas"}') $$, '42501', null,
+  'la coordinación no ve las del Plan de Igualdad (30/10/2026)');
 
 -- Dirección
 set local role postgres; select pg_temp.como('direccion'); set local role authenticated;
-select is(jsonb_array_length(public.abiertas_preguntas('2000/01')), 3, 'Dirección ve las tres preguntas abiertas');
+select is(jsonb_array_length(public.abiertas_preguntas('2000/01')), 4, 'Dirección ve las cuatro preguntas abiertas');
 select is((public.abiertas_preguntas('2000/01') -> 0 ->> 'n')::int, 3, '... con su número de respuestas');
 create temp table r_alu as select public.abiertas('{"curso":"2000/01","colectivo":"alumnos","pregunta":"echa_en_falta"}') as r;
 select is((select (r ->> 'n')::int from r_alu), 3, 'todas las respuestas, también las de un grupo con menos de 5');
@@ -58,6 +62,8 @@ select is((public.abiertas('{"curso":"2000/01","colectivo":"personal","pregunta"
   'Comentario de no docente', 'personal: filtro docente o no docente');
 select is((public.abiertas('{"curso":"2000/01","colectivo":"personal","pregunta":"comentario","antiguedad":"mas_de_un_ano"}') ->> 'n')::int, 1,
   'personal: filtro de antigüedad');
+select is((public.abiertas('{"curso":"2000/01","colectivo":"personal","pregunta":"igualdad_medidas"}') -> 'respuestas' -> 0 ->> 'texto'),
+  'Medida del Plan de Igualdad', 'Dirección ve las del Plan de Igualdad (30/10/2026)');
 select throws_ok($$ select public.abiertas('{"curso":"2000/01","colectivo":"personal","pregunta":"comentario","docente":true,"antiguedad":"primer_ano"}') $$,
   '22023', null, 'los filtros de personal no se combinan');
 select throws_ok($$ select public.abiertas('{"curso":"2000/01","colectivo":"familias","pregunta":"comentario","grupo":"Y7 A"}') $$,
@@ -72,7 +78,7 @@ select is((public.abiertas('{"curso":"2000/01","colectivo":"familias","pregunta"
 
 -- Registro: cada consulta
 set local role postgres;
-select is((select count(*)::int from public.registro_actividad where accion = 'abiertas_consulta') - (select n from antes), 7,
+select is((select count(*)::int from public.registro_actividad where accion = 'abiertas_consulta') - (select n from antes), 8,
   'cada consulta queda en el registro de actividad');
 select is((select detalle -> 'filtro' ->> 'grupo' from public.registro_actividad where accion = 'abiertas_consulta' and detalle -> 'filtro' ? 'grupo'
            order by id desc limit 1), 'Y7 A', '... con sus filtros');

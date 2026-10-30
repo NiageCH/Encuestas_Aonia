@@ -235,7 +235,7 @@ Orden de carga: `cargar_2526.py` → `convertir_alexia_2526.py` → `cargar_asig
 Confirmado por escrito por Mark el 28/10/2026. Visto bueno de Rodrigo el 29/10/2026. **Desplegado el 29/10/2026:**
 - copia previa `datos_locales/copias/nube_2026-10-29_0935`, restaurada y comprobada; recuento de 2025/26 idéntico antes y después;
 - migraciones 30, 31 y 32 en la nube; 512 tests en la nube en verde; validación sin diferencias (el validador compara ahora con el criterio de la versión docente, el del prototipo);
-- Edge Function `enviar-informes` con el remitente provisional `encuestas@niage.eu`, en **modo de pruebas** (sin `ENVIO_PROFESORADO`): no se envía nada al profesorado. **Faltan los datos SMTP de Brevo** (`SMTP_HOST`, `SMTP_PORT=465`, `SMTP_USER`, `SMTP_PASS`): hasta ponerlos, el envío de prueba da «Falta configurar el servidor de correo»;
+- Edge Function `enviar-informes` con el remitente provisional `encuestas@niage.eu`, en **modo de pruebas** (sin `ENVIO_PROFESORADO`): no se envía nada al profesorado. Datos SMTP de Brevo puestos el 29/10/2026; envío de prueba a rodrigo@niage.es el 29/10/2026: correo, enlace y apertura registrados; la descarga del PDF desde el enlace no quedó registrada (pendiente de repetir);
 - web desplegada (`d426edf`);
 - respuestas abiertas en la nube: 15 preguntas y 730 respuestas (alumnado 616, familias 79, personal 35), sin el Plan de Igualdad.
 
@@ -245,11 +245,20 @@ Lo construido:
 - **Respuestas abiertas** (§7.9, migración 31, `etl/cargar_abiertas_2526.py`): 15 preguntas y 730 respuestas, cargadas solo en local. Pantalla «Respuestas abiertas» para Dirección y administración, con filtros, registro de cada consulta y exportación con código.
 - **Informes de jefatura en dos versiones** (decisión del 28/10/2026): completa («no entregar a la jefatura») y para la jefatura, con el mínimo de 5.
 - **Envío al profesorado y a las jefaturas** (§7.10, migración 32, Edge Function `enviar-informes`): enlace personal de 7 días a la versión docente o a la versión para la jefatura, aperturas y descargas registradas, envío individual o por departamento, etapa o tramo con vista previa. En **modo de pruebas**: solo a correos de Niage.
-- Respuestas abiertas: 15 preguntas y 730 respuestas; las tres del Plan de Igualdad no se cargan hasta que el Colegio decida quién puede verlas. Nombres de las preguntas de familias, provisionales.
+- Respuestas abiertas: 15 preguntas y 730 respuestas al desplegar; el Plan de Igualdad y los textos oficiales de familias llegaron el 30/10/2026 (sección siguiente).
 - Conservación para el encargo: respuestas (también las abiertas), propuesta de 5 cursos y borrado después, pendiente de confirmar por el Colegio; envíos y aperturas, dos años.
 - Enlace sin sesión: caducado o anulado, aislamiento entre personas y funciones, tokens alterados o inventados y límite de 300 intentos fallidos por minuto, con alerta en el registro (`28_enlace_sin_sesion.sql`).
 - Tests: 512 pgTAP (25 a 28 nuevos) y 51 de vitest.
-- Pendiente del Colegio: quién puede ver las preguntas abiertas del Plan de Igualdad; los textos de las preguntas abiertas de familias.
+- Decididos por Mark el 30/10/2026: el Plan de Igualdad y los textos de familias (sección siguiente).
+
+## Plan de Igualdad y textos oficiales de familias en las respuestas abiertas (rama `abiertas-igualdad-familias`, 30/10/2026)
+
+Decisión de Mark del 30/10/2026 (§7.9):
+- **Plan de Igualdad:** se cargan sus tres preguntas abiertas (20 respuestas), solo para Dirección y administración, con el mismo registro que el resto. Sin migración: cambia solo la carga (`etl/abiertas_2526.py`).
+- **Familias:** textos oficiales «¿Qué es lo que echa en falta en el Colegio?» y «Si desea añadir algún comentario, hágalo aquí por favor», sin la nota de «texto deducido». La pantalla de familias muestra el texto oficial.
+- Total: 18 preguntas y 750 respuestas (alumnado 616, familias 79, personal 55).
+- Tests: 514 pgTAP (dos nuevos en `26_respuestas_abiertas.sql`: la coordinación no ve las del Plan de Igualdad y Dirección sí) y 51 de vitest.
+- Despliegue: `docs/DESPLIEGUE.md` §7.
 
 ## Tareas con fecha
 

@@ -215,3 +215,13 @@ Confirmado por escrito por Mark el 28/10/2026. **No se sube nada hasta el visto 
 7. **Respuestas abiertas en la nube, en este mismo paso** (con el visto bueno de Rodrigo) (15 preguntas y 730 respuestas; las del Plan de Igualdad no se cargan hasta que el Colegio decida quién puede verlas): `etl/cargar_abiertas_2526.py --ensayo` (recuento) y `etl/cargar_abiertas_2526.py --remoto`. Ojo: `cargar_2526.py` borra las abiertas al recargar el curso; hay que volver a cargarlas después.
 8. Comprobaciones en la web publicada (Rodrigo, con su cuenta): un resultado de menos de 5 marcado como Dirección; la versión completa y la docente de un informe; las dos versiones de un informe de jefatura; la pantalla de respuestas abiertas y su registro; un envío de prueba a un correo de Niage, abrir el enlace y ver la apertura en «Enlaces enviados».
 9. **Para enviar de verdad al profesorado** (más adelante): dominio `sfpaula.com` en Brevo, `REMITENTE=encuestas@sfpaula.com`, `ENVIO_PROFESORADO=activo` y, en la base de datos, `update privado.configuracion_envio set modo = 'activo'`. Las dos cosas a la vez; si falta una, no sale nada al profesorado.
+
+## 7. Plan de Igualdad y textos oficiales de familias en las respuestas abiertas (rama `abiertas-igualdad-familias`, 30/10/2026)
+
+Sin migraciones ni cambios en la Edge Function. Orden:
+1. Copia de la nube y recuento de 2025/26 y de las respuestas abiertas (15 preguntas, 730 respuestas).
+2. Unión a main y comprobación; Rodrigo hace el push.
+3. `etl/cargar_abiertas_2526.py --ensayo` (recuento) y `etl/cargar_abiertas_2526.py --remoto`: borra las abiertas de 2025/26 y las vuelve a cargar todas (18 preguntas, 750 respuestas). El registro de consultas guarda el código de la pregunta, no su identificador: no se pierde nada.
+4. Recuento después: 2025/26 idéntico; abiertas, alumnado 616, familias 79 y personal 55.
+5. Web (`npx clever-tools deploy`): la pantalla de familias muestra el texto oficial.
+

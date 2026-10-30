@@ -327,14 +327,14 @@ Funciones del mockup `referencia/mockups/Mockup_Encuestas_5_admin_usuarios.png`;
 - Tests: `supabase/tests/23_registro_descargas.sql`, `src/pdf/proteger.test.ts` y `src/exportacion/csv.test.ts`.
 
 ### 7.9 Respuestas abiertas (confirmado por Mark el 28/10/2026)
-- Se cargan **tal cual**, sin ocultar nada, desde los ficheros de 2025/26 (`etl/cargar_abiertas_2526.py`, después de `cargar_2526.py`). Son 15 preguntas y 730 respuestas: «¿Qué echas en falta en el Colegio?» y «Comentarios» en cada cuestionario del alumnado (la de Y12 solo tiene comentarios), en familias y en personal. En familias la exportación no trae el texto de sus dos preguntas: se deduce por su posición y la pantalla lo avisa.
+- Se cargan **tal cual**, sin ocultar nada, desde los ficheros de 2025/26 (`etl/cargar_abiertas_2526.py`, después de `cargar_2526.py`). Son 18 preguntas y 750 respuestas: «¿Qué echas en falta en el Colegio?» y «Comentarios» en cada cuestionario del alumnado (la de Y12 solo tiene comentarios), en familias y en personal, y las tres del Plan de Igualdad en personal.
 - **No se cargan** las columnas que piden el nombre de un docente o de la optativa (solo sirven para atribuir valoraciones, §7.2).
 - **Solo Dirección y administración.** Nunca la coordinación ni los informes del profesorado. Entrada propia del menú: «Respuestas abiertas» (`#/abiertas`).
 - **Pantalla por colectivo y pregunta**, con los filtros del colectivo: alumnado (etapa, cuestionario y grupo), familias (etapa) y personal (docente o no docente, o antigüedad, de uno en uno).
 - **Sin vínculo con las respuestas cerradas:** cada respuesta abierta va suelta (`privado.respuesta_abierta`, sin `respuesta_id`), con identificador aleatorio y cargada en orden aleatorio, con solo lo necesario para los filtros. La RPC devuelve solo los textos.
 - **Registro:** cada consulta queda en el registro de actividad (colectivo, pregunta, filtros y número de respuestas; nunca el texto). La exportación (CSV y PDF) lleva la marca de confidencialidad, su código y queda en el registro de descargas.
-- **Plan de Igualdad (decisión del 28/10/2026):** sus tres preguntas abiertas (20 respuestas) **no se cargan** hasta que el Colegio decida quién puede verlas. La carga las cuenta aparte. Quedan 15 preguntas y 730 respuestas.
-- **Preguntas de familias:** los nombres «¿Qué echa en falta en el Colegio?» y «Comentarios» son provisionales hasta que lo confirme el Colegio.
+- **Plan de Igualdad (decisión de Mark del 30/10/2026):** sus tres preguntas abiertas (20 respuestas) se cargan como las demás, visibles **solo para Dirección y administración**, con el mismo registro. Del 28/10 al 30/10 estuvieron sin cargar, a la espera de esa decisión.
+- **Preguntas de familias (textos oficiales, confirmados por Mark el 30/10/2026):** «¿Qué es lo que echa en falta en el Colegio?» y «Si desea añadir algún comentario, hágalo aquí por favor». La exportación de Encuesta Fácil no los trae (la cabecera es la del bloque): la carga reconoce cada pregunta por su posición y le pone su texto oficial. En la pantalla, familias muestra ese texto; alumnado y personal, el nombre común de la pregunta.
 - **Conservación (28/10/2026, para el encargo de tratamiento):** el mismo plazo que el resto de respuestas. Propuesta, pendiente de confirmar por el Colegio: **5 cursos y después se borran**.
 - RPC: `abiertas_preguntas`, `abiertas`, `abiertas_grupos` (migración 20261028000031). Tests: `supabase/tests/26_respuestas_abiertas.sql`.
 
