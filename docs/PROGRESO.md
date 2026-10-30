@@ -268,7 +268,12 @@ Petición de Mark; propuesta con visto bueno de Rodrigo el 30/10/2026, en los tr
 - **Destinos en otra pantalla:** Inicio (recomendación, aspectos, preguntas comunes, más valorados, recomendadores), departamento de Personal → informe de su jefatura centrado en él, asignatura de Alumnado → su profesorado (RPC `profesores_de_clase`, migración 20261030000042), clase del informe del profesor/a → su detalle (versión completa), profesorado de los departamentos de una jefatura.
 - **Alumnado (decisión del 30/10/2026):** satisfacción general por grupo y detalle por pregunta de cada bloque, con las escalas de sus encuestas. El CSV y el PDF los incluyen.
 - Tests: 538 pgTAP (24 nuevos en `29_detalle_al_pulsar.sql`: cada destino con el criterio de cada rol) y 61 de vitest (10 nuevos en `src/detalle.test.ts`). Pruebas en el navegador en ordenador, con teclado y en móvil, como Dirección y como coordinación; capturas en `datos_locales/capturas_detalle/`.
-- Pendiente: visto bueno de Rodrigo a las capturas y subida (`docs/DESPLIEGUE.md` §8).
+- **Desplegado el 30/10/2026** (`docs/DESPLIEGUE.md` §8):
+  - copia previa `datos_locales/copias/nube_2026-10-30_1339`, restaurada y comprobada;
+  - migración 42 en la nube (la única pendiente); 538 tests en la nube en verde; validación sin diferencias; recuento de 2025/26 idéntico antes y después;
+  - web desplegada (`991cf49`); comprobada sin sesión: sirve la versión nueva y `profesores_de_clase` rechaza a quien no tiene sesión;
+  - segunda base local y web de la rama paradas.
+- Con esto, toda la Fase 1 que está en main está en producción. Fuera queda solo la rama `fase2` (local hasta que el Colegio valide la Fase 1).
 
 ## Tareas con fecha
 
