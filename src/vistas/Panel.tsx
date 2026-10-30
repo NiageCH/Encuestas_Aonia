@@ -6,11 +6,14 @@ import { useEffect, useState } from "react";
 import { useAyuda } from "../componentes/Ayuda";
 import { BarraReparto, lineasOculto, textoReparto } from "../componentes/Graficos";
 import { Exportar } from "../componentes/Exportar";
+import { useNavegacion } from "../componentes/Detalle";
+import type { Seccion } from "../navegacion";
+import { DETALLE as DETALLE_PERSONAL } from "./Personal";
 import { Migas } from "../componentes/Marco";
 import { MarcaMenos5, Oculto } from "../componentes/Oculto";
 import {
-  comparacionRecomendacion, opciones, preguntasComunes, puntosColectivo, resultados,
-  type BloqueComparado, type Colectivo, type Fila, type Filtro, type PreguntaComun, type Punto,
+  comparacionRecomendacion, opciones, preguntasComunes, puntosColectivo, resultados, ubicacionPreguntas,
+  type BloqueComparado, type Colectivo, type Fila, type Filtro, type PreguntaComun, type Punto, type Ubicacion,
 } from "../data/resultados";
 import type { Perfil } from "../data/sesion";
 import {
@@ -25,7 +28,15 @@ import { leyendaAnonimato } from "../criterio";
 const CLASE: Record<Colectivo, string> = { alumnos: "en-serie-1", familias: "en-serie-2", personal: "en-serie-3" };
 
 interface Indicadores { personas: Fila; principal: Fila; etiquetaPrincipal: string }
-interface FilaRec { etiqueta: string; fila: Fila; escala: string }
+/** destino: al leer los datos, a qué colectivo lleva la fila («primaria»: alumnado de Primaria); al pintar, la dirección. */
+interface FilaRec { etiqueta: string; fila: Fila; escala: string; destino?: string }
+
+/** Destinos del detalle desde Inicio (30/10/2026): cada colectivo, cada pregunta (a su bloque, resaltada) y cada bloque. */
+interface Destinos {
+  colectivo: (c: Colectivo, filtro?: Record<string, string>) => string | undefined;
+  pregunta: (c: Colectivo, codigo: string) => string | undefined;
+  bloque: (c: Colectivo, bloque: string) => string | undefined;
+}
 interface Comun { pregunta: PreguntaComun; valores: Partial<Record<Colectivo, Fila>> }
 
 export function Panel({ perfil }: { perfil: Perfil }) {
@@ -39,6 +50,29 @@ export function Panel({ perfil }: { perfil: Perfil }) {
   const [puntos, setPuntos] = useState<Partial<Record<Colectivo, { mejora: Punto[]; fuertes: Punto[] }>>>({});
   const [dif, setDif] = useState<Partial<Record<Colectivo, BloqueComparado[]>>>({});
   const [error, setError] = useState<string | null>(null);
+  const [ubic, setUbic] = useState<Partial<Record<Colectivo, Record<string, Ubicacion[]>>>>({});
+  const { destino } = useNavegacion();
+
+  useEffect(() => {
+    Promise.all(colectivos.map(async (c) => [c, await ubicacionPreguntas(c).catch(() => ({}))] as const))
+      .then((x) => setUbic(Object.fromEntries(x)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [perfil]);
+
+  // Un bloque tiene detalle por pregunta en su pantalla: en personal, los de su lista; en los demás, todos menos la
+  // satisfacción general del alumnado (una sola pregunta).
+  const conDetalle = (c: Colectivo, b: string) => (c === "personal" ? DETALLE_PERSONAL.includes(b) : b !== "satisfaccion_general");
+  const ir: Destinos = {
+    colectivo: (c, filtro) => destino({ seccion: `/${c}` as Seccion, filtro }),
+    pregunta: (c, codigo) => {
+      const u = (ubic[c]?.[codigo] ?? []).find((x) => !coordinacion || c !== "alumnos" || x.etapa === perfil.etapa);
+      if (!u) return undefined;
+      return destino({ seccion: `/${c}` as Seccion, filtro: {
+        ...(c === "alumnos" ? { cuestionario: u.cuestionario } : {}),
+        ...(conDetalle(c, u.bloque) ? { bloque: u.bloque, pregunta: codigo, ver: "en-detalle" } : {}) } });
+    },
+    bloque: (c, b) => destino({ seccion: `/${c}` as Seccion, filtro: conDetalle(c, b) ? { bloque: b, ver: "en-detalle" } : {} }),
+  };
 
   useEffect(() => {
     let vigente = true;
@@ -56,17 +90,17 @@ export function Panel({ perfil }: { perfil: Perfil }) {
         Promise.all([
           ...(coordinacion
             ? [seguro(resultados({ colectivo: "alumnos" }, { tipo: "recomendacion" })).then((fila) => fila && {
-                etiqueta: t.panel_rec_alumnos_etapa(t.etapas[perfil.etapa as keyof typeof t.etapas]), fila,
+                etiqueta: t.panel_rec_alumnos_etapa(t.etapas[perfil.etapa as keyof typeof t.etapas]), fila, destino: "alumnos",
                 escala: perfil.etapa === "primaria" ? "1 a 10" : "0 a 10" })]
             : [
                 seguro(resultados({ colectivo: "alumnos", etapa: "primaria" }, { tipo: "recomendacion" }))
-                  .then((fila) => fila && { etiqueta: t.panel_rec_primaria, fila, escala: "1 a 10" }),
+                  .then((fila) => fila && { etiqueta: t.panel_rec_primaria, fila, escala: "1 a 10", destino: "primaria" }),
                 seguro(resultados({ colectivo: "alumnos", etapas: ["pai", "bachillerato"] }, { tipo: "recomendacion" }))
-                  .then((fila) => fila && { etiqueta: t.panel_rec_pai_bach, fila, escala: "0 a 10" }),
+                  .then((fila) => fila && { etiqueta: t.panel_rec_pai_bach, fila, escala: "0 a 10", destino: "alumnos" }),
               ]),
-          seguro(resultados({ colectivo: "familias" }, { tipo: "recomendacion" })).then((fila) => fila && { etiqueta: t.fam_titulo, fila, escala: "1 a 10" }),
+          seguro(resultados({ colectivo: "familias" }, { tipo: "recomendacion" })).then((fila) => fila && { etiqueta: t.fam_titulo, fila, escala: "1 a 10", destino: "familias" }),
           ...(coordinacion ? [] : [seguro(resultados({ colectivo: "personal" }, { tipo: "recomendacion" }))
-            .then((fila) => fila && { etiqueta: t.per_titulo, fila, escala: "1 a 10" })]),
+            .then((fila) => fila && { etiqueta: t.per_titulo, fila, escala: "1 a 10", destino: "personal" })]),
         ]),
         preguntasComunes(),
         Promise.all(colectivos.map(async (c) => [c, await seguro(resultados(filtro(c), { tipo: "seleccion", codigo: "mas_valorado" }))] as const)),
@@ -83,7 +117,7 @@ export function Panel({ perfil }: { perfil: Perfil }) {
       }));
       if (!vigente) return;
       setIndicadores(Object.fromEntries(ind.filter(([, v]) => v)) as Partial<Record<Colectivo, Indicadores>>);
-      setRec(recs.filter((r): r is FilaRec => !!r));
+      setRec(recs.filter((r) => !!r) as FilaRec[]);
       // Solo las preguntas que se pueden comparar: al menos dos colectivos visibles.
       setComunes(valores.filter((v) => Object.keys(v.valores).length >= 2));
       setValorado(Object.fromEntries(val.filter(([, v]) => v)) as Partial<Record<Colectivo, Fila>>);
@@ -193,7 +227,8 @@ export function Panel({ perfil }: { perfil: Perfil }) {
           <h2 className="section-title">{t.panel_rec}</h2>
           <p className="sec-lead">{t.panel_rec_lead}</p>
           <div className="card">
-            {rec.map((r) => <FilaReparto key={r.etiqueta} {...r} />)}
+            {rec.map((r) => <FilaReparto key={r.etiqueta} {...r} destino={r.destino === "primaria" ? ir.colectivo("alumnos", { etapa: "primaria" })
+              : r.destino ? ir.colectivo(r.destino as Colectivo) : undefined} />)}
             <details className="en-calculo" style={{ marginTop: ".8rem" }}>
               <summary>{t.como_se_calcula}</summary>
               <p>{t.calculo_reparto}</p>
@@ -208,8 +243,8 @@ export function Panel({ perfil }: { perfil: Perfil }) {
             {colectivos.filter((c) => puntos[c]).map((c) => (
               <div key={c} className="card">
                 <h3><i className={`en-punto-color ${CLASE[c]}`} aria-hidden="true" />{t.panel_colectivo[c]}</h3>
-                <ListaPuntos titulo={t.panel_fuertes} puntos={puntos[c]!.fuertes} clase="en-fuerte" />
-                <ListaPuntos titulo={t.panel_mejora} puntos={puntos[c]!.mejora} clase="en-mejora" />
+                <ListaPuntos titulo={t.panel_fuertes} puntos={puntos[c]!.fuertes} clase="en-fuerte" destino={(p) => ir.pregunta(c, p)} />
+                <ListaPuntos titulo={t.panel_mejora} puntos={puntos[c]!.mejora} clase="en-mejora" destino={(p) => ir.pregunta(c, p)} />
               </div>
             ))}
           </div>
@@ -226,7 +261,7 @@ export function Panel({ perfil }: { perfil: Perfil }) {
                 {colectivos.filter((c) => dif[c]).map((c) => (
                   <div key={c} className="en-dif-colectivo">
                     <h3>{t.panel_colectivo[c]}</h3>
-                    {dif[c]!.map((b) => <BloqueDif key={b.bloque} b={b} />)}
+                    {dif[c]!.map((b) => <BloqueDif key={b.bloque} b={b} destino={ir.bloque(c, b.bloque)} />)}
                   </div>
                 ))}
                 <p className="notice en-alerta" style={{ marginTop: ".8rem" }}>{t.panel_dif_nota}</p>
@@ -240,7 +275,8 @@ export function Panel({ perfil }: { perfil: Perfil }) {
             <div className="en-legend">
               {colectivos.map((c) => <span key={c}><i className={CLASE[c]} />{t.panel_colectivo[c]}</span>)}
             </div>
-            {comunes.map((c) => <PreguntaComparada key={c.pregunta.codigo} comun={c} colectivos={colectivos} />)}
+            {comunes.map((c) => <PreguntaComparada key={c.pregunta.codigo} comun={c} colectivos={colectivos}
+                                                   destino={(col) => ir.pregunta(col, c.pregunta.preguntas[col]!)} />)}
             <p className="en-hint" style={{ marginTop: ".8rem" }}>{t.panel_comunes_nota}</p>
           </div>
 
@@ -250,7 +286,8 @@ export function Panel({ perfil }: { perfil: Perfil }) {
             <div className="en-legend">
               {colectivos.filter((c) => valorado[c]).map((c) => <span key={c}><i className={CLASE[c]} />{t.panel_colectivo[c]}</span>)}
             </div>
-            <ValoradoComparado valorado={valorado} textos={textos} colectivos={colectivos} />
+            <ValoradoComparado valorado={valorado} textos={textos} colectivos={colectivos}
+                               destino={(col) => (col === "alumnos" ? undefined : ir.colectivo(col, { ver: "en-valorado" }))} />
           </div>
 
           <h2 className="section-title">{t.panel_menos}</h2>
@@ -276,7 +313,7 @@ export function Panel({ perfil }: { perfil: Perfil }) {
   );
 }
 
-function FilaReparto({ etiqueta, fila, escala }: FilaRec) {
+function FilaReparto({ etiqueta, fila, escala, destino }: FilaRec) {
   const ayuda = useAyuda();
   return (
     <div className="en-rep">
@@ -287,7 +324,7 @@ function FilaReparto({ etiqueta, fila, escala }: FilaRec) {
       </div>
       {fila.suprimido ? <p className="en-hint">{lineasOculto(fila)}</p> : (
         <>
-          <BarraReparto fila={fila} />
+          <BarraReparto fila={fila} destino={destino} />
           <div className="en-reparto">{textoReparto(fila)}</div>
         </>
       )}
@@ -295,7 +332,7 @@ function FilaReparto({ etiqueta, fila, escala }: FilaRec) {
   );
 }
 
-function PreguntaComparada({ comun, colectivos }: { comun: Comun; colectivos: Colectivo[] }) {
+function PreguntaComparada({ comun, colectivos, destino }: { comun: Comun; colectivos: Colectivo[]; destino: (c: Colectivo) => string | undefined }) {
   const ayuda = useAyuda();
   return (
     <div className="en-comun">
@@ -307,7 +344,8 @@ function PreguntaComparada({ comun, colectivos }: { comun: Comun; colectivos: Co
           return (
             <div key={c} className="en-comun-fila en-con-ayuda"
                  {...ayuda(v.suprimido ? [f.mayusculaInicial(comun.pregunta.texto), t.panel_colectivo[c], lineasOculto(v)]
-                   : [f.mayusculaInicial(comun.pregunta.texto), t.panel_colectivo[c], t.tip_media(f.media(v.media!)), t.tip_valoraciones(f.recuento(v.n!))])}>
+                   : [f.mayusculaInicial(comun.pregunta.texto), t.panel_colectivo[c], t.tip_media(f.media(v.media!)), t.tip_valoraciones(f.recuento(v.n!))],
+                   v.suprimido ? undefined : destino(c))}>
               <span className="en-serie-etq">{t.panel_colectivo[c]}</span>
               <span className="en-track" aria-hidden="true"><span className={`en-fill ${CLASE[c]}`} style={{ width: `${ancho}%` }} /></span>
               <span className="en-val">{v.suprimido ? <Oculto fila={v} /> : <>{f.media(v.media!)}<MarcaMenos5 fila={v} /></>}</span>
@@ -319,8 +357,9 @@ function PreguntaComparada({ comun, colectivos }: { comun: Comun; colectivos: Co
   );
 }
 
-function ValoradoComparado({ valorado, textos, colectivos }: {
+function ValoradoComparado({ valorado, textos, colectivos, destino }: {
   valorado: Partial<Record<Colectivo, Fila>>; textos: Record<string, string>; colectivos: Colectivo[];
+  destino: (c: Colectivo) => string | undefined;
 }) {
   const ayuda = useAyuda();
   const visibles = colectivos.filter((c) => valorado[c] && !valorado[c]!.suprimido);
@@ -343,7 +382,7 @@ function ValoradoComparado({ valorado, textos, colectivos }: {
               const p = o?.pct ?? 0;
               return (
                 <div key={c} className="en-comun-fila en-con-ayuda"
-                     {...ayuda([f.mayusculaInicial(textos[codigo] ?? codigo), t.panel_colectivo[c], f.porcentaje(p), t.tip_eligen(f.recuento(o?.n ?? 0), f.recuento(valorado[c]!.n!))])}>
+                     {...ayuda([f.mayusculaInicial(textos[codigo] ?? codigo), t.panel_colectivo[c], f.porcentaje(p), t.tip_eligen(f.recuento(o?.n ?? 0), f.recuento(valorado[c]!.n!))], destino(c))}>
                   <span className="en-serie-etq">{t.panel_colectivo[c]}</span>
               <span className="en-track" aria-hidden="true"><span className={`en-fill ${CLASE[c]}`} style={{ width: `${p}%` }} /></span>
                   <span className="en-val">{f.porcentaje(p)}</span>
@@ -357,13 +396,16 @@ function ValoradoComparado({ valorado, textos, colectivos }: {
   );
 }
 
-function ListaPuntos({ titulo, puntos, clase }: { titulo: string; puntos: Punto[]; clase: string }) {
+function ListaPuntos({ titulo, puntos, clase, destino }: { titulo: string; puntos: Punto[]; clase: string; destino: (codigo: string) => string | undefined }) {
+  const ayuda = useAyuda();
   return (
     <div className={`en-puntos-bloque ${clase}`}>
       <h4>{titulo}</h4>
       <ol className="en-lista-puntos">
         {puntos.map((p, i) => (
-          <li key={p.codigo}>
+          <li key={p.codigo} className={destino(p.codigo) ? "en-con-ayuda" : undefined}
+              {...(destino(p.codigo) ? ayuda([f.mayusculaInicial(p.texto), t.tip_media(f.media(p.media)), t.panel_pct_bajo(f.porcentaje(p.pct_bajo)),
+                                              t.tip_valoraciones(f.recuento(p.n))], destino(p.codigo)) : {})}>
             <span className="en-orden" aria-hidden="true">{i + 1}.</span>
             <span>{f.mayusculaInicial(p.texto)}<small>{t.panel_pct_bajo(f.porcentaje(p.pct_bajo))} · {t.tip_valoraciones(f.recuento(p.n))}<MarcaMenos5 fila={{ menos_de_5: p.n < 5 }} /></small></span>
             <b>{f.media(p.media)}</b>
@@ -374,10 +416,12 @@ function ListaPuntos({ titulo, puntos, clase }: { titulo: string; puntos: Punto[
   );
 }
 
-function BloqueDif({ b }: { b: BloqueComparado }) {
+function BloqueDif({ b, destino }: { b: BloqueComparado; destino?: string }) {
   const ancho = (fila: Fila) => (fila.suprimido ? 0 : ((fila.media! - 1) / 5) * 100);
+  const ayuda = useAyuda();
+  const lineas = [b.nombre, b.diferencia === null ? t.panel_dif_sin : t.panel_dif_valor(f.media(b.diferencia))];
   return (
-    <div className="en-comun">
+    <div className={`en-comun${destino ? " en-con-ayuda" : ""}`} {...(destino ? ayuda(lineas, destino) : {})}>
       <div className="en-comun-t">{b.nombre}
         <small className="en-hint" style={{ display: "block" }}>
           {b.diferencia === null ? t.panel_dif_sin : t.panel_dif_valor(f.media(b.diferencia))}

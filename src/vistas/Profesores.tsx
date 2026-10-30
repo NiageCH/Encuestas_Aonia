@@ -6,13 +6,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAyuda } from "../componentes/Ayuda";
 import { Barra } from "../componentes/Graficos";
+import { BandaDetalle, useBajarA, useNavegacion } from "../componentes/Detalle";
 import type { Perfil } from "../data/sesion";
 import { MarcaMenos5, Oculto } from "../componentes/Oculto";
 import {
-  listarProfesores, preguntasProfesorado, resultadosProfesor,
+  listarProfesores, preguntasProfesorado, profesoresDeClase, resultadosProfesor,
   type CeldaProfesor, type PreguntaBloque, type Profesor, type ResultadoProfesor, type VersionInforme,
 } from "../data/resultados";
-import { etiquetaClase, ordenarClases } from "../etiquetas";
+import { claveClase, enumerar, etiquetaClase, ordenarClases } from "../etiquetas";
 import * as f from "../formato";
 import { t } from "../i18n";
 import { leyendaAnonimato, veMenos5 } from "../criterio";
@@ -20,15 +21,31 @@ import { leyendaAnonimato, veMenos5 } from "../criterio";
 export function InformesProfesor({ perfil }: { perfil: Perfil }) {
   const [lista, setLista] = useState<Profesor[] | null>(null);
   const [busqueda, setBusqueda] = useState("");
-  const [elegido, setElegido] = useState<Profesor | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Filtros del detalle (desde Alumnado o desde un informe de jefatura) y docente elegido, en la dirección.
+  const { filtro, cambiar } = useNavegacion();
+  const elegido = lista?.find((p) => String(p.id) === filtro.profesor) ?? null;
+  const setElegido = (p: Profesor) => cambiar({ profesor: String(p.id) });
+  const departamentos = filtro.departamento ? filtro.departamento.split("|") : null;
+  const [deClase, setDeClase] = useState<number[] | null>(null);
 
   useEffect(() => { listarProfesores().then(setLista).catch(() => setError(t.error_datos)); }, []);
+  useEffect(() => {
+    setDeClase(null);
+    if (!filtro.asignatura || !filtro.cuestionario) return;
+    profesoresDeClase({ cuestionario: filtro.cuestionario, asignatura: filtro.asignatura, ...(filtro.grupo ? { grupo: filtro.grupo } : {}) })
+      .then(setDeClase).catch(() => setError(t.error_datos));
+  }, [filtro.asignatura, filtro.cuestionario, filtro.grupo]);
 
+  // La lista que queda con el filtro del detalle (o toda): de ella salen la búsqueda y el lote.
+  const delFiltro = useMemo(() => (lista ?? []).filter((p) =>
+    (!departamentos || departamentos.includes(p.departamento ?? ""))
+    && (!filtro.asignatura || (deClase ?? []).includes(p.id))), [lista, filtro.departamento, filtro.asignatura, deClase]);
+  const conFiltro = !!departamentos || !!filtro.asignatura;
   const filtrados = useMemo(() => {
     const q = normal(busqueda);
-    return (lista ?? []).filter((p) => !q || normal(`${p.nombre} ${p.apellidos} ${p.departamento ?? ""}`).includes(q));
-  }, [lista, busqueda]);
+    return delFiltro.filter((p) => !q || normal(`${p.nombre} ${p.apellidos} ${p.departamento ?? ""}`).includes(q));
+  }, [delFiltro, busqueda]);
 
   return (
     <section>
@@ -36,6 +53,11 @@ export function InformesProfesor({ perfil }: { perfil: Perfil }) {
       <p className="sec-lead">{perfil.rol === "coordinacion" ? t.prof_lead_coord : t.prof_lead}</p>
       {error && <p className="notice en-alerta en-alerta-neg" role="alert">{error}</p>}
       {lista && lista.length === 0 && <p className="notice en-alerta">{t.prof_sin_profesores}</p>}
+      <BandaDetalle partes={[
+        ...(filtro.asignatura ? [[t.det_asignatura, filtro.asignatura] as [string, string]] : []),
+        ...(filtro.grupo ? [[t.exp_grupo, filtro.grupo] as [string, string]] : []),
+        ...(departamentos ? [[t.det_departamento, enumerar(departamentos)] as [string, string]] : []),
+      ]} quitar={{ asignatura: null, cuestionario: null, grupo: null, departamento: null }} />
       {lista && lista.length > 0 && (
         <div className="en-prof">
           <div className="card en-prof-buscador en-noprint">
@@ -44,6 +66,7 @@ export function InformesProfesor({ perfil }: { perfil: Perfil }) {
               <input type="search" className="en-input" value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
                      placeholder={t.prof_buscar_ph} autoComplete="off" />
             </label>
+            {conFiltro && <p className="en-hint" role="status">{t.det_lista_filtrada(delFiltro.length)}</p>}
             <ul className="en-prof-lista" aria-label={t.prof_lista}>
               {filtrados.slice(0, 60).map((p) => (
                 <li key={p.id}>
@@ -56,7 +79,7 @@ export function InformesProfesor({ perfil }: { perfil: Perfil }) {
               ))}
             </ul>
             {filtrados.length > 60 && <p className="en-hint">{t.prof_mas(filtrados.length - 60)}</p>}
-            <Lote profesores={lista} completa={veMenos5(perfil.rol)} />
+            <Lote profesores={conFiltro ? delFiltro : lista} completa={veMenos5(perfil.rol)} />
           </div>
           <div>{elegido ? <Informe profesor={elegido} perfil={perfil} /> : <p className="en-hint">{t.prof_elige}</p>}</div>
         </div>
@@ -72,6 +95,7 @@ function normal(s: string) {
 function Informe({ profesor, perfil }: { profesor: Profesor; perfil: Perfil }) {
   const completa = veMenos5(perfil.rol);
   const ayuda = useAyuda();
+  const { filtro, aqui } = useNavegacion();
   const [datos, setDatos] = useState<ResultadoProfesor | null>(null);
   const [preguntas, setPreguntas] = useState<{ p: PreguntaBloque; r: ResultadoProfesor }[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -91,9 +115,12 @@ function Informe({ profesor, perfil }: { profesor: Profesor; perfil: Perfil }) {
     return () => { vigente = false; };
   }, [profesor.id]);
 
+  useBajarA(!!preguntas);
   if (error) return <p className="notice en-alerta en-alerta-neg" role="alert">{error}</p>;
   if (!datos) return <p className="en-cargando">{t.cargando}</p>;
 
+  // Versión completa: cada clase lleva a su detalle pregunta por pregunta (la versión docente no lo tiene).
+  const aClase = (c: CeldaProfesor) => (completa ? aqui({ clase: claveClase(c), ver: "en-por-clase" }) : undefined);
   const etapas = Object.keys(datos.comparacion).filter((k) => k !== "colegio");
   const g = datos.global;
   const celdas = ordenarClases(datos.celdas);
@@ -138,14 +165,14 @@ function Informe({ profesor, perfil }: { profesor: Profesor; perfil: Perfil }) {
         <h3>{t.prof_por_asignatura}</h3>
         <p className="en-hint">{t.prof_por_asignatura_lead}</p>
         {propias.length === 0 ? <p className="en-hint">{compartidas.length ? t.prof_sin_propias : t.sin_datos_seccion}</p>
-          : propias.map((c) => <Barra key={`${c.clave.cuestionario}-${c.clave.grupo}-${c.clave.asignatura}`} etiqueta={etiquetaClase(c)} fila={c} />)}
+          : propias.map((c) => <Barra key={`${c.clave.cuestionario}-${c.clave.grupo}-${c.clave.asignatura}`} etiqueta={etiquetaClase(c)} fila={c} destino={aClase(c)} />)}
       </div>
 
       {compartidas.length > 0 && (
         <div className="card" style={{ marginTop: ".9rem" }}>
           <h3>{t.prof_compartidas}</h3>
           <p className="notice en-alerta">{t.prof_compartidas_nota}</p>
-          {compartidas.map((c) => <Barra key={`${c.clave.cuestionario}-${c.clave.grupo}-${c.clave.asignatura}`} etiqueta={etiquetaClase(c)} fila={c} />)}
+          {compartidas.map((c) => <Barra key={`${c.clave.cuestionario}-${c.clave.grupo}-${c.clave.asignatura}`} etiqueta={etiquetaClase(c)} fila={c} destino={aClase(c)} />)}
         </div>
       )}
 
@@ -180,7 +207,7 @@ function Informe({ profesor, perfil }: { profesor: Profesor; perfil: Perfil }) {
           </div>
         )}
       </div>
-      {completa && preguntas && <DetallePorClase celdas={celdas} preguntas={preguntas} />}
+      {completa && preguntas && <DetallePorClase celdas={celdas} preguntas={preguntas} abierta={filtro.clase} />}
       <p className="notice en-alerta" style={{ marginTop: ".9rem" }}>{leyendaAnonimato(perfil.rol)}</p>
     </div>
   );
@@ -192,15 +219,18 @@ function Informe({ profesor, perfil }: { profesor: Profesor; perfil: Perfil }) {
 }
 
 /** Versión completa (Dirección y administración): cada pregunta en cada clase, con la marca «menos de 5». */
-function DetallePorClase({ celdas, preguntas }: { celdas: CeldaProfesor[]; preguntas: { p: PreguntaBloque; r: ResultadoProfesor }[] }) {
+function DetallePorClase({ celdas, preguntas, abierta }: {
+  celdas: CeldaProfesor[]; preguntas: { p: PreguntaBloque; r: ResultadoProfesor }[]; abierta?: string;
+}) {
   const mismaClase = (a: CeldaProfesor, b: CeldaProfesor) =>
     a.clave.cuestionario === b.clave.cuestionario && a.clave.grupo === b.clave.grupo && a.clave.asignatura === b.clave.asignatura;
   return (
-    <div className="card" style={{ marginTop: ".9rem" }}>
+    <div className="card" id="en-por-clase" style={{ marginTop: ".9rem" }}>
       <h3>{t.prof_por_clase}</h3>
       <p className="en-hint">{t.prof_por_clase_lead}</p>
       {celdas.map((c) => (
-        <details key={`${c.clave.cuestionario}-${c.clave.grupo}-${c.clave.asignatura}`} className="en-clase-detalle">
+        <details key={`${c.clave.cuestionario}-${c.clave.grupo}-${c.clave.asignatura}`} id={`en-clase-${claveClase(c)}`}
+                 className={`en-clase-detalle${abierta === claveClase(c) ? " en-destacado" : ""}`} open={abierta === claveClase(c) || undefined}>
           <summary>
             <strong>{etiquetaClase(c)}</strong>
             {c.tipo === "compartida" && <small> · {t.prof_compartida_corto}</small>}

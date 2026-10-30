@@ -194,6 +194,35 @@ La coordinación entra directamente en Profesorado (el de su etapa).
 
 Direcciones: `#/personal` y `#/informes/<direccion|equipos|departamentos|profesores>`. Las antiguas llevan a su nuevo sitio: `#/personal/informes/<nivel>` a `#/informes/<nivel>`, `#/profesorado` a Profesorado y `#/responsables` a Dirección. La lógica está en `src/navegacion.ts`, con sus tests.
 
+#### Navegar al detalle al pulsar (decisión de Mark, visto bueno de Rodrigo el 30/10/2026)
+Al pulsar un elemento de un gráfico o de una tabla se entra en su detalle: se aplica un filtro en la misma pantalla o se abre otra pantalla o informe ya filtrado.
+
+- **Tarjeta:** la de cada elemento con detalle acaba en «Pulsa para ver el detalle». Lo que no lleva a ningún sitio no cambia.
+- **Teclado:** el elemento recibe el foco con Tab y se abre con Intro o la barra espaciadora. **Móvil:** la primera pulsación muestra la tarjeta con el enlace «Ver el detalle»; pulsar fuera la cierra.
+- **Pantalla de destino:** arriba, la banda «Detalle» con el filtro aplicado, «Volver» (a la pantalla de la que se llegó) y «Quitar el filtro». Si el destino es un apartado (detalle por pregunta, un departamento, una clase), la página baja hasta él y lo resalta.
+- **Filtros en la dirección de la página** (`#/familias?etapa=pai`): solo las claves que acepta cada pantalla (`PARAMETROS` en `src/navegacion.ts`), y `volver` con la dirección de origen. Una pantalla que el rol no puede ver no recibe filtros: la coordinación que escribe `#/personal?…` acaba en Profesorado sin ellos.
+- **Reglas de cada rol:** el detalle sale de las mismas RPC, con el filtro aplicado, así que cada rol ve lo de siempre: Dirección y administración, también lo de menos de 5, marcado y con su número; la coordinación, con el mínimo de 5 y la complementaria. Para la coordinación, lo oculto no se puede pulsar y no hay destinos a pantallas que no tiene (Personal, Equipos, Departamentos, Respuestas abiertas). Lo impone el servidor; la web solo evita ofrecerlo (`src/detalle.ts`).
+- **Exportación:** el CSV y el PDF de la pantalla de detalle llevan sus filtros en la cabecera y en el registro de descargas, como siempre. En Profesorado, el lote de PDF se limita a la lista filtrada.
+
+Destinos:
+
+| Pantalla | Elemento | Lleva a |
+|---|---|---|
+| Inicio | Recomendación: Primaria · PAI y Bachillerato · familias · personal | Alumnado (con el cuestionario de Primaria) · Alumnado · Familias · Personal |
+| Inicio | Aspectos con mayor y menor valoración, preguntas comunes | La pantalla del colectivo, en el bloque de la pregunta y con ella resaltada (en alumnado, en su cuestionario) |
+| Inicio | Más valorados (familias y personal) · recomendadores y no recomendadores | El apartado «Más valorados» · el bloque en el detalle por pregunta |
+| Alumnado | Satisfacción general por grupo | La misma pantalla, filtrada por ese grupo |
+| Alumnado | Profesorado por asignatura | Informes del profesorado, con la lista limitada a quienes dan esa asignatura en ese cuestionario y grupo (`profesores_de_clase`, migración 20261030000042) |
+| Alumnado | Satisfacción por bloque · indicador de profesorado | El detalle por pregunta de ese bloque |
+| Familias | Bloques · valoración general por etapa | El detalle por pregunta del bloque · la misma pantalla, filtrada por la etapa |
+| Personal | Dimensiones · Superiores (docente o no docente) | El detalle por pregunta de la dimensión · la misma pantalla, filtrada por el segmento |
+| Personal | Reuniones de departamento | El informe de jefatura de ese departamento, centrado en él (sin pantalla nueva). Un departamento sin jefatura no se puede pulsar |
+| Personal | Equipo de Individuación | Informes del Equipo de Individuación |
+| Informe de jefatura | Profesorado de sus departamentos según el alumnado | Informes del profesorado, con la lista limitada a esos departamentos |
+| Informe del profesor/a (versión completa) | Cada clase | Su detalle pregunta por pregunta, desplegado. En la versión docente no se puede pulsar |
+
+Tests: `supabase/tests/29_detalle_al_pulsar.sql` (cada destino con el criterio de cada rol) y `src/detalle.test.ts`.
+
 ### 7.1 Panel general (inicio tras el login)
 1. **Recomendación del Colegio por colectivo:**
    - la comparación entre colectivos se hace con las barras de reparto (§7.8), no con el índice;
@@ -272,6 +301,8 @@ Se porta el prototipo `datos_locales/Tablero_Encuestas_2526_CIS-SFP.html`, que f
 
 - **Alumnado:**
   - filtros de cuestionario y grupo, e indicadores;
+  - satisfacción general por grupo (30/10/2026; pulsar un grupo lo filtra);
+  - detalle por pregunta de cada bloque (30/10/2026), con las etiquetas de la escala de cada bloque tal como vienen en sus encuestas (`src/escalas.ts`): frecuencia en profesorado, satisfacción en servicios, acuerdo en el resto, y las de Primaria;
   - profesorado por asignatura, tabla de colores de asignatura por grupo y satisfacción por bloque;
   - detalle por pregunta, aspectos con mayor y menor valoración;
   - recomendación y aspectos más destacados.

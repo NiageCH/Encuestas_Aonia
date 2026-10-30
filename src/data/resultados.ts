@@ -130,6 +130,25 @@ export async function detallePreguntas(filtro: Filtro, bloque: string, dimension
   return data as DetallePregunta[];   // enunciados tal como están guardados: la web y los PDF les ponen mayúscula inicial
 }
 
+export interface Ubicacion { cuestionario: string; etapa: string | null; bloque: string }
+
+/** Dónde está cada pregunta de un colectivo (código del diccionario → cuestionarios y bloque, en el orden de los
+ *  cuestionarios). Para llevar desde Inicio al detalle por pregunta de su pantalla. Solo estructura, ningún resultado. */
+export async function ubicacionPreguntas(colectivo: Colectivo): Promise<Record<string, Ubicacion[]>> {
+  const { data, error } = await supabase
+    .from("pregunta_cuestionario")
+    .select("pregunta!inner(codigo_diccionario), bloque!inner(codigo), cuestionario!inner(id, codigo, etapa, colectivo, curso!inner(nombre))")
+    .eq("cuestionario.colectivo", colectivo)
+    .eq("cuestionario.curso.nombre", CURSO);
+  if (error) throw error;
+  type Fila = { pregunta: { codigo_diccionario: string }; bloque: { codigo: string }; cuestionario: { id: number; codigo: string; etapa: string | null } };
+  const r: Record<string, (Ubicacion & { id: number })[]> = {};
+  for (const x of (data ?? []) as unknown as Fila[]) {
+    (r[x.pregunta.codigo_diccionario] ??= []).push({ cuestionario: x.cuestionario.codigo, etapa: x.cuestionario.etapa, bloque: x.bloque.codigo, id: x.cuestionario.id });
+  }
+  return Object.fromEntries(Object.entries(r).map(([k, v]) => [k, v.sort((a, b) => a.id - b.id).map(({ id: _, ...u }) => u)]));
+}
+
 /** Texto de cada opción de una pregunta de selección múltiple (código -> texto). */
 export async function opciones(pregunta: string): Promise<Record<string, string>> {
   const { data, error } = await supabase
@@ -183,6 +202,14 @@ export async function listarProfesores(): Promise<Profesor[]> {
   const { data, error } = await supabase.rpc("listar_profesores", { p_curso: CURSO });
   if (error) throw error;
   return (data ?? []) as Profesor[];
+}
+
+/** Docentes que dan una asignatura en un cuestionario (y en un grupo): solo identificadores, para limitar la lista del
+ *  profesorado al pulsar una asignatura en Alumnado. La coordinación solo recibe los de su etapa. */
+export async function profesoresDeClase(filtro: { cuestionario: string; asignatura: string; grupo?: string }): Promise<number[]> {
+  const { data, error } = await supabase.rpc("profesores_de_clase", { p_curso: CURSO, p_filtro: filtro });
+  if (error) throw error;
+  return (data ?? []) as number[];
 }
 
 export interface CeldaProfesor extends Fila {
@@ -292,6 +319,30 @@ export async function listarJefes(): Promise<Jefe[]> {
   const { data, error } = await supabase.rpc("listar_jefes", { p_curso: CURSO });
   if (error) throw error;
   return (data ?? []) as Jefe[];
+}
+
+/** Departamento tal como aparece en la encuesta de personal → la jefatura que lo tiene en su informe (equivalencias de
+ *  §7.3; sin equivalencia, el departamento oficial del mismo nombre). Para llevar del departamento a su informe. */
+export async function jefaturaPorDepartamento(): Promise<Record<string, Jefe>> {
+  const [jefes, deps, eq] = await Promise.all([
+    listarJefes(),
+    supabase.from("departamento").select("id, nombre, curso!inner(nombre)").eq("curso.nombre", CURSO),
+    supabase.from("departamento_equivalencia").select("departamento_encuesta_id, departamento_id"),
+  ]);
+  if (deps.error) throw deps.error;
+  if (eq.error) throw eq.error;
+  const nombre = new Map((deps.data ?? []).map((d) => [d.id as number, d.nombre as string]));
+  const oficiales = new Map<string, string[]>();
+  for (const e of eq.data ?? []) {
+    const de = nombre.get(e.departamento_encuesta_id), o = nombre.get(e.departamento_id);
+    if (de && o) oficiales.set(de, [...(oficiales.get(de) ?? []), o]);
+  }
+  const r: Record<string, Jefe> = {};
+  for (const d of nombre.values()) {
+    const j = jefes.find((x) => (oficiales.get(d) ?? [d]).some((o) => x.departamentos.includes(o)));
+    if (j) r[d] = j;
+  }
+  return r;
 }
 
 export interface SeccionReuniones {

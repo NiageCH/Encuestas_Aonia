@@ -125,6 +125,17 @@ Confirmado por escrito por Mark el 28/10/2026 (§5.0 de la especificación):
 
 Al docente se le trata de usted (correo y página del enlace).
 
+## Navegar al detalle
+
+| Término | Uso |
+|---|---|
+| Pulsa para ver el detalle | Última línea de la tarjeta de un elemento que lleva a su detalle. |
+| Ver el detalle | Enlace de la tarjeta en el móvil. |
+| Detalle | Banda de la pantalla de destino, con el filtro aplicado. |
+| Volver · Quitar el filtro | Botones de la banda: a la pantalla de origen, o la misma pantalla sin filtro. |
+| Departamento del detalle | Rótulo del departamento al que se llega desde Personal, dentro del informe de su jefatura. |
+| Satisfacción general por grupo | Gráfico de Alumnado; cada grupo lleva a sus resultados. |
+
 ## Tablas
 
 Ninguna celda se parte palabra a palabra:

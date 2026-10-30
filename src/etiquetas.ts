@@ -13,6 +13,12 @@ export function etiquetaClase(c: CeldaProfesor): string {
 }
 
 /** Ordena por asignatura y grupo (las de todos los grupos, al final de su asignatura). */
+/** Identificador de una clase (cuestionario, grupo y asignatura) para la dirección de la página y para bajar hasta ella. */
+export function claveClase(c: CeldaProfesor): string {
+  return [c.clave.cuestionario, c.clave.grupo ?? "todos", c.clave.asignatura].join("-").normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
 export function ordenarClases<T extends CeldaProfesor>(celdas: T[]): T[] {
   return [...celdas].sort((a, b) =>
     a.clave.asignatura.localeCompare(b.clave.asignatura, "es")

@@ -9,6 +9,9 @@
 //                                       (envío al profesorado, solo administración)
 //   #/abiertas                          Respuestas abiertas: solo Dirección y administración
 //   #/usuarios[/descargas]              Solo administradores: personas y actividad, o el registro de descargas
+//
+// Filtros en la dirección (navegar al detalle, 30/10/2026): «?clave=valor&…», solo las claves de PARAMETROS de cada
+// pantalla. «volver» guarda la dirección de la que se llegó al pulsar un elemento (banda «Detalle», con «Volver»).
 
 export type Rol = "administrador" | "direccion" | "coordinacion";
 export type Seccion = "/" | "/alumnos" | "/familias" | "/personal" | "/abiertas" | "/informes" | "/usuarios";
@@ -22,11 +25,45 @@ export interface Ruta {
   nivel?: Nivel;
   /** En Accesos: la pestaña del registro de descargas. */
   descargas?: boolean;
+  /** Filtros y detalle en la dirección («?clave=valor»), en el orden de PARAMETROS. */
+  filtro?: Record<string, string>;
 }
 
+/** Claves que acepta cada pantalla en la dirección. «ver»: apartado al que bajar; «volver»: de dónde se llegó. */
+const COMUNES = ["ver", "volver"];
+export const PARAMETROS: Record<string, string[]> = {
+  "/alumnos": ["etapa", "cuestionario", "grupo", "bloque", "pregunta", ...COMUNES],
+  "/familias": ["etapa", "bloque", "pregunta", ...COMUNES],
+  "/personal": ["segmento", "bloque", "pregunta", ...COMUNES],
+  "/informes/equipos": COMUNES,
+  "/informes/departamentos": ["jefe", "departamento", ...COMUNES],
+  "/informes/profesores": ["cuestionario", "grupo", "asignatura", "departamento", "profesor", "clase", ...COMUNES],
+};
+
+const clavePantalla = (r: Ruta) => (r.seccion === "/informes" ? `/informes/${r.nivel}` : r.seccion);
+
 export function aHash(r: Ruta): string {
-  if (r.seccion === "/usuarios" && r.descargas) return "#/usuarios/descargas";
-  return r.seccion === "/informes" ? `#/informes/${r.nivel}` : `#${r.seccion}`;
+  const base = r.seccion === "/usuarios" && r.descargas ? "#/usuarios/descargas"
+    : r.seccion === "/informes" ? `#/informes/${r.nivel}` : `#${r.seccion}`;
+  const claves = PARAMETROS[clavePantalla(r)] ?? [];
+  const pares = claves.filter((k) => r.filtro?.[k]).map((k) => `${k}=${encodeURIComponent(r.filtro![k])}`);
+  return pares.length ? `${base}?${pares.join("&")}` : base;
+}
+
+/** Filtros de la dirección que acepta la pantalla de la ruta (las demás claves se descartan). */
+function leerFiltro(r: Ruta, consulta: string): Ruta {
+  const claves = PARAMETROS[clavePantalla(r)];
+  if (!claves || !consulta) return r;
+  const filtro: Record<string, string> = {};
+  for (const par of consulta.split("&")) {
+    const i = par.indexOf("=");
+    if (i < 1) continue;
+    const k = par.slice(0, i);
+    let v: string;
+    try { v = decodeURIComponent(par.slice(i + 1)); } catch { continue; }
+    if (claves.includes(k) && v) filtro[k] = v;
+  }
+  return Object.keys(filtro).length ? { ...r, filtro } : r;
 }
 
 /** Niveles de «Informes por persona» que ve cada rol. */
@@ -55,7 +92,14 @@ const informes = (nivel: Nivel | undefined, rol: Rol): Ruta => {
 
 /** Lee la dirección, aplica las antiguas y lleva a cada rol a la ruta permitida más cercana. */
 export function leerRuta(hash: string, rol: Rol): Ruta {
-  const partes = hash.replace(/^#/, "").split("?")[0].split("/").filter(Boolean);
+  const [camino, ...resto] = hash.replace(/^#/, "").split("?");
+  const r = rutaSinFiltro(camino.split("/").filter(Boolean), rol);
+  // Una dirección antigua o no permitida lleva a otra pantalla: sus filtros no valen allí.
+  const pedida = "#" + camino.replace(/\/$/, "");
+  return pedida === aHash(r) ? leerFiltro(r, resto.join("?")) : r;
+}
+
+function rutaSinFiltro(partes: string[], rol: Rol): Ruta {
   const nivel = (x: string | undefined) => (NIVELES.includes(x as Nivel) ? (x as Nivel) : undefined);
   // Direcciones antiguas
   if (partes[0] === "profesorado") return informes("profesores", rol);

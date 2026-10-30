@@ -9,11 +9,12 @@ import {
   Barra, CabeceraPreguntas, FilaPregunta, Indicador, IndicadorRecomendacion, LeyendaAcuerdo, Ranking, Recomendacion,
 } from "../componentes/Graficos";
 import { Exportar } from "../componentes/Exportar";
+import { BandaDetalle, useBajarA, useNavegacion } from "../componentes/Detalle";
 import { Migas } from "../componentes/Marco";
 import { aHash } from "../navegacion";
 import {
-  bloques as cargarBloques, cuestionarios as cargarCuestionarios, detallePreguntas, opciones, recuentoIdiomas, resultados,
-  type Bloque, type Cuestionario, type DetallePregunta, type Fila, type Filtro,
+  bloques as cargarBloques, cuestionarios as cargarCuestionarios, detallePreguntas, jefaturaPorDepartamento, opciones, recuentoIdiomas,
+  resultados, type Bloque, type Jefe, type Cuestionario, type DetallePregunta, type Fila, type Filtro,
 } from "../data/resultados";
 import {
   celdas, notasComunes, tablaDetalle, tablaDistribucion, tablaMedias, tablaRecomendacion, tablaValorado, txt, type Exportacion,
@@ -36,7 +37,8 @@ const SEGMENTOS: { clave: string; seg: Segmento; texto: string }[] = [
   { clave: "mas_de_un_ano", seg: { antiguedad: "mas_de_un_ano" }, texto: t.per_mas_de_un_ano },
 ];
 
-const DETALLE = ["centro", "condiciones", "relaciones", "superiores", "puesto", "satisfaccion",
+/** Bloques con detalle por pregunta (también para llevar aquí desde Inicio). */
+export const DETALLE = ["centro", "condiciones", "relaciones", "superiores", "puesto", "satisfaccion",
                  "equipo_individualizacion", "perfil_ib", "pep", "pai"];
 
 interface Datos {
@@ -70,14 +72,19 @@ export function Personal() {
 }
 
 function EncuestaPersonal() {
-  const [clave, setClave] = useState("todos");
+  // Segmento y bloque del detalle, en la dirección (navegar al detalle).
+  const { filtro: param, cambiar, aqui, destino } = useNavegacion();
+  const clave = SEGMENTOS.some((s) => s.clave === param.segmento) ? param.segmento! : "todos";
+  const setClave = (c: string) => cambiar({ segmento: c === "todos" ? null : c });
   const segmento = SEGMENTOS.find((s) => s.clave === clave)!.seg;
   const filtro: Filtro = { colectivo: "personal", ...(segmento ?? {}) };
   const [cuest, setCuest] = useState<Cuestionario | null>(null);
   const [bl, setBl] = useState<Bloque[]>([]);
   const [textos, setTextos] = useState<Record<string, string>>({});
   const [datos, setDatos] = useState<Datos | null>(null);
-  const [bloqueDetalle, setBloqueDetalle] = useState("superiores");
+  const bloqueDetalle = param.bloque && DETALLE.includes(param.bloque) ? param.bloque : "superiores";
+  const setBloqueDetalle = (b: string) => cambiar({ bloque: b });
+  const [jefaturas, setJefaturas] = useState<Record<string, Jefe>>({});
   const [detalle, setDetalle] = useState<DetallePregunta[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,6 +92,7 @@ function EncuestaPersonal() {
     cargarCuestionarios("personal").then((l) => setCuest(l[0] ?? null)).catch(() => {});
     cargarBloques("PER").then(setBl).catch(() => {});
     opciones("mas_valorado").then(setTextos).catch(() => {});
+    jefaturaPorDepartamento().then(setJefaturas).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -132,6 +140,10 @@ function EncuestaPersonal() {
   const escalaBloque = (b: string) => (b === "perfil_ib" ? t.escala_frecuencia : t.escala_acuerdo_per);
   const etiquetas = escalaBloque(bloqueDetalle);
   const nombreBloque = (c: string) => bl.find((b) => b.codigo === c)?.nombre ?? c;
+  useBajarA(!!datos && !!detalle);
+  const aDetalleBloque = (c: string) => (DETALLE.includes(c) ? aqui({ bloque: c, ver: "en-detalle" }) : undefined);
+  const aDepartamento = (d: string) => jefaturas[d] && destino({ seccion: "/informes", nivel: "departamentos",
+    filtro: { jefe: String(jefaturas[d].id), departamento: d, ver: "en-dep-detalle" } });
 
   /** Lo que se ve en pantalla, con el detalle de todos los bloques, para el CSV y el PDF. */
   async function preparar(): Promise<Exportacion> {
@@ -188,8 +200,11 @@ function EncuestaPersonal() {
         ))}
       </div>
       <p className="en-hint">{t.per_filtro_nota}</p>
+      <BandaDetalle partes={[
+        ...(clave !== "todos" ? [[t.per_filtro, SEGMENTOS.find((s) => s.clave === clave)!.texto] as [string, string]] : []),
+        ...(param.bloque ? [[t.bloque, nombreBloque(bloqueDetalle)] as [string, string]] : []),
+      ]} />
       <Exportar preparar={preparar} disabled={!datos} />
-
 
       {error && <p className="notice en-alerta en-alerta-neg" role="alert">{error}</p>}
       {!datos && !error && <p className="en-cargando">{t.cargando}</p>}
@@ -219,14 +234,15 @@ function EncuestaPersonal() {
             <section className="card">
               <h3>{t.per_dimensiones}</h3>
               <p className="en-hint">{t.per_dimensiones_lead}</p>
-              {datos.dimensiones.map(({ bloque, fila }) => <Barra key={bloque.codigo} etiqueta={bloque.nombre} fila={fila} />)}
+              {datos.dimensiones.map(({ bloque, fila }) => <Barra key={bloque.codigo} etiqueta={bloque.nombre} fila={fila} destino={aDetalleBloque(bloque.codigo)} />)}
             </section>
             <section className="card">
               <h3>{t.per_superiores}</h3>
               <p className="en-hint">{t.per_superiores_lead}</p>
               {datos.superioresPorTipo.length > 1
                 ? datos.superioresPorTipo.map((p) => (
-                    <Barra key={p.clave.docente} etiqueta={p.clave.docente === "docente" ? t.per_docentes : t.per_no_docentes} fila={p} />))
+                    <Barra key={p.clave.docente} etiqueta={p.clave.docente === "docente" ? t.per_docentes : t.per_no_docentes} fila={p}
+                           destino={aqui({ segmento: p.clave.docente === "docente" ? "docentes" : "no_docentes" })} />))
                 : <Barra etiqueta={datos.superiores.suprimido ? SEGMENTOS.find((s) => s.clave === clave)!.texto : t.per_no_docentes} fila={datos.superiores} />}
               <p className="en-hint" style={{ marginTop: ".6rem" }}>{t.per_superiores_quien}</p>
               <p className="notice en-alerta" style={{ marginTop: ".8rem" }}>{t.per_superiores_nota}</p>
@@ -239,16 +255,16 @@ function EncuestaPersonal() {
               <p className="en-hint">{t.per_departamentos_lead}</p>
               {datos.departamentos === null ? <p className="en-hint">{t.per_departamentos_sin_filtro}</p>
                 : [...datos.departamentos].sort((a, b) => a.clave.departamento.localeCompare(b.clave.departamento, "es"))
-                    .map((p) => <Barra key={p.clave.departamento} etiqueta={p.clave.departamento} fila={p} />)}
+                    .map((p) => <Barra key={p.clave.departamento} etiqueta={p.clave.departamento} fila={p} destino={aDepartamento(p.clave.departamento)} />)}
             </section>
             <section className="card">
               <h3>{nombreBloque("equipo_individualizacion")}</h3>
               <p className="en-hint">{t.per_equipo_lead}</p>
-              <Barra etiqueta={t.per_equipo_barra} fila={datos.equipo} />
+              <Barra etiqueta={t.per_equipo_barra} fila={datos.equipo} destino={destino({ seccion: "/informes", nivel: "equipos" })} />
             </section>
           </div>
 
-          <h2 className="section-title">{t.detalle}</h2>
+          <h2 className="section-title" id="en-detalle">{t.detalle}</h2>
           <p className="sec-lead">{t.detalle_lead}</p>
           <div className="card">
             <div className="en-toolbar en-noprint">
@@ -264,14 +280,15 @@ function EncuestaPersonal() {
             <LeyendaAcuerdo etiquetas={etiquetas} />
             <CabeceraPreguntas />
             {!detalle ? <p className="en-cargando">{t.cargando}</p>
-              : detalle.map((d) => <FilaPregunta key={d.codigo} texto={d.texto} fila={d.resultado.total} etiquetas={etiquetas} />)}
+              : detalle.map((d) => <FilaPregunta key={d.codigo} codigo={d.codigo} resaltar={param.pregunta === d.codigo}
+                                                 texto={d.texto} fila={d.resultado.total} etiquetas={etiquetas} />)}
           </div>
 
           <h2 className="section-title">{t.per_recomendacion}</h2>
           <p className="sec-lead">{t.recomendacion_lead("1 a 10")}</p>
           <Recomendacion fila={datos.recomendacion} desde={1} />
 
-          <h2 className="section-title">{t.valorado}</h2>
+          <h2 className="section-title" id="en-valorado">{t.valorado}</h2>
           <p className="sec-lead">{t.per_valorado_lead}</p>
           <div className="card"><Ranking fila={datos.valorado} textos={textos} /></div>
 

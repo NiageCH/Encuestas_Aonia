@@ -1,19 +1,25 @@
 // Vista de alumnos (§7.4): filtros de cuestionario y grupo, indicadores, profesorado por
 // asignatura, satisfacción por bloque y recomendación. Primera pantalla del paso 5.
+// Navegar al detalle (30/10/2026): satisfacción general por grupo (pulsar un grupo lo filtra), detalle por pregunta de
+// cada bloque, y cada asignatura lleva a la lista de su profesorado. Filtros en la dirección de la página.
 
 import { useEffect, useMemo, useState } from "react";
-import { Barra, Indicador, IndicadorRecomendacion, ordenar, Recomendacion } from "../componentes/Graficos";
+import {
+  Barra, CabeceraPreguntas, FilaPregunta, Indicador, IndicadorRecomendacion, LeyendaAcuerdo, ordenar, Recomendacion,
+} from "../componentes/Graficos";
+import { BandaDetalle, useBajarA, useNavegacion } from "../componentes/Detalle";
+import { escalaAlumnos } from "../escalas";
 import { Exportar } from "../componentes/Exportar";
 import { Migas } from "../componentes/Marco";
 import { CURSO } from "../data/cliente";
 import { textoParteOculta } from "../etiquetas";
 import {
-  bloques as cargarBloques, cuestionarios as cargarCuestionarios, resultados,
-  type Bloque, type Cuestionario, type Fila, type Filtro, type Resultado,
+  bloques as cargarBloques, cuestionarios as cargarCuestionarios, detallePreguntas, resultados,
+  type Bloque, type Cuestionario, type DetallePregunta, type Fila, type Filtro, type Resultado,
 } from "../data/resultados";
 import type { Perfil } from "../data/sesion";
 import {
-  celdas, notasComunes, tablaDistribucion, tablaMedias, tablaRecomendacion, txt, type Exportacion,
+  celdas, notasComunes, tablaDetalle, tablaDistribucion, tablaMedias, tablaRecomendacion, txt, type Exportacion,
 } from "../exportacion/modelo";
 import * as f from "../formato";
 import { t } from "../i18n";
@@ -27,6 +33,10 @@ interface Datos {
   recomendacion: Fila;
   asignaturas: Fila[];
   bloques: { bloque: Bloque; fila: Fila }[];
+  /** Satisfacción general de cada grupo (sin grupo elegido), con el criterio de cada rol. */
+  porGrupo: Fila[];
+  /** Bloques con detalle por pregunta: los de 1 a 6 que entran en la media, sin la satisfacción general (una pregunta). */
+  detalle: Bloque[];
   /** Grupo oculto: el total del cuestionario (todos los grupos) como referencia. */
   referencia: { personas: Fila; satisfaccion: Fila; profesorado: Fila; recomendacion: Fila } | null;
 }
@@ -35,10 +45,16 @@ const BLOQUES_APARTE = new Set(["profesorado", "satisfaccion_general", "recomend
 
 export function Alumnos({ perfil }: { perfil: Perfil }) {
   const [lista, setLista] = useState<Cuestionario[]>([]);
-  const [cuestionario, setCuestionario] = useState<string>("");
-  const [grupo, setGrupo] = useState<string>("");
   const [datos, setDatos] = useState<Datos | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [detalle, setDetalle] = useState<DetallePregunta[] | null>(null);
+  // Cuestionario, grupo y bloque del detalle, en la dirección. «etapa» (desde Inicio) elige su primer cuestionario.
+  const { filtro: param, cambiar, aqui, destino } = useNavegacion();
+  const cuestionario = lista.find((c) => c.codigo === param.cuestionario)?.codigo
+    ?? lista.find((c) => param.etapa && c.etapa === param.etapa)?.codigo ?? lista[0]?.codigo ?? "";
+  const grupo = param.grupo ?? "";
+  const setCuestionario = (c: string) => cambiar({ cuestionario: c, etapa: null, grupo: null, bloque: null });
+  const setGrupo = (g: string) => cambiar({ grupo: g || null });
 
   useEffect(() => {
     cargarCuestionarios("alumnos")
@@ -46,7 +62,6 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
         // La coordinación solo ve los cuestionarios de su etapa (el servidor también lo impone).
         const l = perfil.rol === "coordinacion" ? todos.filter((c) => c.etapa === perfil.etapa) : todos;
         setLista(l);
-        setCuestionario((c) => c || l[0]?.codigo || "");
         if (l.length === 0) setError(t.sin_cuestionarios);
       })
       .catch(() => setError(t.error_datos));
@@ -60,7 +75,7 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
     const base: Filtro = { colectivo: "alumnos", cuestionario };
     const filtro: Filtro = grupo ? { ...base, grupo } : base;
     (async () => {
-      const [personas, grupos, sat, prof, rec, asig, bl] = await Promise.all([
+      const [personas, grupos, sat, prof, rec, asig, bl, satGrupo] = await Promise.all([
         resultados(filtro, { tipo: "personas" }),
         resultados(base, { tipo: "personas" }, ["grupo"]),
         resultados(filtro, { tipo: "bloque", codigo: "satisfaccion_general" }),
@@ -68,6 +83,7 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
         resultados(filtro, { tipo: "recomendacion" }),
         resultados(filtro, { tipo: "bloque", codigo: "profesorado" }, ["asignatura"]),
         cargarBloques(cuestionario),
+        grupo ? null : resultados(base, { tipo: "bloque", codigo: "satisfaccion_general" }, ["grupo"]),
       ]);
       const deMedia = bl.filter((b) => b.entra_en_media && !BLOQUES_APARTE.has(b.codigo));
       // Si el grupo elegido está oculto, el total del cuestionario como referencia (lo ve todo el que ve el grupo).
@@ -86,6 +102,9 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
         recomendacion: rec.total,
         asignaturas: asig.partes,
         bloques: deMedia.map((b, i) => ({ bloque: b, fila: porBloque[i].total })),
+        porGrupo: (satGrupo?.partes ?? []).filter((p) => p.clave.grupo !== "(sin dato)")
+          .sort((a, b) => a.clave.grupo.localeCompare(b.clave.grupo, "es", { numeric: true })),
+        detalle: bl.filter((b) => b.entra_en_media && b.codigo !== "satisfaccion_general" && b.codigo !== "recomendacion"),
         referencia,
       });
     })().catch(() => vigente && setError(t.error_datos));
@@ -93,12 +112,30 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
   }, [cuestionario, grupo]);
 
   const actual = useMemo(() => lista.find((c) => c.codigo === cuestionario), [lista, cuestionario]);
+  const bloqueDetalle = datos?.detalle.find((b) => b.codigo === param.bloque)?.codigo
+    ?? datos?.detalle.find((b) => !BLOQUES_APARTE.has(b.codigo))?.codigo ?? datos?.detalle[0]?.codigo ?? "";
+  const setBloqueDetalle = (b: string) => cambiar({ bloque: b });
+  const filtroActual: Filtro = grupo ? { colectivo: "alumnos", cuestionario, grupo } : { colectivo: "alumnos", cuestionario };
+  useEffect(() => {
+    if (!datos || !bloqueDetalle) return;
+    let vigente = true;
+    setDetalle(null);
+    detallePreguntas(filtroActual, bloqueDetalle).then((d) => vigente && setDetalle(d)).catch(() => vigente && setDetalle([]));
+    return () => { vigente = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [datos, bloqueDetalle]);
+  useBajarA(!!datos && !!detalle);
+  const nombreBloque = (c: string) => datos?.detalle.find((b) => b.codigo === c)?.nombre ?? c;
+  const aBloque = (c: string) => (datos?.detalle.some((b) => b.codigo === c) ? aqui({ bloque: c, ver: "en-detalle" }) : undefined);
+  const aProfesorado = (asignatura: string) => destino({ seccion: "/informes", nivel: "profesores",
+    filtro: { cuestionario, asignatura, ...(grupo ? { grupo } : {}) } });
   const escalaRec = actual?.etapa === "primaria" ? "1 a 10" : "0 a 10";
 
   /** Lo que se ve en pantalla, para el CSV y el PDF. */
   async function preparar(): Promise<Exportacion> {
     const d = datos!;
     const titulo = actual?.titulo ?? cuestionario;
+    const detalles = await Promise.all(d.detalle.map((b) => detallePreguntas(filtroActual, b.codigo)));
     return {
       vista: "alumnos", titulo: t.alu_titulo,
       filtros: [[t.exp_cuestionario, titulo], ...(grupo ? [[t.exp_grupo, grupo] as [string, string]] : [])],
@@ -120,7 +157,9 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
         ...(grupo ? [] : [{
           titulo: t.exp_respuestas_grupo, columnas: [t.exp_col_grupo, t.exp_col_personas],
           filas: d.grupos.map((g) => [txt(g.clave.grupo), ...celdas(g, ["n"])]),
-        }]),
+        }, tablaMedias(t.alu_grupos_titulo, t.exp_col_grupo, d.porGrupo.map((g) => ({ etiqueta: g.clave.grupo, fila: g })), [t.alu_grupos_lead])]),
+        ...d.detalle.map((b, i) => tablaDetalle(b.nombre, detalles[i].map((x) => ({ texto: x.texto, fila: x.resultado.total })),
+          escalaAlumnos(actual?.etapa, b.codigo))),
       ],
       notas: notasComunes(),
     };
@@ -155,6 +194,11 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
         </label>
       </div>
 
+      <BandaDetalle partes={[
+        [t.exp_cuestionario, actual?.titulo ?? cuestionario],
+        ...(grupo ? [[t.exp_grupo, grupo] as [string, string]] : []),
+        ...(param.bloque ? [[t.bloque, nombreBloque(param.bloque)] as [string, string]] : []),
+      ]} />
       <Exportar preparar={preparar} disabled={!datos} />
 
       {error && <p className="notice en-alerta en-alerta-neg" role="alert">{error}</p>}
@@ -192,23 +236,55 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
               detalle={(x) => t.k_satisfaccion_d(f.recuento(x.n_personas!))} />
             <Indicador etiqueta={t.k_profesorado} fila={datos.profesorado} explicacion={t.tip_k_profesorado}
               valor={(x) => <>{f.media(x.media!)} <small>/ 6</small></>}
-              detalle={() => t.k_profesorado_d} />
+              detalle={() => t.k_profesorado_d} destino={aBloque("profesorado")} />
             <IndicadorRecomendacion etiqueta={t.k_recomendacion} fila={datos.recomendacion} />
           </div>
+
+          {!grupo && datos.porGrupo.length > 0 && (
+            <section className="card" style={{ marginTop: "1.2rem" }}>
+              <h3>{t.alu_grupos_titulo}</h3>
+              <p className="en-hint">{t.alu_grupos_lead}</p>
+              {datos.porGrupo.map((g) => <Barra key={g.clave.grupo} etiqueta={g.clave.grupo} fila={g} destino={aqui({ grupo: g.clave.grupo })} />)}
+            </section>
+          )}
 
           <div className="en-two" style={{ marginTop: "1.2rem" }}>
             <section className="card">
               <h3>{t.prof_asig}</h3>
               <p className="en-hint">{t.prof_asig_lead}</p>
               {datos.asignaturas.length === 0 ? <p className="en-hint">{t.sin_datos_seccion}</p>
-                : ordenar(datos.asignaturas).map((a) => <Barra key={a.clave.asignatura} etiqueta={a.clave.asignatura} fila={a} />)}
+                : ordenar(datos.asignaturas).map((a) => <Barra key={a.clave.asignatura} etiqueta={a.clave.asignatura} fila={a} destino={aProfesorado(a.clave.asignatura)} />)}
             </section>
             <section className="card">
               <h3>{t.bloques}</h3>
               <p className="en-hint">{t.bloques_lead}</p>
-              {datos.bloques.map(({ bloque, fila }) => <Barra key={bloque.codigo} etiqueta={bloque.nombre} fila={fila} />)}
+              {datos.bloques.map(({ bloque, fila }) => <Barra key={bloque.codigo} etiqueta={bloque.nombre} fila={fila} destino={aBloque(bloque.codigo)} />)}
             </section>
           </div>
+
+          {datos.detalle.length > 0 && (
+            <>
+              <h2 className="section-title" id="en-detalle">{t.detalle}</h2>
+              <p className="sec-lead">{t.detalle_lead}</p>
+              <div className="card">
+                <div className="en-toolbar en-noprint">
+                  <label className="en-filters" style={{ display: "grid" }}>
+                    <span>{t.bloque}</span>
+                    <span className="en-select">
+                      <select value={bloqueDetalle} onChange={(e) => setBloqueDetalle(e.target.value)}>
+                        {datos.detalle.map((b) => <option key={b.codigo} value={b.codigo}>{b.nombre}</option>)}
+                      </select>
+                    </span>
+                  </label>
+                </div>
+                <LeyendaAcuerdo etiquetas={escalaAlumnos(actual?.etapa, bloqueDetalle)} />
+                <CabeceraPreguntas />
+                {!detalle ? <p className="en-cargando">{t.cargando}</p>
+                  : detalle.map((d) => <FilaPregunta key={d.codigo} codigo={d.codigo} resaltar={param.pregunta === d.codigo}
+                                                     texto={d.texto} fila={d.resultado.total} etiquetas={escalaAlumnos(actual?.etapa, bloqueDetalle)} />)}
+              </div>
+            </>
+          )}
 
           <h2 className="section-title">{t.recomendacion}</h2>
           <p className="sec-lead">{t.recomendacion_lead(escalaRec)}</p>

@@ -15,14 +15,15 @@ export function ordenar(filas: Fila[]): Fila[] {
       : a.suprimido ? 0 : (b.media ?? 0) - (a.media ?? 0));
 }
 
-export function Indicador({ etiqueta, fila, valor, detalle, destacado, explicacion }: {
+export function Indicador({ etiqueta, fila, valor, detalle, destacado, explicacion, destino }: {
   etiqueta: string; fila: Fila; valor: (x: Fila) => ReactNode; detalle: (x: Fila) => string; destacado?: boolean;
-  explicacion: string;
+  explicacion: string; destino?: string;
 }) {
   const ayuda = useAyuda();
   return (
     <div className={`card en-kpi en-con-ayuda${destacado ? " hl" : ""}`}
-         {...ayuda([etiqueta, fila.suprimido ? lineasOculto(fila) : explicacion, ...(fila.menos_de_5 ? [t.tip_menos5] : [])])}>
+         {...ayuda([etiqueta, fila.suprimido ? lineasOculto(fila) : explicacion, ...(fila.menos_de_5 ? [t.tip_menos5] : [])],
+                   fila.suprimido ? undefined : destino)}>
       <div className="l">{etiqueta}</div>
       <div className="v">{fila.suprimido ? <Oculto fila={fila} /> : valor(fila)}</div>
       <div className="d">{fila.suprimido ? "" : detalle(fila)} <MarcaMenos5 fila={fila} /></div>
@@ -34,8 +35,9 @@ export function lineasOculto(fila: Fila): string {
   return fila.motivo === "menos_de_5" ? t.oculto_tip_menos5 : fila.motivo === "sin_datos" ? t.sin_datos : t.oculto_tip;
 }
 
-/** Barra de 1 a 6. Con referencia (coordinación en Familias), una marca con la media de todo el colegio. */
-export function Barra({ etiqueta, fila, referencia }: { etiqueta: string; fila: Fila; referencia?: Fila }) {
+/** Barra de 1 a 6. Con referencia (coordinación en Familias), una marca con la media de todo el colegio. Con destino,
+ *  lleva al detalle; una barra oculta no (lo que está oculto para un rol no tiene detalle para ese rol). */
+export function Barra({ etiqueta, fila, referencia, destino }: { etiqueta: string; fila: Fila; referencia?: Fila; destino?: string }) {
   const ayuda = useAyuda();
   const ancho = fila.suprimido || fila.media == null ? 0 : ((fila.media - 1) / 5) * 100;
   const ref = referencia && !referencia.suprimido && referencia.media != null ? referencia.media : null;
@@ -49,7 +51,7 @@ export function Barra({ etiqueta, fila, referencia }: { etiqueta: string; fila: 
   ];
   if (ref != null) lineas.push(t.tip_referencia_colegio(f.media(ref)));
   return (
-    <div className="en-bar en-con-ayuda" {...ayuda(lineas)}>
+    <div className="en-bar en-con-ayuda" {...ayuda(lineas, fila.suprimido ? undefined : destino)}>
       <span>{etiqueta}</span>
       <span className="en-track" aria-hidden="true">
         <span className="en-fill" style={{ width: `${ancho}%` }} />
@@ -78,13 +80,13 @@ export function textoReparto(fila: Fila): string {
 }
 
 /** Barra de tres colores con información emergente en cada tramo. */
-export function BarraReparto({ fila, fina }: { fila: Fila; fina?: boolean }) {
+export function BarraReparto({ fila, fina, destino }: { fila: Fila; fina?: boolean; destino?: string }) {
   const ayuda = useAyuda();
   return (
     <div className={`en-apilada${fina ? " fina" : ""}`}>
       {tramosRecomendacion(fila).map((x) => (
         <span key={x.clase} className={`${x.clase} en-cifra en-con-ayuda`} style={{ width: `${x.pct}%` }}
-              {...ayuda([`${f.porcentaje(x.pct)} ${x.corto}`, t.tip_de_respuestas(f.recuento(Math.round((x.pct * fila.n!) / 100)), f.recuento(fila.n!)), x.rango])}>
+              {...ayuda([`${f.porcentaje(x.pct)} ${x.corto}`, t.tip_de_respuestas(f.recuento(Math.round((x.pct * fila.n!) / 100)), f.recuento(fila.n!)), x.rango], destino)}>
           {!fina && x.pct >= 8 ? f.porcentaje(x.pct) : null}
         </span>
       ))}
@@ -169,12 +171,17 @@ const TRAMOS_ACUERDO = ["en-esc-4", "en-esc-5", "en-esc-6"];       // 4, 5, 6
 
 /** Una pregunta de 1 a 6 con su distribución divergente: desacuerdo a la izquierda (1 a 3) y
  *  acuerdo a la derecha (4 a 6). */
-export function FilaPregunta({ texto: guardado, fila, etiquetas }: { texto: string; fila: Fila; etiquetas: string[] }) {
+export function FilaPregunta({ texto: guardado, fila, etiquetas, codigo, resaltar }: {
+  texto: string; fila: Fila; etiquetas: string[]; codigo?: string; resaltar?: boolean;
+}) {
   const ayuda = useAyuda();
   const texto = f.mayusculaInicial(guardado);
+  // La pregunta pedida desde otra pantalla (Inicio): con su identificador para bajar hasta ella, y resaltada.
+  const id = codigo ? `en-pregunta-${codigo}` : undefined;
+  const clase = `en-item en-con-ayuda${resaltar ? " en-destacado" : ""}`;
   if (fila.suprimido) {
     return (
-      <div className="en-item en-con-ayuda" {...ayuda([texto, lineasOculto(fila)])}>
+      <div id={id} className={clase} {...ayuda([texto, lineasOculto(fila)])}>
         <span>{texto}</span><span /><span className="n"><Oculto fila={fila} /></span><span /><span />
       </div>
     );
@@ -198,7 +205,7 @@ export function FilaPregunta({ texto: guardado, fila, etiquetas }: { texto: stri
     ...(fila.menos_de_5 ? [t.tip_menos5] : []),
   ];
   return (
-    <div className="en-item en-con-ayuda" {...ayuda(lineas)}>
+    <div id={id} className={clase} {...ayuda(lineas)}>
       <span>{texto}</span>
       <span className="en-div" aria-hidden="true">
         <span className="h l">{[1, 2, 3].map((v) => tramo(v, TRAMOS_DESACUERDO[v - 1]))}</span>

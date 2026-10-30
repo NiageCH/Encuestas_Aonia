@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { ProveedorAyuda } from "./componentes/Ayuda";
+import { ProveedorNavegacion } from "./componentes/Detalle";
 import { Migas } from "./componentes/Marco";
 import { ProveedorCargados, SinResultados } from "./componentes/SinResultados";
 import { estadoDeError, hayResultados, nivelAcceso, puedeVerResultados, type EstadoCarga } from "./acceso";
@@ -36,8 +37,15 @@ export function App() {
   const [mfaObligatorio, setMfaObligatorio] = useState<boolean | undefined>(undefined);
   const [cargados, setCargados] = useState<EstadoCarga>({ estado: "cargando" });
 
+  // El foco vuelve arriba al cambiar de pantalla; no al cambiar solo un filtro de la misma pantalla.
+  const pantalla = useRef(window.location.hash.split("?")[0]);
   useEffect(() => {
-    const alCambiar = () => { setHash(window.location.hash); document.getElementById("app")?.focus(); };
+    const alCambiar = () => {
+      setHash(window.location.hash);
+      const nueva = window.location.hash.split("?")[0];
+      if (nueva !== pantalla.current) document.getElementById("app")?.focus();
+      pantalla.current = nueva;
+    };
     window.addEventListener("hashchange", alCambiar);
     return () => window.removeEventListener("hashchange", alCambiar);
   }, []);
@@ -118,7 +126,7 @@ export function App() {
   return (
     <Marco ruta={ruta.seccion} enlaces={enlaces} usuario={{ nombre: perfil.nombre, onSalir: salir }}>
       {perfil.rol === "administrador" && mfaObligatorio === false && <p className="en-aviso-entorno" role="note">{t.mfa_desactivado_local}</p>}
-      <ProveedorCargados cargados={cargados}><ProveedorAyuda>{vista}</ProveedorAyuda></ProveedorCargados>
+      <ProveedorCargados cargados={cargados}><ProveedorNavegacion ruta={ruta} rol={perfil.rol}><ProveedorAyuda>{vista}</ProveedorAyuda></ProveedorNavegacion></ProveedorCargados>
     </Marco>
   );
 }

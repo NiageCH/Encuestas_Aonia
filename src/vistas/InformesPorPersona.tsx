@@ -4,6 +4,8 @@
 // Profesores (los de su etapa); el servidor lo impone.
 
 import { useEffect, useState } from "react";
+import { useAyuda } from "../componentes/Ayuda";
+import { BandaDetalle, useBajarA, useNavegacion } from "../componentes/Detalle";
 import { CabeceraPreguntas, FilaPregunta, LeyendaAcuerdo, lineasOculto } from "../componentes/Graficos";
 import { Migas } from "../componentes/Marco";
 import { MarcaMenos5, Oculto } from "../componentes/Oculto";
@@ -138,16 +140,20 @@ function NivelEquipos() {
 
 function NivelDepartamentos() {
   const [jefes, setJefes] = useState<Jefe[] | null>(null);
-  const [elegido, setElegido] = useState<Jefe | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Jefatura elegida y departamento del detalle, en la dirección (desde Personal, al pulsar un departamento).
+  const { filtro, cambiar } = useNavegacion();
+  const elegido = jefes?.find((j) => String(j.id) === filtro.jefe) ?? jefes?.[0] ?? null;
+  const setElegido = (j: Jefe) => cambiar({ jefe: String(j.id), departamento: null });
   useEffect(() => {
-    listarJefes().then((j) => { setJefes(j); setElegido(j[0] ?? null); }).catch(() => setError(t.error_datos));
+    listarJefes().then(setJefes).catch(() => setError(t.error_datos));
   }, []);
 
   return (
     <>
       <h2 className="section-title">{t.ipp_nivel.departamentos}</h2>
       <p className="sec-lead">{t.ipp_departamentos_lead}</p>
+      <BandaDetalle partes={filtro.departamento ? [[t.det_departamento, filtro.departamento]] : []} quitar={{ departamento: null }} />
       {error && <p className="notice en-alerta en-alerta-neg" role="alert">{error}</p>}
       {jefes && jefes.length === 0 && <p className="notice en-alerta">{t.jefe_sin_jefes}</p>}
       {jefes && jefes.length > 0 && (
@@ -163,17 +169,19 @@ function NivelDepartamentos() {
               ))}
             </ul>
           </div>
-          <div>{elegido && <InformeDeJefe key={elegido.id} jefe={elegido} />}</div>
+          <div>{elegido && <InformeDeJefe key={elegido.id} jefe={elegido} departamento={filtro.departamento} />}</div>
         </div>
       )}
     </>
   );
 }
 
-function InformeDeJefe({ jefe }: { jefe: Jefe }) {
+function InformeDeJefe({ jefe, departamento }: { jefe: Jefe; departamento?: string }) {
   const [inf, setInf] = useState<InformeJefe | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { destino } = useNavegacion();
   useEffect(() => { informeJefe(jefe.id).then(setInf).catch(() => setError(t.error_datos)); }, [jefe.id]);
+  useBajarA(!!inf);
   if (error) return <p className="notice en-alerta en-alerta-neg" role="alert">{error}</p>;
   if (!inf) return <p className="en-cargando">{t.cargando}</p>;
   return (
@@ -186,22 +194,26 @@ function InformeDeJefe({ jefe }: { jefe: Jefe }) {
         <BotonPdf generar={async () => (await import("../pdf/generar")).descargarInformeJefe(jefe, "completa")}
                   jefatura={async () => (await import("../pdf/generar")).descargarInformeJefe(jefe, "jefatura")} />
         <div className="en-kpis en-kpis3" style={{ marginTop: ".6rem" }}>
-          <AlumnosDepartamento titulo={tituloAlumnosJefe(inf.alumnos.departamentos)} m={inf.alumnos.media} />
+          <AlumnosDepartamento titulo={tituloAlumnosJefe(inf.alumnos.departamentos)} m={inf.alumnos.media}
+            destino={inf.alumnos.departamentos.length ? destino({ seccion: "/informes", nivel: "profesores",
+              filtro: { departamento: inf.alumnos.departamentos.join("|") } }) : undefined} />
         </div>
       </div>
       {inf.reuniones.length === 0 && <p className="notice en-alerta" style={{ marginTop: ".9rem" }}>{t.jefe_sin_reuniones}</p>}
       {inf.reuniones.map((r) => (
         <DatosSeccion key={r.unidades.join("-")} titulo={tituloReuniones(r)} subtitulo={t.resp_departamento_sub} etiquetas={t.escala_acuerdo_dep}
-                      nota={notaReuniones(r, inf.departamentos, inf.reuniones.length)} datos={r} />
+                      nota={notaReuniones(r, inf.departamentos, inf.reuniones.length)} datos={r}
+                      destacada={!!departamento && r.unidades.includes(departamento)} />
       ))}
     </>
   );
 }
 
-function AlumnosDepartamento({ titulo, m }: { titulo: string; m: MediaDepartamentoAlumnos }) {
+function AlumnosDepartamento({ titulo, m, destino }: { titulo: string; m: MediaDepartamentoAlumnos; destino?: string }) {
   const x = textoAlumnos(m);
+  const ayuda = useAyuda();
   return (
-    <div className="card en-kpi">
+    <div className={`card en-kpi${destino ? " en-con-ayuda" : ""}`} {...(destino ? ayuda([titulo, t.det_alumnos_dep], destino) : {})}>
       <div className="l">{titulo}</div>
       <div className="v">{m.global.suprimido && m.global.motivo === "solo_compartidas" ? <span className="en-sin-media">{t.dep_solo_compartidas_corto}</span>
         : m.global.suprimido ? <span className="en-oculto">{m.global.motivo === "sin_asignacion" ? t.dep_alumnos_pendiente_corto : t.prof_sin_visibles}</span>
@@ -260,12 +272,15 @@ function SeccionInforme({ seccion }: { seccion: SeccionPedida }) {
   return <DatosSeccion titulo={seccion.titulo} subtitulo={seccion.subtitulo} nota={seccion.nota} etiquetas={seccion.etiquetas} datos={datos} />;
 }
 
-function DatosSeccion({ titulo, subtitulo, nota, etiquetas, datos }: {
+function DatosSeccion({ titulo, subtitulo, nota, etiquetas, datos, destacada }: {
   titulo: string; subtitulo: string; nota?: string; etiquetas: string[]; datos: { total: Fila; preguntas: DetallePregunta[] };
+  /** El departamento pedido desde Personal: resaltado y con el identificador para bajar hasta él. */
+  destacada?: boolean;
 }) {
   const tot = datos.total;
   return (
-    <div className="card" style={{ marginTop: ".9rem" }}>
+    <div className={`card${destacada ? " en-destacado" : ""}`} id={destacada ? "en-dep-detalle" : undefined} style={{ marginTop: ".9rem" }}>
+      {destacada && <p className="eyebrow">{t.det_dep_destacado}</p>}
       <h3>{titulo}</h3>
       <p className="en-hint">{subtitulo}</p>
       <div className="en-kpis en-kpis3">

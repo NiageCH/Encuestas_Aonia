@@ -348,3 +348,24 @@ body:has(.en-aviso-validacion)::before { top: 34px; }
   max-height: 260px; overflow-y: auto; }
 .en-env-opcion { display: flex; gap: .45rem; align-items: center; font-size: .9rem; }
 .en-env-fuera td { color: var(--muted); }
+
+/* Navegar al detalle al pulsar (30/10/2026) */
+.en-con-ayuda[data-destino] { cursor: pointer; }
+/* Sombreado al pasar el ratón solo en filas (barras, preguntas comparadas, listas); los tramos de color y los indicadores
+   conservan su color y se aclaran como siempre. */
+.en-bar[data-destino]:hover, .en-comun[data-destino]:hover, .en-lista-puntos li[data-destino]:hover { background: var(--soft); border-radius: 8px; }
+.en-kpi[data-destino]:hover { box-shadow: 0 0 0 2px var(--sky); }
+#en-tip .en-tip-pulsa { margin-top: .25rem; font-weight: 600; color: #cfe6f5; }
+#en-tip.tactil { pointer-events: auto; max-width: min(300px, calc(100vw - 32px)); }
+#en-tip .en-tip-enlace { margin-top: .4rem; display: inline-block; padding: .45rem .7rem; border-radius: 8px; background: #fff; color: var(--navy); font-weight: 700; text-decoration: none; }
+.en-banda-detalle { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .8rem; margin: 0 0 1rem; padding: .7rem .9rem; border: 1px solid var(--line); border-left: 4px solid var(--en-grafico-1); border-radius: 12px; background: #fff; }
+.en-banda-detalle:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
+.en-banda-t { font-weight: 700; }
+.en-banda-filtro { padding: .2rem .6rem; border-radius: 999px; background: var(--soft); }
+.en-banda-filtro small { color: var(--muted); margin-right: .2rem; }
+.en-banda-acciones { margin-left: auto; display: flex; gap: .5rem; flex-wrap: wrap; }
+.en-destacado { box-shadow: 0 0 0 2px var(--sky); border-radius: 8px; }
+@media (max-width: 620px) { .en-banda-acciones { margin-left: 0; width: 100%; } .en-banda-acciones .btn { flex: 1; text-align: center; } }
+/* Buscador de docentes: el rótulo encima y el campo a todo el ancho de su columna */
+.en-prof-buscador .en-filters { grid-template-columns: 1fr; gap: .35rem; }
+.en-prof-buscador .en-filters .en-input { width: 100%; }

@@ -260,6 +260,16 @@ Decisión de Mark del 30/10/2026 (§7.9):
 - Tests: 514 pgTAP (dos nuevos en `26_respuestas_abiertas.sql`: la coordinación no ve las del Plan de Igualdad y Dirección sí) y 51 de vitest.
 - **Desplegado el 30/10/2026:** copia previa `datos_locales/copias/nube_2026-10-30_1157` (restaurada y comprobada); recuento de 2025/26 idéntico antes y después; respuestas abiertas en la nube, 18 preguntas y 750 respuestas (alumnado 616, familias 79, personal 55); web desplegada (`69a0b52`).
 
+## Navegar al detalle al pulsar (rama `detalle-al-pulsar`, 30/10/2026)
+
+Petición de Mark; propuesta con visto bueno de Rodrigo el 30/10/2026, en los tres pasos propuestos (especificación §7.0, «Navegar al detalle al pulsar»):
+- **Mecanismo:** filtros en la dirección de la página, tarjeta con «Pulsa para ver el detalle», Intro y barra espaciadora, móvil con la tarjeta y el enlace «Ver el detalle», banda «Detalle» con «Volver» y «Quitar el filtro», y la página baja al apartado pedido y lo resalta.
+- **Destinos en la misma pantalla:** etapas y bloques de Familias; segmentos y dimensiones de Personal; grupos y bloques de Alumnado.
+- **Destinos en otra pantalla:** Inicio (recomendación, aspectos, preguntas comunes, más valorados, recomendadores), departamento de Personal → informe de su jefatura centrado en él, asignatura de Alumnado → su profesorado (RPC `profesores_de_clase`, migración 20261030000042), clase del informe del profesor/a → su detalle (versión completa), profesorado de los departamentos de una jefatura.
+- **Alumnado (decisión del 30/10/2026):** satisfacción general por grupo y detalle por pregunta de cada bloque, con las escalas de sus encuestas. El CSV y el PDF los incluyen.
+- Tests: 538 pgTAP (24 nuevos en `29_detalle_al_pulsar.sql`: cada destino con el criterio de cada rol) y 61 de vitest (10 nuevos en `src/detalle.test.ts`). Pruebas en el navegador en ordenador, con teclado y en móvil, como Dirección y como coordinación; capturas en `datos_locales/capturas_detalle/`.
+- Pendiente: visto bueno de Rodrigo a las capturas y subida (`docs/DESPLIEGUE.md` §8).
+
 ## Tareas con fecha
 
 - **Eliminar las cuentas de demo y borrar `datos_locales/demo_accesos.txt`** (Rodrigo): **29/10/2026** (la demo es el 28/10/2026). Son «Demo Dirección» (demo.direccion@demo.invalid) y «Demo Coordinación» (demo.coordinacion@demo.invalid), en producción y creadas con `datos_locales/scripts/crear_cuentas_demo.py`. Se eliminan en Accesos y el registro de actividad conserva su alta y su eliminación.

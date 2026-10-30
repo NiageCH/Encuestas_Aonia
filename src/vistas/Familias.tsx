@@ -7,6 +7,7 @@ import {
   Barra, CabeceraPreguntas, FilaPregunta, Indicador, IndicadorRecomendacion, LeyendaAcuerdo, Ranking, Recomendacion,
 } from "../componentes/Graficos";
 import { Exportar } from "../componentes/Exportar";
+import { BandaDetalle, useBajarA, useNavegacion } from "../componentes/Detalle";
 import { Migas } from "../componentes/Marco";
 import { CURSO } from "../data/cliente";
 import { textoParteOculta } from "../etiquetas";
@@ -40,11 +41,15 @@ interface Datos {
 
 export function Familias({ perfil }: { perfil: Perfil }) {
   const fija = perfil.rol === "coordinacion" ? (perfil.etapa as Etapa) : null;
-  const [etapa, setEtapa] = useState<Etapa | "">(fija ?? "");
+  // Etapa y bloque del detalle, en la dirección (navegar al detalle). La coordinación tiene su etapa fija.
+  const { filtro: param, cambiar, aqui } = useNavegacion();
+  const etapa: Etapa | "" = fija ?? (ETAPAS.includes(param.etapa as Etapa) ? (param.etapa as Etapa) : "");
+  const setEtapa = (e: Etapa | "") => cambiar({ etapa: e || null });
   const [datos, setDatos] = useState<Datos | null>(null);
   const [incompletas, setIncompletas] = useState(0);
   const [textos, setTextos] = useState<Record<string, string>>({});
-  const [bloqueDetalle, setBloqueDetalle] = useState("general");
+  const bloqueDetalle = param.bloque ?? "general";
+  const setBloqueDetalle = (b: string) => cambiar({ bloque: b });
   const [detalle, setDetalle] = useState<DetallePregunta[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -101,6 +106,9 @@ export function Familias({ perfil }: { perfil: Perfil }) {
     detallePreguntas(filtro, bloqueDetalle).then((d) => vigente && setDetalle(d)).catch(() => vigente && setDetalle([]));
     return () => { vigente = false; };
   }, [etapa, bloqueDetalle]);
+
+  useBajarA(!!datos && !!detalle);
+  const nombreBloque = (c: string) => datos?.bloques.find((b) => b.bloque.codigo === c)?.bloque.nombre ?? c;
 
   const escalaBloque = (b: string) => (b === "servicios" ? t.escala_satisfaccion_fam : t.escala_acuerdo_fam);
   const etiquetas = escalaBloque(bloqueDetalle);
@@ -167,6 +175,10 @@ export function Familias({ perfil }: { perfil: Perfil }) {
         ))}
       </div>
 
+      <BandaDetalle partes={[
+        ...(!fija && etapa ? [[t.exp_etapa, t.etapas[etapa]] as [string, string]] : []),
+        ...(param.bloque ? [[t.bloque, nombreBloque(param.bloque)] as [string, string]] : []),
+      ]} />
       <Exportar preparar={preparar} disabled={!datos} />
 
       {error && <p className="notice en-alerta en-alerta-neg" role="alert">{error}</p>}
@@ -216,14 +228,16 @@ export function Familias({ perfil }: { perfil: Perfil }) {
             <section className="card">
               <h3>{t.bloques}</h3>
               <p className="en-hint">{t.fam_bloques_lead}</p>
-              {datos.bloques.map(({ bloque, fila }) => <Barra key={bloque.codigo} etiqueta={bloque.nombre} fila={fila} referencia={datos.referencia?.bloques[bloque.codigo]} />)}
+              {datos.bloques.map(({ bloque, fila }) => <Barra key={bloque.codigo} etiqueta={bloque.nombre} fila={fila} referencia={datos.referencia?.bloques[bloque.codigo]}
+                                                              destino={aqui({ bloque: bloque.codigo, ver: "en-detalle" })} />)}
               {datos.referencia && <p className="en-hint en-leyenda-ref"><i className="en-ref-muestra" aria-hidden="true" /> {t.fam_marca_colegio}</p>}
             </section>
             {datos.porEtapa.length > 0 ? (
               <section className="card">
                 <h3>{t.fam_general_etapa}</h3>
                 <p className="en-hint">{t.fam_general_etapa_lead}</p>
-                {datos.porEtapa.map((p) => <Barra key={p.clave.etapa} etiqueta={t.etapas[p.clave.etapa as Etapa]} fila={p} />)}
+                {datos.porEtapa.map((p) => <Barra key={p.clave.etapa} etiqueta={t.etapas[p.clave.etapa as Etapa]} fila={p}
+                                                  destino={aqui({ etapa: p.clave.etapa })} />)}
               </section>
             ) : (
               <section className="card">
@@ -234,7 +248,7 @@ export function Familias({ perfil }: { perfil: Perfil }) {
             )}
           </div>
 
-          <h2 className="section-title">{t.detalle}</h2>
+          <h2 className="section-title" id="en-detalle">{t.detalle}</h2>
           <p className="sec-lead">{t.detalle_lead}</p>
           <div className="card">
             <div className="en-toolbar en-noprint">
@@ -250,7 +264,8 @@ export function Familias({ perfil }: { perfil: Perfil }) {
             <LeyendaAcuerdo etiquetas={etiquetas} />
             <CabeceraPreguntas />
             {!detalle ? <p className="en-cargando">{t.cargando}</p>
-              : detalle.map((d) => <FilaPregunta key={d.codigo} texto={d.texto} fila={d.resultado.total} etiquetas={etiquetas} />)}
+              : detalle.map((d) => <FilaPregunta key={d.codigo} codigo={d.codigo} resaltar={param.pregunta === d.codigo}
+                                                 texto={d.texto} fila={d.resultado.total} etiquetas={etiquetas} />)}
           </div>
 
           <h2 className="section-title">{t.recomendacion}</h2>
@@ -259,7 +274,7 @@ export function Familias({ perfil }: { perfil: Perfil }) {
 
           {datos.porEtapa.length > 0 && (
             <>
-              <h2 className="section-title">{t.valorado}</h2>
+              <h2 className="section-title" id="en-valorado">{t.valorado}</h2>
               <p className="sec-lead">{t.valorado_lead}</p>
               <div className="card"><Ranking fila={datos.valorado} textos={textos} /></div>
             </>

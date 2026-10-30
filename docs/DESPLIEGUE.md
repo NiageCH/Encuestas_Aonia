@@ -225,3 +225,13 @@ Sin migraciones ni cambios en la Edge Function. Orden:
 4. Recuento después: 2025/26 idéntico; abiertas, alumnado 616, familias 79 y personal 55.
 5. Web (`npx clever-tools deploy`): la pantalla de familias muestra el texto oficial.
 
+## 8. Navegar al detalle al pulsar (rama `detalle-al-pulsar`, 30/10/2026)
+
+Orden, como siempre:
+1. Copia de la nube (`copia_nube.py`) y recuento de 2025/26.
+2. Unión a main y comprobación; Rodrigo hace el push.
+3. Migración `20261030000042_profesores_de_clase` (`npx supabase db push`): una RPC nueva que solo devuelve identificadores de docentes. **Numeración:** 42, por encima de las migraciones locales de la Fase 2 (33 a 41), que no están en la nube. Cuando la Fase 2 se suba, irán por detrás de la 42 y habrá que subirlas con `--include-all` o renumerarlas.
+4. Tests en la nube (`npx supabase test db --linked`, 538) y validación (`etl/validar_2526.py --remoto`): sin diferencias, no cambia ninguna cifra.
+5. Web (`npx clever-tools deploy`).
+6. Comprobación en la web publicada: un departamento de Personal lleva a su jefatura, con «Volver»; una asignatura de Alumnado, a su profesorado.
+
