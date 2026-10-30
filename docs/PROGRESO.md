@@ -258,7 +258,7 @@ Decisión de Mark del 30/10/2026 (§7.9):
 - **Familias:** textos oficiales «¿Qué es lo que echa en falta en el Colegio?» y «Si desea añadir algún comentario, hágalo aquí por favor», sin la nota de «texto deducido». La pantalla de familias muestra el texto oficial.
 - Total: 18 preguntas y 750 respuestas (alumnado 616, familias 79, personal 55).
 - Tests: 514 pgTAP (dos nuevos en `26_respuestas_abiertas.sql`: la coordinación no ve las del Plan de Igualdad y Dirección sí) y 51 de vitest.
-- Despliegue: `docs/DESPLIEGUE.md` §7.
+- **Desplegado el 30/10/2026:** copia previa `datos_locales/copias/nube_2026-10-30_1157` (restaurada y comprobada); recuento de 2025/26 idéntico antes y después; respuestas abiertas en la nube, 18 preguntas y 750 respuestas (alumnado 616, familias 79, personal 55); web desplegada (`69a0b52`).
 
 ## Tareas con fecha
 
