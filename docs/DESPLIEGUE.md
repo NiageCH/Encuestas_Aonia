@@ -42,7 +42,7 @@ Recomendación: proveedor europeo, por coherencia con la guía del Colegio. Deci
 
 ## 2. Orden de trabajo
 
-Cada paso se comprueba antes de pasar al siguiente.
+Cada paso se comprueba antes de pasar al siguiente. En cada subida de la web, además, la lista de comprobación del §9.
 
 1. **Supabase en la nube** (Rodrigo crea el proyecto; yo preparo y él ejecuta o autoriza):
    - `npx supabase link --project-ref <ref>`
@@ -234,4 +234,26 @@ Orden, como siempre:
 4. Tests en la nube (`npx supabase test db --linked`, 538) y validación (`etl/validar_2526.py --remoto`): sin diferencias, no cambia ninguna cifra.
 5. Web (`npx clever-tools deploy`).
 6. Comprobación en la web publicada: un departamento de Personal lleva a su jefatura, con «Volver»; una asignatura de Alumnado, a su profesorado.
+
+## 9. Lista de comprobación de cada subida de la web (desde el 03/11/2026)
+
+Antes de subir (en local, con la versión que se va a publicar) y después (en la web publicada), con cada rol (Dirección, administración y una coordinación):
+1. **Cambiar a mano cada desplegable y cada filtro de cada pantalla**, no solo llegar a la pantalla ya filtrada por la dirección de la página. Varias veces seguidas y volviendo al valor de partida, con y sin `?volver`:
+   - Alumnado: cuestionario, grupo y bloque del detalle;
+   - Familias: etapa y bloque del detalle;
+   - Personal: los cinco segmentos y el bloque del detalle;
+   - Informes por persona: cada nivel, un tramo de Equipos, otra jefatura en Departamentos, un docente y la búsqueda en Profesorado;
+   - Respuestas abiertas: colectivo, pregunta y sus filtros.
+   Cada cambio debe quedarse (el desplegable muestra lo elegido) y no borrar los demás filtros.
+2. Los destinos al pulsar (§8) y «Volver» y «Quitar el filtro».
+3. Sin errores en la consola del navegador.
+
+Motivo: el 03/11/2026 el cuestionario de Alumnado no se podía cambiar a mano en producción (detalle-al-pulsar); las pruebas solo habían llegado a la pantalla ya filtrada. Se volvió a la web anterior el mismo día y se corrigió en la rama `correccion-filtros` (§10).
+
+## 10. Corrección de los filtros (rama `correccion-filtros`, 03/11/2026)
+
+Sin migraciones ni cambios en la base de datos. Orden:
+1. Unión a main y comprobación de ficheros; Rodrigo hace el push.
+2. Web (`npx clever-tools deploy`): vuelve la navegación al detalle, con la corrección.
+3. Comprobación en la web publicada con la lista del §9.
 

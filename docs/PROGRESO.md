@@ -275,6 +275,13 @@ Petición de Mark; propuesta con visto bueno de Rodrigo el 30/10/2026, en los tr
   - segunda base local y web de la rama paradas.
 - Con esto, toda la Fase 1 que está en main está en producción. Fuera queda solo la rama `fase2` (local hasta que el Colegio valide la Fase 1).
 
+## Incidencia del 03/11/2026: el cuestionario de Alumnado no se podía cambiar (rama `correccion-filtros`)
+
+- **Causa:** el desplegable hacía dos cambios seguidos de la dirección de la página (el cuestionario y vaciar el grupo) y el segundo partía de la dirección de antes, así que borraba el primero. Venía de detalle-al-pulsar.
+- **Respuesta:** el mismo día se volvió a publicar la web anterior (`69a0b52`), comprobada antes en local con la migración 42; la base de datos no se tocó.
+- **Corrección:** cada cambio de filtro parte de la dirección actual y el desplegable hace un solo cambio. Test que reproduce el fallo: `src/componentes/Detalle.test.ts`. Revisados a mano todos los filtros de todas las pantallas, con cada rol, con y sin `?volver`.
+- **Nueva regla de cada subida:** cambiar a mano cada desplegable de cada pantalla (`docs/DESPLIEGUE.md` §9).
+
 ## Tareas con fecha
 
 - **Eliminar las cuentas de demo y borrar `datos_locales/demo_accesos.txt`** (Rodrigo): **29/10/2026** (la demo es el 28/10/2026). Son «Demo Dirección» (demo.direccion@demo.invalid) y «Demo Coordinación» (demo.coordinacion@demo.invalid), en producción y creadas con `datos_locales/scripts/crear_cuentas_demo.py`. Se eliminan en Accesos y el registro de actividad conserva su alta y su eliminación.
