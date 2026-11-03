@@ -175,7 +175,7 @@ export function Alumnos({ perfil }: { perfil: Perfil }) {
       <div className="card en-filters en-noprint">
         <label><span>{t.cuestionario}</span>
           <span className="en-select">
-            <select value={cuestionario} onChange={(e) => { setCuestionario(e.target.value); setGrupo(""); }}>
+            <select value={cuestionario} onChange={(e) => setCuestionario(e.target.value)}>
               {lista.map((c) => <option key={c.codigo} value={c.codigo}>{c.titulo}</option>)}
             </select>
           </span>

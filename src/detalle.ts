@@ -36,3 +36,14 @@ export function conCambios(filtro: Record<string, string> | undefined, cambios: 
   }
   return r;
 }
+
+/** Dirección nueva al cambiar filtros de la pantalla. Parte de la dirección que hay en ese momento (no de la que había al
+ *  pintar la pantalla), para que dos cambios seguidos no se pisen. Se queda «volver»; se quitan el apartado al que bajar y
+ *  lo resaltado. (Corrección del 03/11/2026: el cuestionario de Alumnado no se podía cambiar.) */
+export function direccionConCambios(hashActual: string, rol: Rol, cambios: Record<string, string | null | undefined>): string {
+  const ruta = leerRuta(hashActual, rol);
+  const filtro = ruta.filtro ?? {};
+  const base = { ...soloFiltros(filtro), ...(filtro.volver ? { volver: filtro.volver } : {}) };
+  return aHash({ ...ruta, filtro: conCambios(base, cambios) });
+}
+
