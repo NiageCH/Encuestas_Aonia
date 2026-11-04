@@ -297,3 +297,63 @@ Petición de Mark; propuesta con visto bueno de Rodrigo el 30/10/2026, en los tr
 
 - Para la demo con el Colegio: en Envío de informes, el correo de prueba ya no se escribe, se elige en un desplegable entre `rodrigo@niage.es` y `mark.polko@sfpaula.com`. El asunto lleva «[PRUEBA]» y el envío al profesorado sigue bloqueado (modo «pruebas»).
 - Migración 43 (`privado.correo_niage` pasa a ser esa lista cerrada) y la Edge Function `enviar-informes` comprueba la misma lista y que el enlace sea de prueba. Tres tests nuevos en `27_envio_informes.sql` (otro correo de Niage o del Colegio, rechazado; el de Mark, aceptado).
+
+## Plan de autonomía del Colegio para la Fase 2 (04/11/2026)
+
+Revisión de autonomía pedida por el Colegio, convertida en plan. La estimación es a nuestro ritmo real: lo ya hecho de la Fase 2 en `fase2` llevó unos tres días. La primera estimación, en jornadas tradicionales (unos 36 días), estaba mal y se ha corregido.
+
+| Bloque | Días | Dónde |
+|---|---|---|
+| Acceso con Microsoft (§7.11) | 1, **construido el 04/11/2026** (falta probarlo con la organización del Colegio) | Paso a producción |
+| Seguridad de cuentas: restablecer el doble factor de otra persona, al menos dos administradores activos, aviso a los 90 días sin uso | 0,5 | Fase 2 |
+| Pantalla «Profesorado del curso» (alta, edición, baja, borrado solo sin valoraciones, @sfpaula.com, aviso de docentes sin correo antes de cada envío) | 0,5 a 1 | Fase 2 |
+| Preguntas de texto libre en el editor y el formulario, con sus respuestas en la pantalla de respuestas abiertas y en SharePoint | 1 | Fase 2, si se aprueba (hoy la especificación de la Fase 2 recomienda no incluirlas) |
+| Bienvenida y aviso de privacidad por encuesta, texto del correo de informes y textos de difusión | 0,5 a 1 | Fase 2 |
+| Escritura en SharePoint al cerrar, con su estado | 1 | Fase 2, con el permiso de sistemas |
+| Avisos a administración (fallo de envío, de SharePoint, límite de intentos, claves próximas a caducar) | 0,5 | Fase 2 |
+| Documentación: técnica para sistemas, manual de administración, guías por rol, guía del profesorado y calendario | 1 a 1,5 | Fase 2 |
+| Borrado automático por plazos, avisos también por correo y lista de claves | 1 | Mantenimiento (antes de octubre de 2028) |
+| **Total** | **unos 8 días** (Microsoft incluido) | |
+
+**Orden:**
+1. Microsoft y la documentación técnica para sistemas, porque necesitan a Manuel.
+2. Seguridad de cuentas.
+3. Profesorado del curso.
+4. Textos.
+5. Texto libre.
+6. SharePoint y avisos.
+7. Manual y guías.
+
+**Pendiente de decidir:**
+- texto libre;
+- escribir en SharePoint (la regla 5 dice que de SharePoint solo se leen ficheros);
+- si @sfpaula.com es obligatorio sin excepciones;
+- si al restablecer el doble factor se avisa por correo;
+- el plazo de las respuestas (5 cursos).
+
+## Acceso con Microsoft (rama `acceso-microsoft`, 04/11/2026, sin publicar)
+
+Decisiones de Rodrigo del 04/11/2026 (especificación §7.11, regla 5 de CLAUDE.md cambiada):
+- Microsoft para el Colegio; correo y contraseña solo para Niage y una cuenta de emergencia.
+- Doble factor de Microsoft para todos y el nuestro también para administración.
+- El informe del docente siempre con Microsoft y la cuenta del destinatario.
+- Se publica con el paso a producción en las cuentas del Colegio.
+
+**Hecho:**
+- migración 44, con el interruptor `privado.configuracion_acceso.microsoft` (apagado por defecto), el gancho `privado.gancho_acceso` y el enlace del informe con Microsoft;
+- las Edge Functions (cuenta «solo informe» al enviar; «Dar acceso» sin invitación para el Colegio);
+- la web: «Entrar con Microsoft», el enlace del informe y Usuarios;
+- la guía para sistemas con las dos variantes de doble factor (`docs/MICROSOFT_SISTEMAS.md`);
+- el plan de despliegue (`docs/DESPLIEGUE.md` §11).
+
+**Probado en local:**
+- 575 tests de la base (34 nuevos) y 67 de la web;
+- de punta a punta con el gancho activado;
+- navegador, en ordenador y móvil.
+
+**Bloqueado:**
+- **Segundo entorno de pruebas en la nube:** Supabase no deja crear un tercer proyecto gratuito (la cuenta ya tiene Encuestas-CSFP e IWL-Platform). Decide Rodrigo: pausar uno, plan Pro o crearlo en una organización del Colegio o de Aonia.
+- **Sistemas (Manuel):**
+  - registrar la aplicación de Microsoft;
+  - elegir la variante de doble factor (acceso condicional o valores predeterminados de seguridad);
+  - crear las cuentas de prueba.

@@ -14,7 +14,7 @@ La especificación completa está en `docs/ESPECIFICACION.md`. Léela antes de e
 2. **Sin datos identificativos:** no se cargan IPs, identificadores de Encuesta Fácil, fechas de respuesta ni **sexo**. Las **respuestas abiertas** se cargan tal cual (desde el 28/10/2026, §7.9), **solo para Dirección y administración**, nunca para la coordinación ni en los informes del profesorado, sin enlace con las respuestas cerradas de la misma persona; cada consulta y exportación queda en el registro.
 3. **Las respuestas individuales nunca se leen desde el cliente.** Solo RPC (`security definer`) que aplican permisos y el criterio de anonimato de cada rol. Única excepción: los textos de las respuestas abiertas, sueltos, para Dirección y administración (§7.9). Las exportaciones CSV y los PDF salen de esas mismas RPC.
 4. **Nada de datos del colegio ni secretos en git.** Ni ficheros de encuestas, ni resultados agregados reales, ni claves. Todo eso vive en `datos_locales/` (ignorado) y en variables de entorno.
-5. **Sin inicio de sesión con Microsoft.** Acceso con correo y contraseña. El correo puede salir por el servidor de correo del colegio (Microsoft 365). De SharePoint solo se leen ficheros.
+5. **Acceso con Microsoft (Entra ID) para el Colegio** (decisión del 04/11/2026, especificación §7.11), desde el paso a producción en las cuentas del Colegio; hasta entonces, correo y contraseña. Correo y contraseña solo para Niage y la cuenta de emergencia del Colegio. Sin altas automáticas: solo entra quien tiene perfil activo. Doble factor de Microsoft para todos y el nuestro también para administración. El informe de cada docente se abre siempre con la cuenta de Microsoft del destinatario. El correo puede salir por el servidor de correo del colegio (Microsoft 365). De SharePoint solo se leen ficheros.
 6. **Estilo de la intranet CIS-SFP** (`referencia/plantilla-intranet-cis-sfp.html`): bloques A y B copiados tal cual, estilos propios con prefijo `en-`, sin peticiones externas. Colores: los de `:root` de la intranet y, para gráficos, indicadores y alertas, la paleta de `src/paleta.ts` (variables `--en-*`, también en los PDF), con sus reglas de uso (especificación, «Paleta»): solo petróleo y positivo como texto sobre blanco, alertas con el color en el borde o un fondo suave y texto oscuro, y cifras o etiquetas visibles en todos los gráficos.
 7. **Español por defecto**, con todos los textos visibles en un diccionario `I18N.es`.
 8. **Textos sin guiones largos como puntuación.** Rangos con "a" ("de 1 a 6").
@@ -22,7 +22,7 @@ La especificación completa está en `docs/ESPECIFICACION.md`. Léela antes de e
 ## Arquitectura
 
 - GitHub privado (organización Niage) · Vite + React + TypeScript · alojamiento web en Clever Cloud (París), entorno de pruebas en `encuestas-sfp.niage.eu`, desplegado con `npx clever-tools deploy` (despliegue automático desde GitHub, pendiente).
-- Supabase (Irlanda, UE; proyecto `osxjfmnhcyybgffanlqo`, plan Free hasta las pruebas con el colegio): Auth (correo y contraseña, alta por invitación, doble factor obligatorio para administradores), Postgres con RLS, RPC de agregación.
+- Supabase (Irlanda, UE; proyecto `osxjfmnhcyybgffanlqo`, plan Free hasta las pruebas con el colegio): Auth (correo y contraseña, alta por invitación, doble factor obligatorio para administradores; con el paso a producción, Microsoft para el Colegio, §7.11), Postgres con RLS, RPC de agregación.
 - Brevo como SMTP de Supabase Auth, configurado solo en el panel de Supabase (remitente provisional `encuestas@niage.eu`; previsto `encuestas@sfpaula.com`).
 - ETL en Python (`etl/`), ejecutado en local por Niage con la clave de servicio de `.env`.
 - Toda la lógica de datos del frontend en `src/data/`: el colegio aún no ha confirmado si acepta Supabase o pone su backend.
@@ -73,3 +73,4 @@ Bloqueos actuales (detalle en la especificación §10):
 - Cuestionario de personal en inglés (4 respuestas): falta el fichero.
 - Inglés de Y10 D: falta el docente que no está en Alexia (sustitución) para atribuirle sus valoraciones.
 - Departamento o equipo en la encuesta de personal: no viene en 2025/26; se aplica el plan alternativo (§7.3).
+- Acceso con Microsoft (rama `acceso-microsoft`): falta el segundo entorno de pruebas en la nube (límite de proyectos gratuitos de Supabase) y la aplicación de Microsoft de sistemas (`docs/MICROSOFT_SISTEMAS.md`).

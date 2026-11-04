@@ -257,3 +257,69 @@ Sin migraciones ni cambios en la base de datos. Orden:
 2. Web (`npx clever-tools deploy`): vuelve la navegación al detalle, con la corrección.
 3. Comprobación en la web publicada con la lista del §9.
 
+## 11. Acceso con Microsoft (rama `acceso-microsoft`, 04/11/2026)
+
+Se publica **con el paso a producción en las cuentas del Colegio, no antes**. No se une a main hasta entonces, y nada de esto toca el entorno actual (`osxjfmnhcyybgffanlqo`, `encuestas-sfp.niage.eu`). Funcionamiento en la especificación §7.11; lo que configura sistemas, en `docs/MICROSOFT_SISTEMAS.md`.
+
+**Qué lleva:**
+- migración 44 (`20261104000044_acceso_microsoft.sql`);
+- las Edge Functions `admin-usuarios` y `enviar-informes`;
+- la web: «Entrar con Microsoft», el enlace del informe con Microsoft y «Dar acceso» en Usuarios.
+
+Con el interruptor `privado.configuracion_acceso.microsoft` apagado, todo funciona como hoy.
+
+### Segundo entorno de pruebas en la nube
+
+**Bloqueado el 04/11/2026.** Supabase deja dos proyectos gratuitos activos por cuenta, y la de Rodrigo ya tiene dos (Encuestas-CSFP e IWL-Platform). Opciones, a decidir por Rodrigo:
+- pausar otro proyecto;
+- pasar la organización de Encuestas al plan Pro;
+- crearlo en una organización del Colegio o de Aonia.
+
+Cuando exista:
+1. Crear el proyecto en la región de Irlanda (`eu-west-1`). La contraseña de la base va a `datos_locales/`.
+2. Añadir a `supabase/config.toml` un bloque `[remotes.microsoft]` con su `project_id` y:
+   - `[remotes.microsoft.auth]`: `site_url` y `additional_redirect_urls` de la web de pruebas, y `enable_signup = false`;
+   - `[remotes.microsoft.auth.hook.custom_access_token]`: `enabled = true`, `uri = "pg-functions://postgres/privado/gancho_acceso"`;
+   - `[remotes.microsoft.auth.external.azure]`: `enabled = true`, `client_id`, `secret = "env(SUPABASE_AUTH_EXTERNAL_AZURE_SECRET)"`, `url = "https://login.microsoftonline.com/<id de la organización>"`.
+   Nada de esto va en la configuración de arriba ni en `[remotes.pruebas]`: el entorno actual no cambia.
+3. Migraciones con `npx supabase db push --db-url …` y configuración con `npx supabase config push --project-ref <nuevo>`, **nunca** con el proyecto enlazado.
+4. Solo datos de ejemplo (`supabase/tests/fixtures/datos_ejemplo.psql`) y las cuentas de prueba de sistemas: ningún dato real del Colegio.
+5. Encender el interruptor: `update privado.configuracion_acceso set microsoft = true, correos_contrasena = '{<cuenta de emergencia>}';`.
+6. Desplegar las dos Edge Functions con `--project-ref <nuevo>`.
+7. Servir la web de la rama apuntando a ese proyecto, en local o en una aplicación aparte de Clever.
+8. Probar la tabla de cuentas de `docs/MICROSOFT_SISTEMAS.md` §7, más:
+   - Niage y la cuenta de emergencia con contraseña;
+   - administración con Microsoft y nuestro código;
+   - un envío de prueba con el informe abierto por el destinatario con Microsoft, y no con otra cuenta.
+
+### En el paso a producción en las cuentas del Colegio
+
+El orden de siempre (§2 y la lista de §9), más:
+1. **Antes:** sistemas configura la aplicación de producción (`docs/MICROSOFT_SISTEMAS.md`, una de las dos variantes de doble factor) y nos pasa los identificadores y el secreto.
+2. **Cruce de correos:** las cuentas de la plataforma con el correo principal de cada persona en Microsoft. Se corrigen los alias y las cuentas sin correo.
+3. **Cuenta de emergencia:**
+   - de administración, con contraseña y doble factor;
+   - se guarda donde decida el Colegio;
+   - su correo va en `correos_contrasena`.
+4. Migración 44, las Edge Functions y la configuración de Auth del proyecto de producción: proveedor de Microsoft limitado a la organización, gancho y `enable_signup = false`.
+5. Encender el interruptor. Comprobar:
+   - una cuenta del Colegio con contraseña es rechazada;
+   - con Microsoft, entra;
+   - Niage y emergencia entran con contraseña.
+6. Anotar la fecha de caducidad del secreto en la lista de claves.
+
+### Probado en local (04/11/2026)
+
+- **Tests de la base:** 575, todos bien. Son los 541 de antes más los 34 de `30_acceso_microsoft.sql`.
+- **Tests de la web:** 67.
+- **De punta a punta, con el gancho activado en la Supabase local de pruebas:**
+  - apagado, todo como hoy;
+  - encendido, el Colegio con contraseña es rechazado con el mensaje en español, Niage entra, la sesión con contraseña ya abierta no se renueva y un perfil desactivado es rechazado.
+- **Navegador, en ordenador y móvil:**
+  - la pantalla de acceso con «Entrar con Microsoft» y el formulario para Niage y emergencia;
+  - el botón lleva al proveedor `azure` con vuelta a la web;
+  - el motivo de un rechazo se ve en español;
+  - el enlace del informe pide Microsoft y no enseña nada;
+  - apagado, todo como hoy.
+- **Falta:** el inicio de sesión real con Microsoft, que necesita la aplicación de sistemas y el segundo entorno.
+
