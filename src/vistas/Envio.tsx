@@ -21,6 +21,8 @@ export function textoInforme(x: Pick<Destinatario, "tipo" | "informe" | "tramo">
 }
 const ETAPAS = ["primaria", "pai", "bachillerato"];
 const TRAMOS = ["y1_y5", "y6_y9", "y10_y12"];
+// Únicos destinatarios de prueba (04/11/2026); el servidor y la Edge Function comprueban la misma lista.
+const CORREOS_PRUEBA = ["rodrigo@niage.es", "mark.polko@sfpaula.com"] as const;
 
 const fechaHora = (iso: string) =>
   new Date(iso).toLocaleString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -32,7 +34,7 @@ export function EnvioInformes() {
   const [tipo, setTipo] = useState<TipoSeleccion>("docente");
   const [valores, setValores] = useState<string[]>([]);
   const [busqueda, setBusqueda] = useState("");
-  const [correoPrueba, setCorreoPrueba] = useState("");
+  const [correoPrueba, setCorreoPrueba] = useState<string>(CORREOS_PRUEBA[0]);
   const [previa, setPrevia] = useState<VistaPrevia | null>(null);
   const [confirmando, setConfirmando] = useState(false);
   const [estado, setEstado] = useState<"" | "cargando" | "enviando">("");
@@ -128,7 +130,9 @@ export function EnvioInformes() {
 
         <label className="en-filters" style={{ display: "grid", marginTop: ".8rem", maxWidth: 420 }}>
           <span>{t.env_correo_prueba}</span>
-          <input type="email" className="en-input" value={correoPrueba} onChange={(e) => setCorreoPrueba(e.target.value)} placeholder="nombre@niage.es" />
+          <select value={correoPrueba} onChange={(e) => setCorreoPrueba(e.target.value)}>
+            {CORREOS_PRUEBA.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
         </label>
         <p className="en-hint">{t.env_correo_prueba_ayuda}</p>
 

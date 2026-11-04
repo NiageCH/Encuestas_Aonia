@@ -292,3 +292,8 @@ Petición de Mark; propuesta con visto bueno de Rodrigo el 30/10/2026, en los tr
 - Cuestionario de personal en inglés (4 respuestas).
 - Inglés de Y10 D: nombre y correo del docente que no está en Alexia (sustitución).
 - Departamento o equipo en el fichero de personal: se verifica en el paso 3.
+
+## Destinatarios de prueba fijos (rama `destinatarios-prueba`, 04/11/2026)
+
+- Para la demo con el Colegio: en Envío de informes, el correo de prueba ya no se escribe, se elige en un desplegable entre `rodrigo@niage.es` y `mark.polko@sfpaula.com`. El asunto lleva «[PRUEBA]» y el envío al profesorado sigue bloqueado (modo «pruebas»).
+- Migración 43 (`privado.correo_niage` pasa a ser esa lista cerrada) y la Edge Function `enviar-informes` comprueba la misma lista y que el enlace sea de prueba. Tres tests nuevos en `27_envio_informes.sql` (otro correo de Niage o del Colegio, rechazado; el de Mark, aceptado).

@@ -300,8 +300,8 @@ export const I18N = {
     env_tipos: { docente: "Individual", departamento: "Departamento", etapa: "Etapa", tramo: "Tramo", todos: "Todo el profesorado", jefaturas: "Jefaturas" },
     env_tramos: { y1_y5: "Y1 a Y5", y6_y9: "Y6 a Y9", y10_y12: "Y10 a Y12" },
     env_elegidos: (n: number) => `${n} ${n === 1 ? "docente elegido" : "docentes elegidos"}`,
-    env_correo_prueba: "Correo de prueba (de Niage)",
-    env_correo_prueba_ayuda: "Todos los correos de este envío irán a esta dirección, con «[PRUEBA]» en el asunto y el nombre del docente al que iría.",
+    env_correo_prueba: "Correo de prueba",
+    env_correo_prueba_ayuda: "Todos los correos de este envío irán a esta dirección, con «[PRUEBA]» en el asunto y el nombre del docente al que iría. No se envía nada al profesorado.",
     env_ver: "Ver destinatarios",
     env_previa: "Destinatarios",
     env_previa_lead: (n: number, fuera: number, dias: number) =>

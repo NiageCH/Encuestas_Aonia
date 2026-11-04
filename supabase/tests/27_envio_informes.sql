@@ -2,7 +2,7 @@
 -- Niage; enlace personal a la versión docente, con caducidad y cada apertura y descarga registradas.
 begin;
 \ir fixtures/datos_ejemplo.psql
-select plan(34);
+select plan(37);
 
 set local role postgres;
 create temp table ids as select (select id from public.persona_responsable where apellidos = 'Uno') as uno,
@@ -26,6 +26,13 @@ select throws_ok($$ select public.admin_envio_destinatarios('2000/01', '{"tipo":
   'en modo pruebas hace falta un correo de Niage');
 select throws_ok($$ select public.admin_envio_destinatarios('2000/01', '{"tipo":"todos"}', 'docente.uno@ejemplo.test') $$, '22023', null,
   'el correo de prueba tiene que ser de Niage');
+select throws_ok($$ select public.admin_envio_destinatarios('2000/01', '{"tipo":"todos"}', 'otra.persona@niage.es') $$, '22023', null,
+  'solo los dos correos de prueba: otro de Niage tampoco');
+select is((select bool_and(d ->> 'destinatario' = 'mark.polko@sfpaula.com')
+           from jsonb_array_elements(public.admin_envio_destinatarios('2000/01', '{"tipo":"todos"}', ' Mark.Polko@sfpaula.com ') -> 'destinatarios') d),
+  true, 'el correo de prueba de Mark vale, y todos van a él');
+select throws_ok($$ select public.admin_envio_destinatarios('2000/01', '{"tipo":"todos"}', 'otra.persona@sfpaula.com') $$, '22023', null,
+  'otro correo del Colegio, no');
 create temp table prev as select public.admin_envio_destinatarios('2000/01', '{"tipo":"todos"}', 'Rodrigo@niage.es') as r;
 select is((select r ->> 'modo' from prev), 'pruebas', 'la vista previa dice el modo');
 select is((select jsonb_array_length(r -> 'destinatarios') from prev), 2, 'todos: los dos docentes');

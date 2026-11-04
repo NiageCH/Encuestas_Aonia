@@ -5,8 +5,9 @@
 // POST { envio: "<id>" }  ->  { enviados, errores }
 //
 // Doble cerrojo para no escribir al profesorado antes de tiempo: la base de datos (modo «pruebas») solo crea enlaces a
-// correos de Niage, y aquí se comprueba otra vez: cualquier destinatario que no sea de Niage exige ENVIO_PROFESORADO=activo
-// y el remitente del Colegio (encuestas@sfpaula.com).
+// los dos correos de prueba (rodrigo@niage.es y mark.polko@sfpaula.com, desde el 04/11/2026), y aquí se comprueba otra
+// vez: cualquier otro destinatario, o un correo que no sea de prueba, exige ENVIO_PROFESORADO=activo y el remitente del
+// Colegio (encuestas@sfpaula.com).
 //
 // Variables (secretos de la función): SMTP_HOST, SMTP_PORT (465 recomendado: Supabase no deja salir por el 25 ni el 587),
 // SMTP_USER, SMTP_PASS, REMITENTE, SITIO_URL y, cuando el Colegio lo autorice, ENVIO_PROFESORADO=activo.
@@ -21,7 +22,8 @@ const LOCAL = URL_SUPABASE === "http://kong:8000";
 const REMITENTE_COLEGIO = "encuestas@sfpaula.com";
 const REMITENTE = Deno.env.get("REMITENTE") ?? (LOCAL ? "encuestas@niage.eu" : "");
 const ACTIVO = Deno.env.get("ENVIO_PROFESORADO") === "activo" && REMITENTE.toLowerCase() === REMITENTE_COLEGIO;
-const DE_NIAGE = /^[a-z0-9._%+-]+@niage\.(es|eu)$/i;
+const CORREOS_PRUEBA = new Set(["rodrigo@niage.es", "mark.polko@sfpaula.com"]);
+const dePrueba = (p: { destinatario: string; prueba: boolean }) => p.prueba && CORREOS_PRUEBA.has(p.destinatario.trim().toLowerCase());
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -112,8 +114,8 @@ Deno.serve(async (req) => {
   let enviados = 0;
   let errores = 0;
   for (const p of (data ?? []) as Pendiente[]) {
-    // Segundo cerrojo: fuera de Niage, solo con el envío activado y el remitente del Colegio.
-    if (!DE_NIAGE.test(p.destinatario) && !(ACTIVO && p.modo === "activo")) {
+    // Segundo cerrojo: fuera de los correos de prueba, solo con el envío activado y el remitente del Colegio.
+    if (!dePrueba(p) && !(ACTIVO && p.modo === "activo")) {
       await admin.rpc("envio_marcar", { p_enlace: p.enlace, p_error: "Bloqueado: el envío al profesorado no está activado" });
       errores++;
       continue;
