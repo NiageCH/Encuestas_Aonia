@@ -495,14 +495,22 @@ begin
   )
   select array_agg(r), array_agg(m), array_agg(es_total) into v_r, v_m, v_total from miembros;
 
+  -- En cada vuelta, cada relación con un solo oculto elige a quién ocultar: primero una parte (no el total) y, como
+  -- siempre, la de menos respuestas. Entre tablas (bloque, preguntas y satisfacción), antes que eso, la parte que más
+  -- relaciones arregla a la vez (otras con un solo oculto) y menos abre (otras sin ninguno): si queda oculta una
+  -- pregunta, se elige otra del mismo bloque antes que una pregunta suelta de otro, que obligaría a ocultar su bloque.
   loop
-    select array_agg(distinct m) into v_nuevos from (
-      select distinct on (r) m from (
-        select r, m, es_total, count(*) filter (where v_mot[m] is not null) over (partition by r) as ocultos
-        from (select distinct r, m, es_total from unnest(v_r, v_m, v_total) u(r, m, es_total)) d
-      ) z
-      where ocultos = 1 and v_mot[m] is null
-      order by r, es_total, p_n[m], m
+    with d as (
+      select distinct r, m, es_total from unnest(v_r, v_m, v_total) u(r, m, es_total)
+    ), z as (
+      select r, m, es_total, count(*) filter (where v_mot[m] is not null) over (partition by r) as ocultos from d
+    ), efecto as (
+      select m, count(*) filter (where ocultos = 0) - count(*) filter (where ocultos = 1) as coste from z group by m
+    )
+    select array_agg(distinct y.m) into v_nuevos from (
+      select distinct on (z.r) z.m from z join efecto e on e.m = z.m
+      where z.ocultos = 1 and v_mot[z.m] is null
+      order by z.r, z.es_total, case when left(z.r, 1) = 'c' then e.coste else 0 end, p_n[z.m], z.m
     ) y;
     exit when v_nuevos is null;
     foreach i in array v_nuevos loop

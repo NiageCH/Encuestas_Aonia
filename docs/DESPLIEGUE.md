@@ -329,7 +329,7 @@ Visto bueno de Rodrigo el 06/11/2026. Orden de siempre:
 1. Copia de la nube (`copia_nube.py`) y prueba de restauración; recuento de 2025/26 (`etl/borrar_2526.py --remoto`, sin `--confirmar`).
 2. Unión a main (con los dos commits pendientes) y comprobación de que no entra ningún fichero de datos; push (Rodrigo).
 3. Migraciones (`npx supabase db push --dry-run` y `npx supabase db push`): 45 (detalle por clase), 46 (supresión conjunta) y 47 (lo que llega al navegador). **Numeración:** la 44 es la de Microsoft, que no está en main; cuando se suba irá por detrás de estas y habrá que subirla con `--include-all` o renumerarla.
-4. Tests en la nube (`npx supabase test db --linked`, 608) y validación (`etl/validar_2526.py --remoto`). Recuento igual antes y después.
+4. Tests en la nube (`npx supabase test db --linked`, 608) y validación (`etl/validar_2526.py --remoto`: tres diferencias esperadas, las de §5 punto 16 de la especificación). Recuento igual antes y después.
 5. Web (`npx clever-tools deploy`).
 6. Comprobación en la web publicada, con la lista del §9 (cada desplegable a mano, en cada pantalla y rol): el detalle por clase en la vista del profesor/a (Dirección y una coordinación), un PDF en versión docente y un envío de prueba abierto por el enlace.
 
