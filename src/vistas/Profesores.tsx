@@ -8,10 +8,11 @@ import { useAyuda } from "../componentes/Ayuda";
 import { Barra } from "../componentes/Graficos";
 import { BandaDetalle, useBajarA, useNavegacion } from "../componentes/Detalle";
 import type { Perfil } from "../data/sesion";
+import { DetallePorClase } from "../componentes/DetallePorClase";
 import { MarcaMenos5, Oculto } from "../componentes/Oculto";
 import {
-  listarProfesores, preguntasProfesorado, profesoresDeClase, resultadosProfesor,
-  type CeldaProfesor, type PreguntaBloque, type Profesor, type ResultadoProfesor, type VersionInforme,
+  detalleProfesor, listarProfesores, profesoresDeClase,
+  type CeldaProfesor, type InformeProfesor, type Profesor, type ResultadoProfesor, type VersionInforme,
 } from "../data/resultados";
 import { claveClase, enumerar, etiquetaClase, ordenarClases } from "../etiquetas";
 import * as f from "../formato";
@@ -96,31 +97,24 @@ function Informe({ profesor, perfil }: { profesor: Profesor; perfil: Perfil }) {
   const completa = veMenos5(perfil.rol);
   const ayuda = useAyuda();
   const { filtro, aqui } = useNavegacion();
-  const [datos, setDatos] = useState<ResultadoProfesor | null>(null);
-  const [preguntas, setPreguntas] = useState<{ p: PreguntaBloque; r: ResultadoProfesor }[] | null>(null);
+  // Bloque, cada pregunta y cada pregunta en cada clase, en una llamada, con la versión del rol (§7.2).
+  const [datos, setDatos] = useState<InformeProfesor | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let vigente = true;
-    setDatos(null); setPreguntas(null); setError(null);
-    (async () => {
-      const r = await resultadosProfesor(profesor.id);
-      if (!vigente) return;
-      setDatos(r);
-      const cuestionarios = [...new Set(r.celdas.map((c) => c.clave.cuestionario))];
-      const ps = cuestionarios.length ? await preguntasProfesorado(cuestionarios) : [];
-      const rs = await Promise.all(ps.map((p) => resultadosProfesor(profesor.id, { tipo: "pregunta", codigo: p.codigo })));
-      if (vigente) setPreguntas(ps.map((p, i) => ({ p, r: rs[i] })));
-    })().catch(() => vigente && setError(t.error_datos));
+    setDatos(null); setError(null);
+    detalleProfesor(profesor.id).then((r) => vigente && setDatos(r)).catch(() => vigente && setError(t.error_datos));
     return () => { vigente = false; };
   }, [profesor.id]);
 
+  const preguntas = datos?.preguntas;
   useBajarA(!!preguntas);
   if (error) return <p className="notice en-alerta en-alerta-neg" role="alert">{error}</p>;
   if (!datos) return <p className="en-cargando">{t.cargando}</p>;
 
-  // Versión completa: cada clase lleva a su detalle pregunta por pregunta (la versión docente no lo tiene).
-  const aClase = (c: CeldaProfesor) => (completa ? aqui({ clase: claveClase(c), ver: "en-por-clase" }) : undefined);
+  // Cada clase lleva a su detalle pregunta por pregunta (en las dos versiones).
+  const aClase = (c: CeldaProfesor) => aqui({ clase: claveClase(c), ver: "en-por-clase" });
   const etapas = Object.keys(datos.comparacion).filter((k) => k !== "colegio");
   const g = datos.global;
   const celdas = ordenarClases(datos.celdas);
@@ -190,11 +184,11 @@ function Informe({ profesor, perfil }: { profesor: Profesor; perfil: Perfil }) {
                 </tr>
               </thead>
               <tbody>
-                {preguntas.map(({ p, r }) => (
-                  <tr key={p.codigo}>
-                    <td>{p.texto}</td>
-                    <td className="n en-con-ayuda" data-etiqueta={t.prof_col_profesor} {...ayuda(r.global.suprimido ? [p.texto, t.prof_sin_visibles]
-                      : [p.texto, t.tip_media(f.media(r.global.media!)), t.tip_valoraciones(f.recuento(r.global.n_valoraciones!))])}>
+                {preguntas.map(({ codigo, texto, resultado: r }) => (
+                  <tr key={codigo}>
+                    <td>{texto}</td>
+                    <td className="n en-con-ayuda" data-etiqueta={t.prof_col_profesor} {...ayuda(r.global.suprimido ? [texto, t.prof_sin_visibles]
+                      : [texto, t.tip_media(f.media(r.global.media!)), t.tip_valoraciones(f.recuento(r.global.n_valoraciones!))])}>
                       {r.global.suprimido ? <span className="en-oculto">{t.oculto_menos5}</span> : <strong>{f.media(r.global.media!)}</strong>}
                       {!r.global.suprimido && r.global.menos_de_5 ? <MarcaMenos5 fila={{ menos_de_5: true }} /> : null}
                     </td>
@@ -207,7 +201,7 @@ function Informe({ profesor, perfil }: { profesor: Profesor; perfil: Perfil }) {
           </div>
         )}
       </div>
-      {completa && preguntas && <DetallePorClase celdas={celdas} preguntas={preguntas} abierta={filtro.clase} />}
+      {preguntas && <DetallePorClase celdas={celdas} preguntas={preguntas} abierta={filtro.clase} />}
       <p className="notice en-alerta" style={{ marginTop: ".9rem" }}>{leyendaAnonimato(perfil.rol)}</p>
     </div>
   );
@@ -216,48 +210,6 @@ function Informe({ profesor, perfil }: { profesor: Profesor; perfil: Perfil }) {
     if (!fila) return "";
     return fila.suprimido ? <Oculto fila={fila} /> : f.media(fila.media!);
   }
-}
-
-/** Versión completa (Dirección y administración): cada pregunta en cada clase, con la marca «menos de 5». */
-function DetallePorClase({ celdas, preguntas, abierta }: {
-  celdas: CeldaProfesor[]; preguntas: { p: PreguntaBloque; r: ResultadoProfesor }[]; abierta?: string;
-}) {
-  const mismaClase = (a: CeldaProfesor, b: CeldaProfesor) =>
-    a.clave.cuestionario === b.clave.cuestionario && a.clave.grupo === b.clave.grupo && a.clave.asignatura === b.clave.asignatura;
-  return (
-    <div className="card" id="en-por-clase" style={{ marginTop: ".9rem" }}>
-      <h3>{t.prof_por_clase}</h3>
-      <p className="en-hint">{t.prof_por_clase_lead}</p>
-      {celdas.map((c) => (
-        <details key={`${c.clave.cuestionario}-${c.clave.grupo}-${c.clave.asignatura}`} id={`en-clase-${claveClase(c)}`}
-                 className={`en-clase-detalle${abierta === claveClase(c) ? " en-destacado" : ""}`} open={abierta === claveClase(c) || undefined}>
-          <summary>
-            <strong>{etiquetaClase(c)}</strong>
-            {c.tipo === "compartida" && <small> · {t.prof_compartida_corto}</small>}
-            {" · "}{c.suprimido ? <Oculto fila={c} /> : <>{f.media(c.media!)} · n {f.recuento(c.n!)}</>}
-            <MarcaMenos5 fila={c} />
-          </summary>
-          <div className="tbl-wrap">
-            <table className="doc-table en-tabla-prof">
-              <thead><tr><th>{t.pregunta}</th><th>{t.media}</th><th>n</th></tr></thead>
-              <tbody>
-                {preguntas.filter(({ r }) => r.celdas.some((y) => mismaClase(y, c))).map(({ p, r }) => {
-                  const x = r.celdas.find((y) => mismaClase(y, c));
-                  return (
-                    <tr key={p.codigo}>
-                      <td>{p.texto}</td>
-                      <td className="n" data-etiqueta={t.media}>{!x ? "·" : x.suprimido ? <Oculto fila={x} /> : <strong>{f.media(x.media!)}</strong>}</td>
-                      <td className="n" data-etiqueta="n">{x && !x.suprimido ? <>{f.recuento(x.n!)}<MarcaMenos5 fila={x} /></> : ""}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </details>
-      ))}
-    </div>
-  );
 }
 
 function BotonPdf({ profesor, completa }: { profesor: Profesor; completa: boolean }) {

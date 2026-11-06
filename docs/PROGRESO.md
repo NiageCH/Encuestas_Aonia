@@ -15,6 +15,14 @@ Plan de trabajo en `docs/ESPECIFICACION.md` §9.
 | 9. Administración de usuarios y registro | Hecho en local |
 | 10. Despliegue | Plan preparado (`docs/DESPLIEGUE.md`); pendiente de las decisiones y cuentas de Rodrigo |
 
+## Detalle por clase en la versión docente (rama informe-docente-clases, 06/11/2026)
+
+Petición de Mark: el informe que recibe cada docente lleva también cada pregunta en cada clase (asignatura y grupo). Especificación §7.2.
+- **Hecho:** en pantalla (vista del profesor/a, ahora en una sola llamada, `detalle_profesor`), en el PDF y en el enlace personal. Mínimo de 5 y complementaria en cada celda, más el paso por clase (`privado.complementaria_por_clase`). Una clase oculta sale en una línea, sin sus preguntas. La versión completa no cambia. `resultados_profesor` con una pregunta da lo mismo que el informe.
+- **Recuento con 2025/26 (versión docente):** 2.009 de 11.688 celdas ocultas (17 %): 1.063 por menos de 5 y 946 por complementaria. Bachillerato: 618 de 1.617 (38 %); el paso por clase añade 45, todas en Bachillerato. PAI: 1.301 de 8.265; Primaria: 90 de 1.806. Las clases compartidas cuentan una vez en el informe de cada docente.
+- **Probado:** 573 tests de la base (32 nuevos, `31_detalle_clase_docente.sql`) y 71 de la web (4 nuevos). Capturas en `datos_locales/capturas_clases/` (un docente con clases grandes y otro con pequeñas: enlace en ordenador y móvil, y PDF).
+- **Falta:** despliegue con el visto bueno de Rodrigo, en el orden de siempre, con la prueba a mano de los desplegables.
+
 ## Paso 1 · Repositorio (13/10/2026)
 
 - Repositorio git en `main`, remoto `origin` en `NiageCH/Encuestas_Aonia` (privado).

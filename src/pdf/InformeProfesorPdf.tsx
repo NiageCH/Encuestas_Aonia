@@ -75,7 +75,8 @@ export function InformeProfesorPdf({ profesor, informe, sello }: DatosInformePdf
   const celdas = ordenarClases(informe.celdas);
   const propias = celdas.filter((c) => c.tipo !== "compartida");
   const compartidas = celdas.filter((c) => c.tipo === "compartida");
-  const hayComplementaria = celdas.some((c) => c.motivo === "complementaria");
+  const hayComplementaria = celdas.some((c) => c.motivo === "complementaria")
+    || informe.preguntas.some((p) => p.resultado.celdas.some((c) => c.motivo === "complementaria"));
   const completa = informe.version === "completa";
   const version = completa ? t.version_completa : t.version_docente;
 
@@ -147,10 +148,10 @@ export function InformeProfesorPdf({ profesor, informe, sello }: DatosInformePdf
             </View>
           ))}
 
-          {completa && (
+          {celdas.length > 0 && (
             <>
               <Text style={base.h2} break>{t.prof_por_clase}</Text>
-              <Text style={base.lead}>{t.prof_por_clase_lead}</Text>
+              <Text style={base.lead}>{t.prof_por_clase_lead_pdf}</Text>
               {celdas.map((c) => (
                 <View key={`${c.clave.cuestionario}-${c.clave.grupo}-${c.clave.asignatura}`}>
                   <View wrap={false}>
@@ -158,13 +159,15 @@ export function InformeProfesorPdf({ profesor, informe, sello }: DatosInformePdf
                       {etiquetaClase(c)}{c.tipo === "compartida" ? ` · ${t.prof_compartida_corto}` : ""}
                       {" · "}{c.suprimido ? textoOculto(c) : `${f.media(c.media!)} · n ${f.recuento(c.n!)}`}<Marca fila={c} />
                     </Text>
-                    <View style={s.thFila}>
-                      <Text style={[s.th, s.colPregunta]}>{t.pregunta}</Text>
-                      <Text style={[s.th, s.colNum]}>{t.media}</Text>
-                      <Text style={[s.th, s.colNum]}>n</Text>
-                    </View>
+                    {c.suprimido ? <Text style={base.muted}>{t.prof_clase_oculta}</Text> : (
+                      <View style={s.thFila}>
+                        <Text style={[s.th, s.colPregunta]}>{t.pregunta}</Text>
+                        <Text style={[s.th, s.colNum]}>{t.media}</Text>
+                        <Text style={[s.th, s.colNum]}>n</Text>
+                      </View>
+                    )}
                   </View>
-                  {informe.preguntas.filter((p) => p.resultado.celdas.some((y) => mismaClase(y, c))).map((p) => {
+                  {!c.suprimido && informe.preguntas.filter((p) => p.resultado.celdas.some((y) => mismaClase(y, c))).map((p) => {
                     const x = p.resultado.celdas.find((y) => mismaClase(y, c));
                     return (
                       <View key={p.codigo} style={s.fila} wrap={false}>

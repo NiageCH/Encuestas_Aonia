@@ -273,6 +273,14 @@ export type InformeProfesor = ResultadoProfesor & {
   version: VersionInforme;
 };
 
+/** Informe de un profesor en pantalla (bloque, cada pregunta y cada pregunta en cada clase), con la versión del rol: la
+ *  completa para Dirección y administración, la docente para la coordinación. No queda en el registro. */
+export async function detalleProfesor(docente: number): Promise<InformeProfesor> {
+  const { data, error } = await supabase.rpc("detalle_profesor", { p_curso: CURSO, p_docente: docente });
+  if (error) throw error;
+  return textosConMayuscula(data as InformeProfesor);
+}
+
 /** Informe de un profesor (bloque, cada pregunta y cada pregunta en cada clase) para el PDF. Queda en el registro de
  *  actividad, con la versión y si forma parte de un lote. */
 export async function informeProfesor(docente: number, lote = false, version: VersionInforme = "completa"): Promise<InformeProfesor> {

@@ -3,6 +3,7 @@
 // el servidor. Si el enlace ha caducado o no vale, lo dice y remite a Dirección.
 
 import { useEffect, useRef, useState } from "react";
+import { DetallePorClase } from "../componentes/DetallePorClase";
 import { Barra } from "../componentes/Graficos";
 import { Oculto } from "../componentes/Oculto";
 import { informeEnlace, type InformeEnlace } from "../data/envio";
@@ -101,6 +102,7 @@ function PaginaProfesor({ token, caduca, profesor, informe }: { token: string; c
           {compartidas.map((c) => <Barra key={`${c.clave.cuestionario}-${c.clave.grupo}-${c.clave.asignatura}`} etiqueta={etiquetaClase(c)} fila={c} />)}
         </div>
       )}
+      <DetallePorClase celdas={celdas} preguntas={informe.preguntas} />
       <p className="notice en-alerta" style={{ marginTop: ".9rem" }}>{t.leyenda_oculto} {t.aviso_cierre}</p>
       <p className="en-hint">{t.enl_pie}</p>
     </div>
