@@ -2,7 +2,7 @@
 -- registro desde el cliente y las RPC exigen un perfil activo (y aal2 a los administradores).
 begin;
 \ir fixtures/datos_ejemplo.psql
-select plan(26);
+select plan(27);
 
 -- anon
 set local role anon;
@@ -31,8 +31,10 @@ select throws_ok($$ insert into public.cuestionario (curso_id, colectivo, codigo
 select throws_ok($$ update public.usuario_perfil set rol = 'administrador' $$, '42501', null,
   'nadie se cambia el rol desde el cliente');
 select ok((select count(*) from public.cuestionario) > 0, 'un usuario activo lee el catálogo');
-select is((select count(*) from public.persona_responsable where correo in ('docente.uno@ejemplo.test', 'docente.dos@ejemplo.test')), 2::bigint,
+select is((select count(*) from public.persona_responsable where apellidos in ('Uno', 'Dos')), 2::bigint,
   'dirección ve los profesores');
+select throws_ok($$ select correo from public.persona_responsable $$, '42501', null,
+  '... pero no sus correos (solo los usan las funciones de envío)');
 select is((select count(*) from public.registro_actividad), 0::bigint, 'dirección no ve el registro de actividad');
 select is((select count(*) from public.usuario_perfil), 1::bigint, 'dirección solo ve su propio perfil');
 

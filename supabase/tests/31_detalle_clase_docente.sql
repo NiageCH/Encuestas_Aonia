@@ -82,11 +82,13 @@ select is((select (p -> 'resultado' -> 'global' ->> 'media')::numeric from p4, j
 -- 2. Con los datos de ejemplo -------------------------------------------------------------------------------------------
 -- En Y7 B, Matemáticas, «Explica con claridad» queda con 4 valoraciones: la clase (8) se ve, esa pregunta no, y «El trato
 -- es respetuoso» (8) se despejaría restando: se oculta también.
-update privado.respuesta_item ri set valor = null, ns_nc = true
-from privado.respuesta r, public.grupo g, public.pregunta p, public.asignatura a
-where ri.respuesta_id = r.id and r.grupo_id = g.id and g.nombre = 'Y7 B' and ri.pregunta_id = p.id and p.codigo_diccionario = 'prof_claridad'
-  and ri.asignatura_id = a.id and a.nombre = 'Matemáticas' and ri.valor is not null
-  and r.id in (select r2.id from privado.respuesta r2 where r2.grupo_id = g.id order by r2.id limit 3);
+update privado.respuesta_item set valor = null, ns_nc = true
+where ctid in (
+  select ri.ctid from privado.respuesta_item ri
+  join privado.respuesta r on r.id = ri.respuesta_id join public.grupo g on g.id = r.grupo_id
+  join public.pregunta p on p.id = ri.pregunta_id join public.asignatura a on a.id = ri.asignatura_id
+  where g.nombre = 'Y7 B' and p.codigo_diccionario = 'prof_claridad' and a.nombre = 'Matemáticas' and ri.valor is not null
+  order by r.id limit 3);
 
 select pg_temp.como('coord_pai'); set local role authenticated;
 create temp table coord as select public.detalle_profesor('2000/01', (select uno from ids)) as r;

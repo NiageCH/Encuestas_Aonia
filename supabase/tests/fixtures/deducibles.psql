@@ -1,0 +1,66 @@
+-- Intento de deducir celdas ocultas restando (lo usa el test 32 y la comprobación con los datos reales). Pide, con el
+-- usuario simulado, la satisfacción general, cada bloque de escala y cada pregunta de escala con los mismos filtros y
+-- dimensiones, y busca toda relación (total y sus partes) con un solo miembro oculto: ese se despejaría restando.
+--   en una tabla: cada margen con sus celdas, por cada dimensión;
+--   entre tablas, en la misma celda: el bloque con sus preguntas; la satisfacción con sus bloques y con sus preguntas.
+create temp table ded_celda (tabla text, clave jsonb, oculta boolean);
+create temp table ded_rel (padre text, hijo text);
+create function pg_temp.deducibles(p_filtro jsonb, p_dims text[])
+returns table (relacion text, tabla text, clave jsonb)
+language plpgsql as $$
+declare
+  v_cuest integer[];
+  v_t     text;
+  v_m     jsonb;
+  v_r     jsonb;
+begin
+  v_cuest := array(select jsonb_array_elements_text(privado.resolver(p_filtro, p_dims) -> 'cuestionarios')::integer);
+  delete from ded_celda; delete from ded_rel;
+  insert into ded_rel
+    select distinct 'B:' || b.codigo, 'Q:' || p.codigo_diccionario
+    from public.pregunta_cuestionario pc join public.pregunta p on p.id = pc.pregunta_id join public.bloque b on b.id = pc.bloque_id
+    where pc.cuestionario_id = any(v_cuest) and p.tipo = 'escala' and not pc.por_departamento
+    union
+    select distinct 'S', 'Q:' || p.codigo_diccionario
+    from public.pregunta_cuestionario pc join public.pregunta p on p.id = pc.pregunta_id join public.bloque b on b.id = pc.bloque_id
+    where pc.cuestionario_id = any(v_cuest) and p.tipo = 'escala' and p.escala_min = 1 and p.escala_max = 6 and b.entra_en_media
+      and not pc.por_departamento
+    union
+    select distinct 'S', 'B:' || b.codigo
+    from public.pregunta_cuestionario pc join public.pregunta p on p.id = pc.pregunta_id join public.bloque b on b.id = pc.bloque_id
+    where pc.cuestionario_id = any(v_cuest) and p.tipo = 'escala' and p.escala_min = 1 and p.escala_max = 6 and b.entra_en_media
+      and not pc.por_departamento;
+  for v_t in select 'S' union select padre from ded_rel union select hijo from ded_rel loop
+    v_m := case when v_t = 'S' then '{"tipo": "satisfaccion"}'::jsonb
+                when v_t like 'B:%' then jsonb_build_object('tipo', 'bloque', 'codigo', substr(v_t, 3))
+                else jsonb_build_object('tipo', 'pregunta', 'codigo', substr(v_t, 3)) end;
+    begin
+      v_r := public.resultados(p_filtro, v_m, p_dims);
+    exception when others then
+      continue;   -- esa tabla no se puede pedir con estos filtros: no sirve para restar
+    end;
+    insert into ded_celda
+      select v_t, x -> 'clave', (x ->> 'suprimido')::boolean
+      from jsonb_array_elements(jsonb_build_array(v_r -> 'total') || (v_r -> 'partes')) x
+      where x ->> 'motivo' is distinct from 'sin_datos';
+  end loop;
+
+  return query
+  -- Márgenes: una fila y sus partes con una clave más.
+  with rel as (
+    select 'margen' as relacion, m.tabla, m.clave, d.dim, m.oculta as oculto_total,
+           count(*) filter (where x.oculta) as ocultas, count(*) as partes
+    from ded_celda m
+    cross join lateral (select distinct jsonb_object_keys(y.clave) as dim from ded_celda y where y.tabla = m.tabla) d
+    join ded_celda x on x.tabla = m.tabla and x.clave @> m.clave and x.clave ? d.dim and not m.clave ? d.dim
+                    and (select count(*) from jsonb_object_keys(x.clave)) = (select count(*) from jsonb_object_keys(m.clave)) + 1
+    group by m.tabla, m.clave, d.dim, m.oculta
+  ), metr as (
+    select 'metricas' as relacion, m.tabla, m.clave, left(r.hijo, 1) as dim, m.oculta as oculto_total,
+           count(*) filter (where x.oculta) as ocultas, count(*) as partes
+    from ded_celda m join ded_rel r on r.padre = m.tabla join ded_celda x on x.tabla = r.hijo and x.clave = m.clave
+    group by m.tabla, m.clave, left(r.hijo, 1), m.oculta
+  )
+  select z.relacion, z.tabla, z.clave from (select * from rel union all select * from metr) z
+  where (z.oculto_total::int + z.ocultas) = 1;
+end $$;
