@@ -26,6 +26,7 @@ import json
 import subprocess
 import sys
 import tempfile
+import time
 import uuid
 from collections import defaultdict
 from decimal import Decimal
@@ -70,11 +71,53 @@ def regla(apartado, donde, cond, msg):
         diferencias.append(f"[{apartado}] {donde} · CRITERIO: {msg}")
 
 
-conn = psycopg.connect(url_bd(ARGS.remoto))
-cur = conn.cursor()
+URL_BD = url_bd(ARGS.remoto)
 USUARIO = str(uuid.uuid4())
-cur.execute("insert into auth.users (id, email, aud, role) values (%s, 'verificacion@local', 'authenticated', 'authenticated')", (USUARIO,))
-cur.execute("insert into public.usuario_perfil (id, nombre, rol) values (%s, 'Verificación', 'direccion')", (USUARIO,))
+
+
+class Consultas:
+    """Cada consulta va en una transacción corta que siempre se deshace (la nube cierra las transacciones que se
+    quedan abiertas sin hacer nada). Con `version`, como un usuario de Dirección temporal que se crea dentro de la
+    misma transacción y desaparece con ella, con la versión completa o la del destinatario («docente» o «jefatura»).
+    Si se corta la conexión, reconecta y reintenta."""
+
+    def __init__(self):
+        self.conn = psycopg.connect(URL_BD)
+        self.version = None
+        self.filas = []
+
+    def execute(self, sql, params=()):
+        for intento in range(5):
+            try:
+                with self.conn.cursor() as c:
+                    if self.version is not None:
+                        c.execute("insert into auth.users (id, email, aud, role) values (%s, 'verificacion@local', 'authenticated', 'authenticated')", (USUARIO,))
+                        c.execute("insert into public.usuario_perfil (id, nombre, rol) values (%s, 'Verificación', 'direccion')", (USUARIO,))
+                        c.execute("select set_config('request.jwt.claims', %s, true), set_config('encuestas.version_docente', %s, true)",
+                                  (json.dumps({"sub": USUARIO, "role": "authenticated", "aal": "aal1"}),
+                                   "" if self.version == "completa" else "on"))
+                    c.execute(sql, params)
+                    self.filas = c.fetchall()
+                self.conn.rollback()
+                return
+            except psycopg.OperationalError as e:
+                print(f"Conexión cortada ({str(e).splitlines()[0][:80]}); reintento {intento + 1} de 5", file=sys.stderr)
+                try:
+                    self.conn.close()
+                except Exception:
+                    pass
+                time.sleep(15 * (intento + 1))
+                self.conn = psycopg.connect(URL_BD)
+        raise SystemExit("La conexión se corta una y otra vez: no se ha podido terminar la comprobación.")
+
+    def fetchall(self):
+        return self.filas
+
+    def fetchone(self):
+        return self.filas[0] if self.filas else None
+
+
+cur = Consultas()
 cur.execute("select id from public.curso where nombre = %s", (CURSO,))
 CID = cur.fetchone()[0]
 
@@ -227,9 +270,8 @@ def clave_plat(c):
 
 
 # ---------------------------------------------------------------- informes de la plataforma
-def como_direccion(docente_version):
-    cur.execute("""select set_config('request.jwt.claims', %s, true), set_config('encuestas.version_docente', %s, true)""",
-                (json.dumps({"sub": USUARIO, "role": "authenticated", "aal": "aal1"}), "on" if docente_version else ""))
+def como_direccion(version):
+    cur.version = version
 
 
 cur.execute("""select d.id from public.persona_responsable d
@@ -239,7 +281,7 @@ DOCENTES = [r[0] for r in cur.fetchall()]
 
 informes = {}
 for version in ("completa", "docente"):
-    como_direccion(version == "docente")
+    como_direccion(version)
     for d in DOCENTES:
         cur.execute("select privado.informe_profesor(%s::smallint, %s, null::text)", (CID, d))
         informes[(version, d)] = cur.fetchone()[0]
@@ -388,7 +430,7 @@ DEP_DE = dict(cur.fetchall())
 
 jef = {}
 for version in ("completa", "jefatura"):
-    como_direccion(version == "jefatura")
+    como_direccion(version)
     for pid, deps in JEFES:
         cur.execute("select privado.informe_jefatura_departamento(%s, %s)", (CURSO, pid))
         jef[(version, pid)] = cur.fetchone()[0]
@@ -483,7 +525,7 @@ for (version, pid), inf in jef.items():
 
 # ---------------------------------------------------------------- Equipo de Individuación
 for version in ("completa", "jefatura"):
-    como_direccion(version == "jefatura")
+    como_direccion(version)
     ap = f"Equipo de Individuación · versión {version}"
     cur.execute("select privado.grupos_equipo(%s)", (CURSO,))
     grupos = cur.fetchone()[0]
@@ -504,7 +546,7 @@ for version in ("completa", "jefatura"):
         comprobar_seccion(ap, f"tramos {sorted(ts)}", version, "equipo_individualizacion",
                           lambda i, ts=ts: TRAMO.get(i["resp"]) in ts, inf)
 
-conn.rollback()
+cur.conn.close()
 
 # ---------------------------------------------------------------- tabla «Detalle por pregunta» del frontend
 # (src/data/tablaProfesor.ts ejecutado con vite-node sobre los mismos informes: tabla_frontend.json)
