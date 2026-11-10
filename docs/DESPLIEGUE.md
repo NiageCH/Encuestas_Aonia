@@ -180,7 +180,10 @@ Requisito: `DATABASE_URL` en el `.env` de Rodrigo con la cadena de conexión del
    preguntas, asignaturas, grupos, etapas y segmentos) contra la nube, dentro de una transacción
    que se deshace. Informe en `datos_locales/informes/validacion_2526_nube.md`, que debe dar el
    mismo resultado que `validacion_2526.md` (hoy: todo en verde, sin diferencias).
-2. Recuento de la nube igual al local: `etl/borrar_2526.py --remoto` sin `--confirmar` solo muestra
+2. `etl/verificar_informes_2526.py --remoto`: recálculo independiente de todos los informes (profesorado,
+   jefaturas y Equipo de Individuación, versión completa y del destinatario) contra la nube, en una transacción
+   que se deshace. Debe dar 0 diferencias, como en local.
+3. Recuento de la nube igual al local: `etl/borrar_2526.py --remoto` sin `--confirmar` solo muestra
    el recuento (cuestionarios, respuestas, valoraciones, atribuciones, tramos, grupos, asignaturas,
    departamentos, asignaciones, cargos, personas y preguntas).
 3. `npx supabase test db --linked` (los tests usan su propio curso inventado y no dejan nada).
@@ -247,6 +250,7 @@ Antes de subir (en local, con la versión que se va a publicar) y después (en l
    Cada cambio debe quedarse (el desplegable muestra lo elegido) y no borrar los demás filtros.
 2. Los destinos al pulsar (§8) y «Volver» y «Quitar el filtro».
 3. Sin errores en la consola del navegador.
+4. **Si la subida cambia los informes** (profesorado, jefaturas, Equipo de Individuación, sus funciones o su tabla en la web) **o tras una carga de datos:** `etl/verificar_informes_2526.py` en local antes de subir y con `--remoto` después, con 0 diferencias.
 
 Motivo: el 03/11/2026 el cuestionario de Alumnado no se podía cambiar a mano en producción (detalle-al-pulsar); las pruebas solo habían llegado a la pantalla ya filtrada. Se volvió a la web anterior el mismo día y se corrigió en la rama `correccion-filtros` (§10).
 

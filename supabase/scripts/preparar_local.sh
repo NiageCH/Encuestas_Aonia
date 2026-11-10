@@ -24,6 +24,7 @@ DATABASE_URL=$LOCAL .venv/bin/python etl/cargar_asignaciones.py datos_locales/as
 DATABASE_URL=$LOCAL .venv/bin/python etl/cargar_responsables.py
 DATABASE_URL=$LOCAL .venv/bin/python etl/cargar_abiertas_2526.py | tail -3
 DATABASE_URL=$LOCAL .venv/bin/python etl/validar_2526.py >/dev/null && echo "Validación de 2025/26: sin diferencias"
+DATABASE_URL=$LOCAL .venv/bin/python etl/verificar_informes_2526.py >/dev/null && echo "Informes de 2025/26: recálculo independiente sin diferencias"
 
 echo "== Usuarios de prueba"
 if [ ! -f "$USUARIOS" ]; then

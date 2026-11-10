@@ -51,6 +51,7 @@ python3 supabase/scripts/probar_mfa_local.py   # prueba el doble factor del admi
 python3 supabase/scripts/probar_invitacion_local.py   # prueba invitaciones, contraseñas y permisos
 .venv/bin/python etl/cargar_2526.py            # carga 2025/26 (--ensayo: sin tocar la base de datos)
 .venv/bin/python etl/validar_2526.py           # validación contra el prototipo (--remoto: la nube)
+.venv/bin/python etl/verificar_informes_2526.py   # recálculo independiente de todos los informes, completa y destinatario (--remoto: la nube); tras cada carga y cada cambio en los informes
 .venv/bin/python etl/borrar_2526.py            # borra el curso 2025/26 (sin --confirmar solo muestra el recuento)
 .venv/bin/python etl/convertir_alexia_2526.py      # listado de Alexia → plantilla de asignación (datos_locales/)
 .venv/bin/python etl/cargar_asignaciones.py RUTA.xlsx  # asignación de profesores (plantilla en etl/plantillas/)

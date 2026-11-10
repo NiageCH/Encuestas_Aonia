@@ -22,6 +22,7 @@ Petición de Mark: en «Detalle por pregunta» leyó la columna «Profesor/a» c
 - **Migración 48:** la media de todo el profesorado de una etapa sale aunque todas las clases del docente en esa etapa estén ocultas (antes faltaba en 28 preguntas de docentes de PAI, versión docente).
 - **Probado:** 614 tests de la base (nuevo: 34) y 81 de la web; validación de 2025/26 con las tres diferencias esperadas; capturas y PDF de dos docentes en las dos versiones y en móvil; desplegables y filtros cambiados a mano con Dirección, administración y coordinación (DESPLIEGUE §9), sin fallos ni errores en consola.
 - **Pendiente de Mark (sin construir):** informe por tutor/a, informe por servicio y envío en un paso por tipo de informe.
+- **Comprobación independiente de los informes** (`etl/verificar_informes_2526.py`, 10/11/2026): recalcula desde las respuestas, sin funciones de la plataforma, todos los informes del profesorado, de las jefaturas y del Equipo de Individuación, versión completa y del destinatario, y la tabla del frontend. En local: 390.533 cifras comparadas y 15.849 comprobaciones del criterio de anonimato, 0 diferencias. En la lista de cada carga y de cada cambio en los informes (README, DESPLIEGUE §9).
 
 ## Detalle por clase en la versión docente, supresión conjunta y lo que llega al navegador (rama informe-docente-clases, 06/11/2026)
 

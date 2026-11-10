@@ -234,10 +234,12 @@ python3 -m venv .venv && .venv/bin/pip install -r etl/requirements.txt
 .venv/bin/python etl/cargar_2526.py --ensayo   # convierte y resume, sin tocar la base de datos
 .venv/bin/python etl/cargar_2526.py            # carga en la base de datos local (repetible)
 .venv/bin/python etl/validar_2526.py           # compara con los agregados del prototipo (--remoto: la nube)
+.venv/bin/python etl/verificar_informes_2526.py   # recalcula todos los informes desde las respuestas y los compara (--remoto: la nube)
 .venv/bin/python etl/borrar_2526.py            # recuento del curso; con --confirmar, lo borra (--remoto: la nube)
 ```
 
 - Cada columna de cada fichero se carga o se descarta con un motivo; una columna sin regla detiene la carga.
+- **Después de cada carga y de cada cambio en los informes** (profesorado, jefaturas, Equipo de Individuación, sus RPC o la tabla de `src/data/tablaProfesor.ts`): `etl/verificar_informes_2526.py`, en local y, tras subir, con `--remoto`. Recalcula desde las respuestas, sin funciones de la plataforma, cada cifra de los informes en la versión completa y en la del destinatario, y comprueba los motivos de lo oculto. Debe dar 0 diferencias. Resultado (solo cifras) en `datos_locales/informes/verificacion_informes_2526[_nube].md`; los informes que descarga solo pasan por una carpeta temporal.
 - Nunca se cargan identificadores, fechas, IP, correo, nombres, sexo ni las preguntas cerradas del Plan de Igualdad. Las respuestas abiertas se cargan aparte, con `etl/cargar_abiertas_2526.py` (§7.9).
 - El nombre del profesor/a o de la optativa que escribe el alumnado solo se usa en memoria para atribuir la respuesta a un docente; el texto nunca se carga. Del nivel de tutoría del personal solo se carga el tramo, y solo para el bloque del Equipo de Individuación.
 - Informes de carga y de validación: `datos_locales/informes/`.
@@ -352,7 +354,7 @@ Detalle en [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md). Orden de cada subida:
 
 1. GitHub, tras la comprobación de datos de arriba.
 2. Migraciones en la nube: `npx supabase db push --dry-run` para ver qué se aplica y después `npx supabase db push`.
-3. Tests en la nube (`npx supabase test db --linked`) con el recuento antes y después (`etl/borrar_2526.py --remoto`, sin `--confirmar`): debe ser idéntico.
+3. Tests en la nube (`npx supabase test db --linked`) con el recuento antes y después (`etl/borrar_2526.py --remoto`, sin `--confirmar`): debe ser idéntico. Si la subida toca los informes: `etl/verificar_informes_2526.py --remoto`, con 0 diferencias.
 4. Web: `npx clever-tools deploy` (sube el último commit; Clever compila y sirve con el `Caddyfile`).
 
 ## Forma de trabajo
