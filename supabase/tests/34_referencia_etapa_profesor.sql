@@ -29,7 +29,7 @@ select ok((select bool_and(p -> 'resultado' -> 'comparacion' ? 'pai') from coord
 select ok((select bool_and(k in ('clave', 'media', 'motivo', 'suprimido')) from coord, jsonb_object_keys(r -> 'comparacion' -> 'pai') k),
   '... solo con la media (sin número de respuestas)');
 
-reset role;
+set local role postgres;
 select pg_temp.como('direccion'); set local role authenticated;
 select ok((select public.detalle_profesor('2000/01', (select cuatro from ids)) -> 'comparacion' -> 'pai' ? 'n'),
   'Dirección: la comparación completa, como antes');
