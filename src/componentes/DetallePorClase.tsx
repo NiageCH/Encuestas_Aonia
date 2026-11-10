@@ -6,7 +6,9 @@ import type { CeldaProfesor, InformeProfesor } from "../data/resultados";
 import { claveClase, etiquetaClase } from "../etiquetas";
 import * as f from "../formato";
 import { t } from "../i18n";
+import { deLaClase, notasDeCeldas } from "../data/tablaProfesor";
 import { MarcaMenos5, Oculto } from "./Oculto";
+import { NotasTabla } from "./TablaPreguntasProfesor";
 
 export const mismaClase = (a: CeldaProfesor, b: CeldaProfesor) =>
   a.clave.cuestionario === b.clave.cuestionario && a.clave.grupo === b.clave.grupo && a.clave.asignatura === b.clave.asignatura;
@@ -31,18 +33,16 @@ export function DetallePorClase({ celdas, preguntas, abierta }: {
             <table className="doc-table en-tabla-prof">
               <thead><tr><th>{t.pregunta}</th><th>{t.media}</th><th>n</th></tr></thead>
               <tbody>
-                {preguntas.filter(({ resultado }) => resultado.celdas.some((y) => mismaClase(y, c))).map(({ codigo, texto, resultado }) => {
-                  const x = resultado.celdas.find((y) => mismaClase(y, c));
-                  return (
-                    <tr key={codigo}>
-                      <td>{texto}</td>
-                      <td className="n" data-etiqueta={t.media}>{!x ? "·" : x.suprimido ? <Oculto fila={x} /> : <strong>{f.media(x.media!)}</strong>}</td>
-                      <td className="n" data-etiqueta="n">{x && !x.suprimido ? <>{f.recuento(x.n!)}<MarcaMenos5 fila={x} /></> : ""}</td>
-                    </tr>
-                  );
-                })}
+                {deLaClase(preguntas, c).map(({ codigo, texto, x }) => (
+                  <tr key={codigo}>
+                    <td>{texto}</td>
+                    <td className="n" data-etiqueta={t.media}>{x.suprimido ? <Oculto fila={x} /> : <strong>{f.media(x.media!)}</strong>}</td>
+                    <td className="n" data-etiqueta="n">{!x.suprimido ? <>{f.recuento(x.n!)}<MarcaMenos5 fila={x} /></> : ""}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
+            <NotasTabla notas={notasDeCeldas(deLaClase(preguntas, c).map(({ x }) => x))} />
           </div>}
         </details>
       ))}

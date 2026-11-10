@@ -9,10 +9,12 @@ import { Barra } from "../componentes/Graficos";
 import { BandaDetalle, useBajarA, useNavegacion } from "../componentes/Detalle";
 import type { Perfil } from "../data/sesion";
 import { DetallePorClase } from "../componentes/DetallePorClase";
+import { TablaPreguntasProfesor } from "../componentes/TablaPreguntasProfesor";
+import { etapasDelInforme } from "../data/tablaProfesor";
 import { MarcaMenos5, Oculto } from "../componentes/Oculto";
 import {
   detalleProfesor, listarProfesores, profesoresDeClase,
-  type CeldaProfesor, type InformeProfesor, type Profesor, type ResultadoProfesor, type VersionInforme,
+  type CeldaProfesor, type InformeProfesor, type Profesor, type VersionInforme,
 } from "../data/resultados";
 import { claveClase, enumerar, etiquetaClase, ordenarClases } from "../etiquetas";
 import * as f from "../formato";
@@ -115,7 +117,7 @@ function Informe({ profesor, perfil }: { profesor: Profesor; perfil: Perfil }) {
 
   // Cada clase lleva a su detalle pregunta por pregunta (en las dos versiones).
   const aClase = (c: CeldaProfesor) => aqui({ clase: claveClase(c), ver: "en-por-clase" });
-  const etapas = Object.keys(datos.comparacion).filter((k) => k !== "colegio");
+  const etapas = etapasDelInforme(datos);
   const g = datos.global;
   const celdas = ordenarClases(datos.celdas);
   const propias = celdas.filter((c) => c.tipo !== "compartida");
@@ -170,46 +172,11 @@ function Informe({ profesor, perfil }: { profesor: Profesor; perfil: Perfil }) {
         </div>
       )}
 
-      <div className="card" style={{ marginTop: ".9rem" }}>
-        <h3>{t.prof_detalle}</h3>
-        <p className="en-hint">{t.prof_detalle_lead}</p>
-        {!preguntas ? <p className="en-cargando">{t.cargando}</p> : (
-          <div className="tbl-wrap">
-            <table className="doc-table en-tabla-prof">
-              <thead>
-                <tr>
-                  <th>{t.pregunta}</th><th>{t.prof_col_profesor}</th>
-                  {etapas.map((e) => <th key={e}>{t.etapas[e as keyof typeof t.etapas]}</th>)}
-                  {datos.comparacion.colegio && <th>{t.prof_col_colegio}</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {preguntas.map(({ codigo, texto, resultado: r }) => (
-                  <tr key={codigo}>
-                    <td>{texto}</td>
-                    <td className="n en-con-ayuda" data-etiqueta={t.prof_col_profesor} {...ayuda(r.global.suprimido ? [texto, t.prof_sin_visibles]
-                      : [texto, t.tip_media(f.media(r.global.media!)), t.tip_valoraciones(f.recuento(r.global.n_valoraciones!))])}>
-                      {r.global.suprimido ? <span className="en-oculto">{t.oculto_menos5}</span> : <strong>{f.media(r.global.media!)}</strong>}
-                      {!r.global.suprimido && r.global.menos_de_5 ? <MarcaMenos5 fila={{ menos_de_5: true }} /> : null}
-                    </td>
-                    {etapas.map((e) => <td key={e} className="n" data-etiqueta={t.etapas[e as keyof typeof t.etapas]}>{celda(r.comparacion[e])}</td>)}
-                    {datos.comparacion.colegio && <td className="n" data-etiqueta={t.prof_col_colegio}>{celda(r.comparacion.colegio)}</td>}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <TablaPreguntasProfesor informe={datos} ayuda={ayuda} />
       {preguntas && <DetallePorClase celdas={celdas} preguntas={preguntas} abierta={filtro.clase} />}
       <p className="notice en-alerta" style={{ marginTop: ".9rem" }}>{leyendaAnonimato(perfil.rol)}</p>
     </div>
   );
-
-  function celda(fila?: ResultadoProfesor["comparacion"][string]) {
-    if (!fila) return "";
-    return fila.suprimido ? <Oculto fila={fila} /> : f.media(fila.media!);
-  }
 }
 
 function BotonPdf({ profesor, completa }: { profesor: Profesor; completa: boolean }) {

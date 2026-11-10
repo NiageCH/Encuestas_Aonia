@@ -4,7 +4,8 @@
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { Style } from "@react-pdf/types";
 import type { CeldaProfesor, Fila, InformeProfesor } from "../data/resultados";
-import { etiquetaClase, ordenarClases } from "../etiquetas";
+import { deLaClase, etapasDelInforme, tablaProfesor, type ValorTabla } from "../data/tablaProfesor";
+import { columnaProfesor, etiquetaClase, ordenarClases, textoNota } from "../etiquetas";
 import * as f from "../formato";
 import { t } from "../i18n";
 import { base, C, Cabecera, MarcaAgua, Pie, textoOculto } from "./comun";
@@ -27,6 +28,8 @@ const s = StyleSheet.create({
   colValor: { width: 46, textAlign: "right", fontWeight: 700 },
   colN: { width: 74, textAlign: "right", color: C.muted, fontSize: 8 },
   thFila: { flexDirection: "row", paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: C.navy },
+  thGrupos: { flexDirection: "row", marginTop: 4 },
+  thGrupo: { textAlign: "center", color: C.navy, borderBottomWidth: 0.5, borderBottomColor: C.line, paddingBottom: 2, marginLeft: 6 },
   th: { fontSize: 7.5, fontWeight: 700, color: C.muted, textTransform: "uppercase" },
   colPregunta: { flex: 1, paddingRight: 6 },
   colNum: { width: 66, textAlign: "right" },
@@ -41,12 +44,15 @@ function Marca({ fila }: { fila?: { menos_de_5?: boolean | number } }) {
   return fila?.menos_de_5 ? <Text style={s.marca}>{` ${t.marca_menos5}`}</Text> : null;
 }
 
-const mismaClase = (a: CeldaProfesor, b: CeldaProfesor) =>
-  a.clave.cuestionario === b.clave.cuestionario && a.clave.grupo === b.clave.grupo && a.clave.asignatura === b.clave.asignatura;
-
 function Media({ fila, estilo }: { fila?: Fila; estilo?: Style }) {
-  if (!fila) return <Text style={estilo}>·</Text>;
+  if (!fila) return <Text style={[base.oculto, estilo ?? {}]}>{t.sin_datos}</Text>;
   return fila.suprimido ? <Text style={[base.oculto, estilo ?? {}]}>{textoOculto(fila)}</Text> : <Text style={estilo}>{f.media(fila.media!)}</Text>;
+}
+
+/** Una celda del detalle por pregunta: la cifra o, si no la lleva, el texto de su nota. */
+function ValorPdf({ v, estilo, estrecha }: { v: ValorTabla; estilo: Style[]; estrecha: boolean }) {
+  if ("nota" in v) return <Text style={[base.oculto, ...estilo, estrecha ? { fontSize: 6.5, paddingLeft: 3 } : {}]}>{textoNota(v, true)}</Text>;
+  return <Text style={estilo}>{f.media(v.media)}<Marca fila={v} /></Text>;
 }
 
 function FilaClase({ c }: { c: CeldaProfesor }) {
@@ -70,14 +76,24 @@ export interface DatosInformePdf {
 
 export function InformeProfesorPdf({ profesor, informe, sello }: DatosInformePdf) {
   const g = informe.global;
-  const etapas = Object.keys(informe.comparacion).filter((k) => k !== "colegio");
+  const completa = informe.version === "completa";
+  const etapas = etapasDelInforme(informe);
+  const tabla = tablaProfesor(informe);
+  const cols = tabla.columnas.map((c) => columnaProfesor(c, tabla, completa && !!g.menos_de_5));
+  const estrecha = cols.length > 3;
+  const colN: Style = { width: estrecha ? 56 : 66, textAlign: "right" };
+  const grupos: { texto?: string; ancho: number }[] = [];
+  for (const c of cols) {
+    const ultimo = grupos[grupos.length - 1];
+    if (c.grupo && ultimo?.texto === c.grupo) ultimo.ancho++;
+    else grupos.push({ texto: c.grupo, ancho: 1 });
+  }
   const nombreEtapa = (e: string) => t.etapas[e as keyof typeof t.etapas] ?? e;
   const celdas = ordenarClases(informe.celdas);
   const propias = celdas.filter((c) => c.tipo !== "compartida");
   const compartidas = celdas.filter((c) => c.tipo === "compartida");
   const hayComplementaria = celdas.some((c) => c.motivo === "complementaria")
     || informe.preguntas.some((p) => p.resultado.celdas.some((c) => c.motivo === "complementaria"));
-  const completa = informe.version === "completa";
   const version = completa ? t.version_completa : t.version_docente;
 
   return (
@@ -131,22 +147,26 @@ export function InformeProfesorPdf({ profesor, informe, sello }: DatosInformePdf
 
           <Text style={base.h2}>{t.prof_detalle}</Text>
           <Text style={base.lead}>{t.prof_detalle_lead}</Text>
-          <View style={s.thFila} fixed={false}>
-            <Text style={[s.th, s.colPregunta]}>{t.pregunta}</Text>
-            <Text style={[s.th, s.colNum]}>{t.prof_col_profesor}</Text>
-            {etapas.map((e) => <Text key={e} style={[s.th, s.colNum]}>{nombreEtapa(e)}</Text>)}
-            {informe.comparacion.colegio && <Text style={[s.th, s.colNum]}>{t.prof_col_colegio}</Text>}
+          {tabla.porPares && <Text style={base.lead}>{t.prof_detalle_lead_pares}</Text>}
+          <View wrap={false} minPresenceAhead={60}>
+            {tabla.porPares && (
+              <View style={s.thGrupos}>
+                <Text style={s.colPregunta}> </Text>
+                {grupos.map((x, i) => <Text key={i} style={[s.th, s.thGrupo, { width: (colN.width as number) * x.ancho - 6 }]}>{x.texto ?? ""}</Text>)}
+              </View>
+            )}
+            <View style={s.thFila}>
+              <Text style={[s.th, s.colPregunta]}>{t.pregunta}</Text>
+              {cols.map((c, i) => <Text key={i} style={[s.th, colN, { paddingLeft: 5 }, estrecha ? { fontSize: 6.5 } : {}]}>{c.titulo}</Text>)}
+            </View>
           </View>
-          {informe.preguntas.map((p) => (
-            <View key={p.codigo} style={s.fila} wrap={false}>
-              <Text style={s.colPregunta}>{p.texto}</Text>
-              <Text style={[s.colNum, { fontWeight: 700 }]}>
-                {p.resultado.global.suprimido ? t.oculto_menos5 : f.media(p.resultado.global.media!)}<Marca fila={p.resultado.global} />
-              </Text>
-              {etapas.map((e) => <Media key={e} fila={p.resultado.comparacion[e]} estilo={s.colNum} />)}
-              {informe.comparacion.colegio && <Media fila={p.resultado.comparacion.colegio} estilo={s.colNum} />}
+          {tabla.filas.map((fila) => (
+            <View key={fila.codigo} style={s.fila} wrap={false}>
+              <Text style={s.colPregunta}>{fila.texto}</Text>
+              {fila.valores.map((v, i) => <ValorPdf key={i} v={v} estrecha={estrecha} estilo={i === 0 ? [colN, { fontWeight: 700 }] : [colN]} />)}
             </View>
           ))}
+          {tabla.notas.map((n) => <Text key={n} style={base.nota}>{n === "complementaria" ? t.pdf_nota_asterisco : t.prof_notas[n]}</Text>)}
 
           {celdas.length > 0 && (
             <>
@@ -167,16 +187,13 @@ export function InformeProfesorPdf({ profesor, informe, sello }: DatosInformePdf
                       </View>
                     )}
                   </View>
-                  {!c.suprimido && informe.preguntas.filter((p) => p.resultado.celdas.some((y) => mismaClase(y, c))).map((p) => {
-                    const x = p.resultado.celdas.find((y) => mismaClase(y, c));
-                    return (
-                      <View key={p.codigo} style={s.fila} wrap={false}>
-                        <Text style={s.colPregunta}>{p.texto}</Text>
-                        {x ? <Media fila={x} estilo={{ ...s.colNum, fontWeight: 700 }} /> : <Text style={s.colNum}>·</Text>}
-                        <Text style={[s.colNum, { color: C.muted }]}>{x && !x.suprimido ? f.recuento(x.n!) : ""}<Marca fila={x} /></Text>
-                      </View>
-                    );
-                  })}
+                  {!c.suprimido && deLaClase(informe.preguntas, c).map(({ codigo, texto, x }) => (
+                    <View key={codigo} style={s.fila} wrap={false}>
+                      <Text style={s.colPregunta}>{texto}</Text>
+                      <Media fila={x} estilo={{ ...s.colNum, fontWeight: 700 }} />
+                      <Text style={[s.colNum, { color: C.muted }]}>{!x.suprimido ? f.recuento(x.n!) : ""}<Marca fila={x} /></Text>
+                    </View>
+                  ))}
                 </View>
               ))}
             </>

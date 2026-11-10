@@ -1,6 +1,7 @@
 // Etiquetas compartidas por la vista y los PDF.
 
 import type { CeldaProfesor, GrupoEquipo, MediaDepartamentoAlumnos, SeccionReuniones } from "./data/resultados";
+import type { ColumnaTabla, TablaProfesor, ValorTabla } from "./data/tablaProfesor";
 import * as f from "./formato";
 import { t } from "./i18n";
 
@@ -70,4 +71,31 @@ export function textoAlumnos(m: MediaDepartamentoAlumnos): { texto: string; deta
 export function textoParteOculta(motivo: string | undefined, curso: string, colectivo: "familias" | "alumnos", nombre: string): string {
   if (colectivo === "familias") return motivo === "menos_de_5" ? t.fam_etapa_menos5(curso, nombre) : t.fam_etapa_compl(nombre);
   return motivo === "menos_de_5" ? t.alu_grupo_menos5(curso, nombre) : t.alu_grupo_compl(nombre);
+}
+
+const nombreEtapa = (e: string) => t.etapas[e as keyof typeof t.etapas] ?? e;
+
+/** Encabezado de una columna del detalle por pregunta del informe del profesor/a: «grupo» es la etapa cuando las
+ *  columnas van por pares; «etiqueta», lo que se lee en el móvil junto a la cifra. */
+export function columnaProfesor(col: ColumnaTabla, tabla: Pick<TablaProfesor, "porPares">, conMenos5 = false):
+  { grupo?: string; titulo: string; etiqueta: string } {
+  switch (col.tipo) {
+    case "docente": {
+      const titulo = conMenos5 ? t.prof_col_profesor_completa : t.prof_col_profesor;
+      return { titulo, etiqueta: titulo };
+    }
+    case "docente_etapa":
+      return { grupo: nombreEtapa(col.etapa), titulo: t.prof_par_docente, etiqueta: t.prof_par_etiqueta(nombreEtapa(col.etapa), t.prof_par_docente) };
+    case "etapa":
+      return tabla.porPares
+        ? { grupo: nombreEtapa(col.etapa), titulo: t.prof_par_todos, etiqueta: t.prof_par_etiqueta(nombreEtapa(col.etapa), t.prof_par_todos) }
+        : { titulo: t.prof_col_etapa(nombreEtapa(col.etapa)), etiqueta: t.prof_col_etapa(nombreEtapa(col.etapa)) };
+    case "colegio":
+      return { titulo: t.prof_col_colegio, etiqueta: t.prof_col_colegio };
+  }
+}
+
+/** Texto de una celda sin cifra («menos de 5», «no se pregunta»…); el PDF marca la complementaria con asterisco. */
+export function textoNota(v: Extract<ValorTabla, { nota: string }>, pdf = false): string {
+  return v.nota === "complementaria" && pdf ? `${t.prof_celda.complementaria}*` : t.prof_celda[v.nota];
 }

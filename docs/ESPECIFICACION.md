@@ -248,6 +248,11 @@ Tests: `supabase/tests/29_detalle_al_pulsar.sql` (cada destino con el criterio d
   - media global (§5.3), **solo con sus clases propias** (§5.12);
   - detalle por pregunta;
   - comparación con la media de su etapa y la del Colegio.
+- **Detalle por pregunta: encabezados y notas** (petición de Mark del 10/11/2026), igual en pantalla, en el PDF (las dos versiones) y en el enlace personal; la tabla sale de `src/data/tablaProfesor.ts`:
+  - «Este profesor/a (sus clases)»: su media, solo con sus clases propias visibles (en la versión completa, «sus clases, con menos de 5»). Las demás columnas dicen «todo el profesorado»: son la media de todo el alumnado de la etapa o del Colegio sobre todos los docentes, como referencia, no partes de su media (Mark había leído la del docente como media de las de PAI y Bachillerato).
+  - Con clases en dos etapas o más, **por pares**: en cada etapa, su media en esa etapa («Este profesor/a») junto a la de todo el profesorado. Sale de sus clases propias visibles de esa etapa, que ya se ven una a una en el detalle por clase: no deja deducir nada nuevo.
+  - Ninguna celda vacía ni «·»: un texto y su nota debajo de la tabla. «menos de 5» y «oculto» (anonimato); «sin datos visibles» (tiene clases con la pregunta, todas ocultas); «sin clases propias» (solo compartidas en esa etapa); «no se pregunta» (no está en el cuestionario de esa etapa); «no se muestra» (Colegio en la versión docente cuando la pregunta solo se hace en dos etapas: con la del Colegio se deduciría una etapa a partir de la otra). El detalle por clase lleva las notas de sus celdas ocultas.
+  - La media de todo el profesorado de una etapa sale también cuando todas las clases del docente en esa etapa quedan ocultas (migración 48): no depende del docente.
 - **Dos secciones** (decisión del Colegio, 21/10/2026), en pantalla y en PDF:
   - **«Sus clases»:** grupos y asignaturas en los que es el único docente. De aquí sale la media global.
   - **«Valoraciones compartidas»:** clases con más de un docente (codocencia, desdobles por niveles, Música y preguntas que agrupan varias materias), con una nota: «El alumnado valora la asignatura, no a cada docente. Estas valoraciones son compartidas con otros docentes y no entran en su media».

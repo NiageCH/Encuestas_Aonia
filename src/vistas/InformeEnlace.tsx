@@ -4,6 +4,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { DetallePorClase } from "../componentes/DetallePorClase";
+import { TablaPreguntasProfesor } from "../componentes/TablaPreguntasProfesor";
+import { etapasDelInforme } from "../data/tablaProfesor";
 import { Barra } from "../componentes/Graficos";
 import { Oculto } from "../componentes/Oculto";
 import { informeEnlace, type InformeEnlace } from "../data/envio";
@@ -43,7 +45,7 @@ function PaginaProfesor({ token, caduca, profesor, informe }: { token: string; c
   const celdas = ordenarClases(informe.celdas);
   const propias = celdas.filter((c) => c.tipo !== "compartida");
   const compartidas = celdas.filter((c) => c.tipo === "compartida");
-  const etapas = Object.keys(informe.comparacion).filter((k) => k !== "colegio");
+  const etapas = etapasDelInforme(informe);
 
   async function descargar() {
     setPdf("generando");
@@ -102,6 +104,7 @@ function PaginaProfesor({ token, caduca, profesor, informe }: { token: string; c
           {compartidas.map((c) => <Barra key={`${c.clave.cuestionario}-${c.clave.grupo}-${c.clave.asignatura}`} etiqueta={etiquetaClase(c)} fila={c} />)}
         </div>
       )}
+      <TablaPreguntasProfesor informe={informe} />
       <DetallePorClase celdas={celdas} preguntas={informe.preguntas} />
       <p className="notice en-alerta" style={{ marginTop: ".9rem" }}>{t.leyenda_oculto} {t.aviso_cierre}</p>
       <p className="en-hint">{t.enl_pie}</p>

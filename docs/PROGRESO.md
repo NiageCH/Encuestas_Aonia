@@ -15,6 +15,14 @@ Plan de trabajo en `docs/ESPECIFICACION.md` §9.
 | 9. Administración de usuarios y registro | Hecho en local |
 | 10. Despliegue | Plan preparado (`docs/DESPLIEGUE.md`); pendiente de las decisiones y cuentas de Rodrigo |
 
+## Encabezados y notas del informe del profesor/a (rama `informe-profesor-encabezados`, 10/11/2026)
+
+Petición de Mark: en «Detalle por pregunta» leyó la columna «Profesor/a» como media de las de PAI y Bachillerato. Comprobación independiente sobre los datos (cifras fuera de git): la columna del docente es la media de sus clases propias visibles (la captura era la versión docente en PDF); las de PAI y Bachillerato, todo el alumnado de la etapa sobre todo el profesorado; la «·» del Colegio, porque esa pregunta solo está en PAI y Bachillerato (migración 47). Especificación §7.2.
+- **Hecho:** encabezados «Este profesor/a (sus clases)» y «… (todo el profesorado)», también en las tarjetas; texto de introducción; con dos etapas o más, columnas por pares (su media en la etapa y la de todo el profesorado); notas en lugar de «·» o huecos, también en el detalle por clase; la tabla por pregunta ahora también en la pantalla del enlace personal. Pantalla, PDF completo y docente y enlace, con un solo modelo (`src/data/tablaProfesor.ts`).
+- **Migración 48:** la media de todo el profesorado de una etapa sale aunque todas las clases del docente en esa etapa estén ocultas (antes faltaba en 28 preguntas de docentes de PAI, versión docente).
+- **Probado:** 614 tests de la base (nuevo: 34) y 81 de la web; validación de 2025/26 con las tres diferencias esperadas; capturas y PDF de dos docentes en las dos versiones y en móvil; desplegables y filtros cambiados a mano con Dirección, administración y coordinación (DESPLIEGUE §9), sin fallos ni errores en consola.
+- **Pendiente de Mark (sin construir):** informe por tutor/a, informe por servicio y envío en un paso por tipo de informe.
+
 ## Detalle por clase en la versión docente, supresión conjunta y lo que llega al navegador (rama informe-docente-clases, 06/11/2026)
 
 Petición de Mark: el informe que recibe cada docente lleva también cada pregunta en cada clase (asignatura y grupo). Especificación §7.2 y §5, puntos 16 y 17.

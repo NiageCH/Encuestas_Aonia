@@ -32,6 +32,11 @@ describe("detalle por clase (versión docente)", () => {
     expect(html).toContain("<strong>3,50</strong>");
     expect(html).not.toMatch(/Pregunta a<\/td><td[^>]*><strong>/);
   });
+  it("debajo de la tabla, la nota de cada texto que sale en lugar de una cifra", () => {
+    expect(html).toMatch(/«menos.de.5»: el resultado tiene menos.de.5 respuestas/);
+    expect(html).toContain("«oculto»: se oculta para que no se pueda deducir otro resultado por resta");
+    expect(html).not.toContain("·</td>");
+  });
   it("sin la marca «menos de 5» de la versión completa", () => {
     expect(html).not.toContain("en-menos5");
   });
