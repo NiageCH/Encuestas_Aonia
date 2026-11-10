@@ -8,6 +8,7 @@ import {
   type EntradaRegistro, type Usuario,
 } from "../data/admin";
 import type { Perfil, Rol } from "../data/sesion";
+import * as f from "../formato";
 import { t } from "../i18n";
 import { aHash } from "../navegacion";
 import { Descargas } from "./Descargas";
@@ -251,6 +252,9 @@ function describir(e: EntradaRegistro): string {
   const autor = e.usuario_eliminado ? `${e.usuario} (${t.usr_eliminado_marca})` : e.usuario;
   e = { ...e, usuario: autor };
   switch (e.accion) {
+    case "verificacion_tecnica": return d.fase === "alta"
+      ? t.reg_verificacion_alta(String(d.script ?? ""), String(d.base ?? ""))
+      : t.reg_verificacion_baja(String(d.resultado ?? ""), d.cifras != null ? f.recuento(Number(d.cifras)) : null);
     case "invitacion": return t.reg_invitacion(e.usuario, quien, t.roles[d.rol as Rol] ?? String(d.rol));
     case "alta_directa": return t.reg_alta_directa(e.usuario, quien, t.roles[d.rol as Rol] ?? String(d.rol));
     case "reenvio_invitacion": return t.reg_reenvio(e.usuario, quien);

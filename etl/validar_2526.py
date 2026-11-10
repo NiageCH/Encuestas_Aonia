@@ -27,6 +27,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ / "etl"))
 
 from cargar_2526 import url_bd  # noqa: E402
+from cuenta_tecnica import Uso  # noqa: E402
 from cuestionarios_2526 import CURSO, convertir_todo  # noqa: E402
 from encuesta_facil import slug  # noqa: E402
 
@@ -148,6 +149,8 @@ def main() -> None:
     notas_grupo: List[str] = []
     n_excl, excl_items, excl_rec = excluidas_personal()
 
+    # Cuenta técnica de verificación: alta temporal y baja en el registro de actividad (etl/cuenta_tecnica.py).
+    uso = Uso(url_bd(args.remoto), "etl/validar_2526.py", "nube" if args.remoto else "local").empezar()
     with psycopg.connect(url_bd(args.remoto)) as conn, conn.cursor() as cur:
         # Media de profesorado por grupo con la fórmula del prototipo (asignaturas con 5 o más
         # personas, ponderadas por personas), calculada como postgres sobre los datos cargados.
@@ -160,8 +163,8 @@ def main() -> None:
                        where cu.nombre = %s and i.valor is not null group by 1, 2, 3)
             select codigo, grupo, sum(n * m) / sum(n) from x where n >= 5 group by 1, 2""", (CURSO,))
         prof_grupo_prototipo = {(c, g): float(v) for c, g, v in cur.fetchall()}
-        cur.execute("insert into auth.users (id, email, aud, role) values (%s, 'validacion@local', 'authenticated', 'authenticated')", (USUARIO,))
-        cur.execute("insert into public.usuario_perfil (id, nombre, rol) values (%s, 'Validación', 'direccion')", (USUARIO,))
+        cur.execute("insert into auth.users (id, email, aud, role) values (%s, 'verificacion@local', 'authenticated', 'authenticated')", (USUARIO,))
+        cur.execute("insert into public.usuario_perfil (id, nombre, rol) values (%s, 'Cuenta técnica de verificación (Niage)', 'direccion')", (USUARIO,))
         cur.execute("select set_config('request.jwt.claims', %s, true)",
                     (json.dumps({"sub": USUARIO, "role": "authenticated", "aal": "aal1"}),))
         # El prototipo aplica el mínimo de 5 y la complementaria: se compara con ese mismo criterio, el de la versión docente
@@ -396,6 +399,7 @@ def main() -> None:
     destino.write_text(texto)
     print(texto)
     print(f"Guardado en {destino.relative_to(RAIZ)}")
+    uso.resultado = f"{fallos_control} diferencias en la tabla de control" if fallos_control else "sin diferencias en la tabla de control"
     sys.exit(1 if fallos_control else 0)
 
 

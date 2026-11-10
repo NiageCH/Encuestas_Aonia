@@ -595,6 +595,8 @@ export const I18N = {
       coordinacion: "Ve solo los resultados de su etapa.",
     },
     reg_invitacion: (quien: string, a: string, rol: string) => `${quien} ha invitado a ${a} (${rol})`,
+    reg_verificacion_alta: (script: string, base: string) => `Cuenta técnica de verificación (Niage): alta temporal para comprobar los resultados (${script}, base ${base}). Es un acceso de Dirección que solo existe dentro de consultas que se deshacen: no puede entrar en la plataforma y no queda en la base de datos.`,
+    reg_verificacion_baja: (resultado: string, cifras: string | null) => `Cuenta técnica de verificación (Niage): baja. Comprobación ${resultado}${cifras ? `, ${cifras} cifras comparadas` : ""}.`,
     reg_alta_directa: (quien: string, a: string, rol: string) => `${quien} ha dado de alta a ${a} (${rol}), sin invitación`,
     reg_reenvio: (quien: string, a: string) => `${quien} ha reenviado la invitación a ${a}`,
     reg_desactivacion: (quien: string, a: string) => `${quien} ha desactivado a ${a}`,

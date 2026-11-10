@@ -38,6 +38,7 @@ RAIZ = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(RAIZ / "etl"))
 from cargar_2526 import url_bd  # noqa: E402
 from cuestionarios_2526 import CURSO  # noqa: E402
+from cuenta_tecnica import Uso  # noqa: E402
 
 ap_args = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 ap_args.add_argument("--remoto", action="store_true", help="comprueba la base de DATABASE_URL (la nube); no escribe nada")
@@ -73,6 +74,8 @@ def regla(apartado, donde, cond, msg):
 
 URL_BD = url_bd(ARGS.remoto)
 USUARIO = str(uuid.uuid4())
+# Cuenta técnica de verificación: alta temporal y baja en el registro de actividad (etl/cuenta_tecnica.py).
+USO = Uso(URL_BD, "etl/verificar_informes_2526.py", "nube" if ARGS.remoto else "local").empezar()
 
 
 class Consultas:
@@ -92,7 +95,7 @@ class Consultas:
                 with self.conn.cursor() as c:
                     if self.version is not None:
                         c.execute("insert into auth.users (id, email, aud, role) values (%s, 'verificacion@local', 'authenticated', 'authenticated')", (USUARIO,))
-                        c.execute("insert into public.usuario_perfil (id, nombre, rol) values (%s, 'Verificación', 'direccion')", (USUARIO,))
+                        c.execute("insert into public.usuario_perfil (id, nombre, rol) values (%s, 'Cuenta técnica de verificación (Niage)', 'direccion')", (USUARIO,))
                         c.execute("select set_config('request.jwt.claims', %s, true), set_config('encuestas.version_docente', %s, true)",
                                   (json.dumps({"sub": USUARIO, "role": "authenticated", "aal": "aal1"}),
                                    "" if self.version == "completa" else "on"))
@@ -608,4 +611,6 @@ print("\n".join(lineas[:-len(diferencias)] if diferencias else lineas))
 if diferencias:
     print(f"Las {len(diferencias)} diferencias, en {destino.relative_to(RAIZ)}")
 print(f"Guardado en {destino.relative_to(RAIZ)}")
+USO.resultado = f"{len(diferencias)} diferencias" if diferencias else "sin diferencias"
+USO.cifras = sum(comparadas.values())
 sys.exit(1 if diferencias else 0)
