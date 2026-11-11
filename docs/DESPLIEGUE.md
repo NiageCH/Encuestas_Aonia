@@ -245,12 +245,12 @@ Antes de subir (en local, con la versión que se va a publicar) y después (en l
    - Alumnado: cuestionario, grupo y bloque del detalle;
    - Familias: etapa y bloque del detalle;
    - Personal: los cinco segmentos y el bloque del detalle;
-   - Informes por persona: cada nivel, un tramo de Equipos, otra jefatura en Departamentos, un docente y la búsqueda en Profesorado;
+   - Informes por persona: cada nivel, un tramo de Equipos, otra jefatura en Departamentos, un docente y la búsqueda en Profesorado, otro grupo en Tutoría, otro servicio en Servicios (y, con administración, poner y quitar un responsable) y, en Envío, cada tipo de informe, cada forma de acotar, la vista previa, quitar a alguien y «Ver como lo recibe»;
    - Respuestas abiertas: colectivo, pregunta y sus filtros.
    Cada cambio debe quedarse (el desplegable muestra lo elegido) y no borrar los demás filtros.
 2. Los destinos al pulsar (§8) y «Volver» y «Quitar el filtro».
 3. Sin errores en la consola del navegador.
-4. **Si la subida cambia los informes** (profesorado, jefaturas, Equipo de Individuación, sus funciones o su tabla en la web) **o tras una carga de datos:** `etl/verificar_informes_2526.py` en local antes de subir y con `--remoto` después, con 0 diferencias.
+4. **Si la subida cambia los informes** (profesorado, jefaturas, Equipo de Individuación, tutoría, servicios, sus funciones o sus tablas en la web) **o tras una carga de datos:** `etl/verificar_informes_2526.py` en local antes de subir y con `--remoto` después, con 0 diferencias.
 
 Motivo: el 03/11/2026 el cuestionario de Alumnado no se podía cambiar a mano en producción (detalle-al-pulsar); las pruebas solo habían llegado a la pantalla ya filtrada. Se volvió a la web anterior el mismo día y se corrigió en la rama `correccion-filtros` (§10).
 

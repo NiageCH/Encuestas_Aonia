@@ -160,7 +160,9 @@ Tests obligatorios: una batería de casos en `supabase/tests` que intente saltar
 | Resultados de menos de 5 (§5.0) | Sí, marcados | Sí, marcados | No (mínimo de 5 y complementaria) |
 | Informe del profesor/a | Completo y docente | Completo y docente | Solo el docente |
 | Informes de jefatura y de equipo | Completo y para la jefatura | Completo y para la jefatura | No |
-| Envío de informes al profesorado (§7.10) | Sí | No | No |
+| Informes de tutoría y de servicios (§7.12 y §7.13) | Completo y para el destinatario | Completo y para el destinatario | No |
+| Responsables de servicio (§7.13) | Los mantiene | Los ve | No |
+| Envío de informes (§7.10 y §7.14) | Sí | No | No |
 | Accesos y registro de actividad | Sí | No | No |
 
 Correspondencia de cuestionarios con etapas:
@@ -377,7 +379,7 @@ Funciones del mockup `referencia/mockups/Mockup_Encuestas_5_admin_usuarios.png`;
 - **Conservación (28/10/2026, para el encargo de tratamiento):** el mismo plazo que el resto de respuestas. Propuesta, pendiente de confirmar por el Colegio: **5 cursos y después se borran**.
 - RPC: `abiertas_preguntas`, `abiertas`, `abiertas_grupos` (migración 20261028000031). Tests: `supabase/tests/26_respuestas_abiertas.sql`.
 
-### 7.10 Envío de informes al profesorado y a las jefaturas (confirmado por Mark el 28/10/2026)
+### 7.10 Envío de informes al profesorado y a las jefaturas (confirmado por Mark el 28/10/2026; desde el 11/11/2026, también tutoría y servicios, en un paso: §7.14)
 - **Enlace personal por docente** a la versión docente de su informe, **válido 7 días**. Se abre sin cuenta (`#/informe/<token>`): enseña el informe y deja descargar el PDF, a nombre del docente y con su código. **Cada apertura y cada descarga quedan registradas.** El token solo existe en claro hasta que sale el correo; en la base de datos queda su huella (SHA-256). Un enlace se puede anular.
 - **Jefaturas (decisión del 28/10/2026):** cada jefatura recibe su enlace a la **versión para la jefatura**, siempre: la de departamento, con todos sus departamentos, y la del Equipo de Individuación, con su tramo (o con los tramos que salen juntos). Se eligen en «Informes de jefatura», una a una o todas. Una persona que es docente y jefatura recibe un enlace por informe.
 - **Envío individual o por departamento, etapa o tramo** (Y1 a Y5, Y6 a Y9, Y10 a Y12), o a todo el profesorado, siempre con **vista previa de destinatarios** antes de enviar y una confirmación. Quien no tiene resultados del alumnado o no tiene correo se queda fuera y la vista previa lo dice. Solo administración, en «Informes por persona › Envío al profesorado».
@@ -408,6 +410,33 @@ Decisiones de Rodrigo del 04/11/2026. Construido en la rama `acceso-microsoft` (
 - **Secreto de cliente:** Supabase solo admite secreto (no certificado). 12 meses; renovación en `docs/MICROSOFT_SISTEMAS.md` y aviso de caducidad en la lista de claves.
 - **Pruebas antes de producción:** en local (tests y prueba de punta a punta con contraseña) y en un segundo entorno de pruebas en la nube con la organización del Colegio y cuentas de prueba de sistemas, sin tocar producción (`docs/DESPLIEGUE.md` §11).
 - Tests: `supabase/tests/30_acceso_microsoft.sql` (34).
+
+### 7.12 Informe de tutoría (petición de Mark del 11/11/2026)
+- **Un informe por grupo, para su tutor/a.** El cotutor/a no lo recibe (decisión de Mark). Solo grupos con encuesta del alumnado (Y2 a Y12); Infantil y Y1 no tienen.
+- **Tutores:** de la hoja «Tutores» del listado de Alexia, con `etl/cargar_tutores_2526.py` (tabla `public.tutoria`, un tutor/a por grupo y curso). Solo el tutor/a y su correo; el cotutor/a no se carga. Los grupos se emparejan como en la asignación de profesores: «Y9-A» es «Y9 A», y los grupos «.Comp» de Alexia son el grupo de la encuesta con el mismo curso y letra («Y6-B.Comp» es «Y6 B»). Con 2025/26 son los ocho grupos que contestan el cuestionario de Y6 a Y10, y ninguno tiene otro grupo con su mismo curso y letra en Alexia. Pendiente de que Rodrigo lo confirme antes de cargarlo en la nube.
+- **Contenido:**
+  - cada pregunta del alumnado sobre su tutor/a en el cuestionario del grupo (dos en PAI y Bachillerato, una en Primaria), con la media del grupo y, como referencia, la de todo el alumnado de su etapa (todo el profesorado tutor). Sin media del Colegio: la pregunta de PAI y Bachillerato solo existe en esas dos etapas (con el Colegio se deduciría una de la otra, §5 punto 17) y la de Primaria solo en Primaria;
+  - **la labor tutorial según las familias y el personal, solo como referencia del Colegio** (decisión de Mark): no dicen de qué grupo son, así que no se pueden atribuir a cada tutor/a.
+- **Anonimato:** la celda del grupo es la misma que la coordinación ve en Alumnado con ese grupo (`public.resultados`, con la supresión conjunta): en la versión del tutor/a, un grupo con menos de 5 sale «menos de 5» y la complementaria oculta otro grupo del mismo cuestionario.
+- Preguntas de cada informe: `etl/informes_2526.py` (`etl/cargar_informes_2526.py`, tabla `public.tutoria_pregunta`).
+- RPC: `listar_tutorias`, `informe_tutoria(p_curso, p_grupo, p_registrar, p_version 'completa' | 'tutor')`. Pantalla: Informes por persona › Tutoría, con el PDF completo y el de la versión para el tutor/a.
+
+### 7.13 Informe de servicio (petición de Mark del 11/11/2026)
+- **Un informe por servicio, solo para su responsable**, sin copia al directivo (decisión de Mark).
+- **Servicios** (15 en 2025/26): los del bloque de servicios de alumnado y familias, juntando los que cada encuesta llama de otra forma («Enfermería» y «Servicio de enfermería», «Transporte escolar» y «Transporte», «Mantenimiento» y «Mantenimiento de las instalaciones», «Administración» y «Administración (ventanilla)»). Papelería y Cafetería solo las valoran las familias; Atención al cliente y Vigilantes educativos, solo el alumnado. «Atención al cliente» (alumnado de PAI) va aparte de Administración hasta que el Colegio diga si es el mismo servicio. La Biblioteca y el Servicio de Orientación llevan además sus preguntas propias de otros bloques, también las del personal, que solo valora esos dos.
+- **Contenido:** por colectivo, cada pregunta con la media de todo el colectivo y de cada etapa en la que se pregunta (alumnado y familias; las familias con hijos en varias etapas cuentan en cada una), y la media de todos los servicios del colectivo como referencia. Las respuestas de familias sin etapa cuentan en el total y en la supresión, pero no salen como una etapa (§5 punto 6).
+- **Anonimato:** las mismas tablas que Dirección ve en Alumnado o Familias repartidas por etapa (`public.resultados` con la dimensión etapa, supresión conjunta). En la versión del responsable, una etapa con menos de 5 sale «menos de 5» y la complementaria oculta otra.
+- **Responsables:** una persona por servicio y curso (`public.responsable_servicio`), que mantiene administración desde la aplicación (Informes por persona › Servicios: poner, cambiar o quitar). Se busca por su correo; si no está en la plataforma (personal no docente), se crea con su nombre. Cada cambio queda en el registro de actividad. Mark pasará los responsables cuando los envíe el Colegio. Con el acceso con Microsoft (§7.11), necesitan cuenta del Colegio.
+- RPC: `listar_servicios`, `informe_servicio(p_curso, p_servicio, p_registrar, p_version 'completa' | 'responsable')`, `admin_servicio_responsable`, `admin_servicio_responsable_quitar`.
+
+### 7.14 Envío en un paso (petición de Mark del 11/11/2026)
+- En Informes por persona › Envío de informes (solo administración):
+  1. **Qué informe:** profesorado, jefaturas de departamento, Equipo de Individuación, tutoría o servicios.
+  2. **A quién:** por defecto, todos sus destinatarios. Se puede acotar: el profesorado por docente, departamento, etapa o tramo; las jefaturas por persona (y el Equipo por tramo); la tutoría por etapa, grupo o tutor/a; los servicios por servicio.
+  3. **Vista previa:** el número de informes que se van a enviar y la lista, con avisos separados. Se quedan fuera los que no tienen destinatario (grupo sin tutor/a, servicio sin responsable), los que no tienen correo y los que no tienen resultados. Salen desmarcados los que no tendrían ningún resultado visible en su versión (lo comprueba el servidor por tandas, `admin_envio_visibles`) y los que ya lo recibieron (último enlace enviado y no anulado). Cada fila se puede marcar o desmarcar, y «Ver como lo recibe» enseña el informe en la versión del destinatario sin abrir su enlace.
+  4. **Confirmar** con el número exacto de correos. El servidor recalcula los destinatarios y crea un enlace por informe, menos los desmarcados (`admin_envio_crear(..., p_excluir)`); cada envío queda en el registro.
+- Mismas reglas que §7.10: versión del destinatario con el mínimo de 5, enlace personal de 7 días, cada apertura y descarga registradas, y modo de pruebas (solo a los dos correos de prueba) mientras no exista el remitente del Colegio.
+- Tests: `supabase/tests/35_tutoria_servicios_envio.sql`. Verificación independiente: `etl/verificar_informes_2526.py` recalcula también los informes de tutoría y de servicios, en las dos versiones, y comprueba los tutores frente a la hoja de Alexia y el catálogo frente a `etl/informes_2526.py`.
 
 ---
 

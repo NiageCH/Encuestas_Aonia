@@ -1,26 +1,44 @@
-// Envío de informes al profesorado (§7.10). Solo administración: vista previa de destinatarios, creación del envío
-// (el servidor recalcula los destinatarios y crea un enlace personal por docente) y envío de los correos por la Edge
-// Function enviar-informes, que es la única que ve los tokens. En modo «pruebas», todo va a un correo de Niage.
-// La página del enlace (sin cuenta) usa informeEnlace y descargaEnlace.
+// Envío de informes (§7.10 y §7.14). Solo administración: se elige el tipo de informe (por defecto, a todos sus
+// destinatarios), vista previa con los avisos, creación del envío (el servidor recalcula los destinatarios y crea un
+// enlace personal por informe, menos los que se quitan) y envío de los correos por la Edge Function enviar-informes, que
+// es la única que ve los tokens. En modo «pruebas», todo va a un correo de prueba. La página del enlace (sin cuenta) usa
+// informeEnlace y descargaEnlace.
 
 import { FunctionsHttpError } from "@supabase/supabase-js";
 import { CURSO, supabase } from "./cliente";
 import type { InformeEquipo, InformeJefe, InformeProfesor } from "./resultados";
+import type { InformeServicio, InformeTutoria } from "./tutoriaServicios";
 import { textosConMayuscula } from "../formato";
 import type { SelloDescarga } from "../exportacion/modelo";
 
-export type TipoSeleccion = "docente" | "departamento" | "etapa" | "tramo" | "todos" | "jefaturas";
-export type TipoInforme = "profesor" | "jefatura_departamento" | "jefatura_equipo";
-export interface Seleccion { tipo: TipoSeleccion; valores?: string[] }
+export type TipoInforme = "profesor" | "jefatura_departamento" | "jefatura_equipo" | "tutoria" | "servicio";
+export const TIPOS_INFORME: TipoInforme[] = ["profesor", "jefatura_departamento", "jefatura_equipo", "tutoria", "servicio"];
+export type TipoFiltro = "docente" | "departamento" | "etapa" | "tramo" | "persona" | "grupo" | "servicio";
+/** Por cuáles se puede acotar cada informe (sin acotar: todos sus destinatarios). El servidor comprueba lo mismo. */
+export const FILTROS: Record<TipoInforme, TipoFiltro[]> = {
+  profesor: ["docente", "departamento", "etapa", "tramo"],
+  jefatura_departamento: ["persona"],
+  jefatura_equipo: ["persona", "tramo"],
+  tutoria: ["etapa", "grupo", "persona"],
+  servicio: ["servicio"],
+};
+export interface Seleccion { informe: TipoInforme; filtro: { tipo: "todos" } | { tipo: TipoFiltro; valores: string[] } }
+
+export type Aviso = "sin_destinatario" | "sin_resultados" | "sin_correo";
 
 export interface Destinatario {
-  persona_id: number; tipo: TipoInforme; tramo: string | null;
-  /** Jefatura de departamento: sus departamentos; del equipo: su tramo. */
+  /** Identifica el informe: para quitarlo del envío y para comprobar qué vería su destinatario. */
+  clave: string;
+  /** Sin destinatario (grupo sin tutor/a, servicio sin responsable): null. */
+  persona_id: number | null; tipo: TipoInforme; tramo: string | null; grupo_id: number | null; servicio_id: number | null;
+  /** Jefatura de departamento: sus departamentos; del equipo: su tramo; tutoría: el grupo; servicio: su nombre. */
   informe: string | null;
-  nombre: string; apellidos: string; departamento: string | null; correo: string | null;
-  destinatario: string;
-  /** Se queda fuera: sin resultados del alumnado o sin correo. */
-  aviso: "sin_resultados" | "sin_correo" | null;
+  nombre: string | null; apellidos: string | null; departamento: string | null; correo: string | null;
+  destinatario: string | null;
+  /** Se queda fuera. */
+  aviso: Aviso | null;
+  /** Último enlace enviado (y no anulado) de este informe, en el mismo modo. */
+  ya_enviado: string | null;
 }
 
 export interface VistaPrevia { modo: "pruebas" | "activo"; dias: number; destinatarios: Destinatario[] }
@@ -31,9 +49,18 @@ export async function vistaPrevia(seleccion: Seleccion, correoPrueba: string): P
   return data as VistaPrevia;
 }
 
-/** Crea los enlaces y manda los correos. Devuelve cuántos han salido y cuántos han fallado. */
-export async function enviar(seleccion: Seleccion, correoPrueba: string): Promise<{ enlaces: number; enviados: number; errores: number }> {
-  const { data, error } = await supabase.rpc("admin_envio_crear", { p_curso: CURSO, p_seleccion: seleccion, p_correo_prueba: correoPrueba || null });
+/** ¿Tendría cada destinatario algún resultado visible en su versión? Por tandas (el informe del profesor/a tarda). */
+export async function visibles(claves: string[]): Promise<Record<string, boolean>> {
+  const { data, error } = await supabase.rpc("admin_envio_visibles", { p_curso: CURSO, p_claves: claves });
+  if (error) throw error;
+  return (data ?? {}) as Record<string, boolean>;
+}
+
+/** Crea los enlaces (menos los que se quitan) y manda los correos. Devuelve cuántos han salido y cuántos han fallado. */
+export async function enviar(seleccion: Seleccion, correoPrueba: string, excluir: string[] = []): Promise<{ enlaces: number; enviados: number; errores: number }> {
+  const { data, error } = await supabase.rpc("admin_envio_crear", {
+    p_curso: CURSO, p_seleccion: seleccion, p_correo_prueba: correoPrueba || null, p_excluir: excluir,
+  });
   if (error) throw error;
   const creado = data as { envio: string; enlaces: number };
   const r = await supabase.functions.invoke("enviar-informes", { body: { envio: creado.envio } });
@@ -53,7 +80,8 @@ export async function jefaturas(): Promise<Jefatura[]> {
 }
 
 export interface EnlaceEnviado {
-  id: string; docente: string; tipo: TipoInforme; tramo: string | null; destinatario: string; prueba: boolean; creado: string; enviado: string | null; error: string | null;
+  id: string; docente: string; tipo: TipoInforme; tramo: string | null; grupo: string | null; servicio: string | null;
+  destinatario: string; prueba: boolean; creado: string; enviado: string | null; error: string | null;
   caduca: string; anulado: string | null; pendiente: boolean; aperturas: number; descargas: number; ultima: string | null;
 }
 
@@ -77,7 +105,9 @@ export type InformeEnlace =
   | { estado: "limitado" }
   | { estado: "ok"; caduca: string; curso: string; tipo: "profesor"; profesor: Persona; informe: InformeProfesor }
   | { estado: "ok"; caduca: string; curso: string; tipo: "jefatura_departamento"; profesor: Persona; informe: InformeJefe }
-  | { estado: "ok"; caduca: string; curso: string; tipo: "jefatura_equipo"; profesor: Persona; informe: InformeEquipo };
+  | { estado: "ok"; caduca: string; curso: string; tipo: "jefatura_equipo"; profesor: Persona; informe: InformeEquipo }
+  | { estado: "ok"; caduca: string; curso: string; tipo: "tutoria"; profesor: Persona; informe: InformeTutoria }
+  | { estado: "ok"; caduca: string; curso: string; tipo: "servicio"; profesor: Persona; informe: InformeServicio };
 
 export async function informeEnlace(token: string): Promise<InformeEnlace> {
   const { data, error } = await supabase.rpc("informe_enlace", { p_token: token });

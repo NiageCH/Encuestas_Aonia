@@ -1,5 +1,6 @@
-"""Comprobación independiente de los informes de 2025/26: profesorado, jefaturas de departamento y Equipo de
-Individuación, en la versión completa y en la del destinatario (docente o jefatura).
+"""Comprobación independiente de los informes de 2025/26: profesorado, jefaturas de departamento, Equipo de
+Individuación, tutoría y servicios, en la versión completa y en la del destinatario (docente, jefatura, tutor/a o
+responsable del servicio).
 
 Uso:
     .venv/bin/python etl/verificar_informes_2526.py            # base de datos local
@@ -9,9 +10,12 @@ Recalcula desde las tablas de respuestas, sin funciones de la plataforma, qué r
 compartida, atribuida por el nombre que escribió el alumnado, optativa) y cada sección, y sus cifras: respuestas,
 personas, valoraciones, NS/NC, media y reparto; media global del docente; detalle por pregunta y por clase; medias de
 etapa y Colegio (todo el profesorado); reuniones de departamento, media del profesorado de cada jefatura según el
-alumnado y Equipo de Individuación por tramos. Pide a la plataforma los mismos informes (como un usuario de Dirección
+alumnado, Equipo de Individuación por tramos, tutoría (cada grupo, su etapa y la referencia del Colegio; los tutores,
+también frente a la hoja «Tutores» de Alexia) y servicios (cada colectivo, en total y por etapa, y el catálogo frente a
+etl/informes_2526.py). Pide a la plataforma los mismos informes (como un usuario de Dirección
 temporal, en una transacción que se deshace) y compara cifra a cifra. Ejecuta también la tabla «Detalle por pregunta»
-del frontend (src/data/tablaProfesor.ts, con vite-node) sobre esos informes.
+del frontend (src/data/tablaProfesor.ts) y las de tutoría y servicios (src/data/tablasResumen.ts), con vite-node,
+sobre esos informes.
 
 De lo que la plataforma oculta comprueba que el motivo encaja con el número de respuestas («menos de 5» con menos de 5,
 «oculto» con 5 o más, nada visible con menos de 5 fuera de la versión completa, el paso por clase y los tramos). La
@@ -549,6 +553,212 @@ for version in ("completa", "jefatura"):
         comprobar_seccion(ap, f"tramos {sorted(ts)}", version, "equipo_individualizacion",
                           lambda i, ts=ts: TRAMO.get(i["resp"]) in ts, inf)
 
+# ---------------------------------------------------------------- tutoría y servicios (§7.12 y §7.13)
+from informes_2526 import SERVICIOS, TUTORIA_COLEGIO, TUTORIA_GRUPO  # noqa: E402
+
+cur.execute("select respuesta_id, etapa from privado.respuesta_etapa")
+ETAPAS_FAM = defaultdict(set)
+for r, e in cur.fetchall():
+    ETAPAS_FAM[r].add(e)
+FAMILIAS = [c for c, v in CUEST.items() if v["colectivo"] == "familias"]
+DE_COLECTIVO = {"alumnos": set(ALUMNOS), "familias": set(FAMILIAS), "personal": set(PERSONAL)}
+ORDEN_ETAPAS = ["infantil", "primaria", "pai", "bachillerato"]
+ETIQUETA_ETAPA = {"Infantil": "infantil", "Primaria": "primaria", "PAI": "pai", "Bachillerato": "bachillerato"}
+
+
+def colectivo_de(codigo):
+    cs = {CUEST[c]["colectivo"] for (c, p) in PC if p == PREG_COD.get(codigo) and c in CUEST}
+    return cs.pop() if len(cs) == 1 else None
+
+
+def items_q(q, cuests, filtro=lambda i: True):
+    return [i for i in CUR_ITEMS if i["cuest"] in cuests and i["preg"] == q and i["bloque"] is not None
+            and not i["por_dep"] and filtro(i)]
+
+
+def comprobar_fila(ap, donde, version, s, x, por_pregunta=True):
+    """Una celda: sus cifras si se ve; si está oculta, que el motivo encaje con su número de respuestas."""
+    if x is None:
+        diferencias.append(f"[{ap}] {donde} · falta en la plataforma")
+        return
+    if x["suprimido"]:
+        if version == "completa":
+            regla(ap, donde, s["n"] == 0, f"oculta en la versión completa con n {s['n']}")
+        elif x.get("motivo") == "menos_de_5":
+            regla(ap, donde, s["n"] < MIN, f"«menos de 5» con n {s['n']}")
+        elif x.get("motivo") == "sin_datos":
+            regla(ap, donde, s["n"] == 0, f"«sin datos» con n {s['n']}")
+        else:
+            regla(ap, donde, s["n"] >= MIN, f"«{x.get('motivo')}» con n {s['n']}")
+        return
+    for f in ("n", "n_personas", "n_valoraciones", "ns_nc", "media"):
+        cmp(ap, donde, f, s[f], x.get(f))
+    if por_pregunta:
+        for v, k in s["distribucion"].items():
+            cmp(ap, donde, f"distribución {v}", k, x["distribucion"].get(v))
+    if version != "completa":
+        regla(ap, donde, s["n"] >= MIN, f"visible con n {s['n']}")
+    else:
+        cmp(ap, donde, "marca menos de 5", s["n"] < MIN, bool(x.get("menos_de_5")))
+
+
+def celda_esperada(s, x):
+    """Lo que tiene que enseñar la tabla del frontend en una celda."""
+    if x is None:
+        return {"nota": "no_se_pregunta"}
+    if x["suprimido"]:
+        return {"nota": {"menos_de_5": "menos_de_5", "sin_datos": "sin_datos"}.get(x.get("motivo"), "complementaria")}
+    if s["n_valoraciones"] == 0:
+        return {"nota": "sin_datos"}     # visible en la versión completa, pero todas las respuestas son NS/NC
+    return {"media": s["media"], "n": s["n_valoraciones"]}
+
+
+resumen_esperado = {}     # clave del frontend -> celda esperada
+
+# Catálogo: lo cargado frente a etl/informes_2526.py
+cur.execute("""select p.codigo_diccionario, tp.ambito from public.tutoria_pregunta tp join public.pregunta p on p.id = tp.pregunta_id
+               where tp.curso_id = %s order by tp.ambito, tp.orden""", (CID,))
+cat = cur.fetchall()
+cmp("Tutoría · catálogo", "etl/informes_2526.py", "preguntas del grupo", TUTORIA_GRUPO, [c for c, a in cat if a == "grupo"])
+cmp("Tutoría · catálogo", "etl/informes_2526.py", "referencias del Colegio", TUTORIA_COLEGIO, [c for c, a in cat if a == "colegio"])
+
+# Tutores: lo cargado frente a la hoja «Tutores» de Alexia, con un emparejamiento propio («Y6-B.Comp» es «Y6 B»).
+cur.execute("select grupo_id, persona_id from public.tutoria where curso_id = %s", (CID,))
+TUTOR = dict(cur.fetchall())
+cur.execute("select id, lower(correo) from public.persona_responsable")
+CORREO = dict(cur.fetchall())
+ALEXIA = RAIZ / "datos_locales" / "fuentes" / "Grupos_asignaturas_docentes_2025-26.xlsx"
+GRUPO_NOMBRE = {v["nombre"]: k for k, v in GRUPO.items()}
+if ALEXIA.exists():
+    import re
+    import openpyxl
+    hoja = list(openpyxl.load_workbook(ALEXIA, read_only=True, data_only=True)["Tutores"].iter_rows(values_only=True))
+    cab = [str(c or "").strip() for c in hoja[0]]
+    esperado_tutor = {}
+    for fila in hoja[1:]:
+        f = dict(zip(cab, fila))
+        nombre = re.sub(r"\.Comp$", "", str(f.get("Grupo") or "").strip()).replace("-", " ")
+        if nombre in GRUPO_NOMBRE and f.get("Correo tutor/a"):
+            esperado_tutor[GRUPO_NOMBRE[nombre]] = str(f["Correo tutor/a"]).strip().lower()
+    cmp("Tutoría · tutores (Alexia)", "hoja Tutores", "grupos con tutor/a", sorted(GRUPO[g]["nombre"] for g in esperado_tutor),
+        sorted(GRUPO[g]["nombre"] for g in TUTOR))
+    for g, correo in esperado_tutor.items():
+        cmp("Tutoría · tutores (Alexia)", GRUPO[g]["nombre"], "correo del tutor/a", correo, CORREO.get(TUTOR.get(g)))
+
+CUEST_GRUPO = {}
+_cuenta = defaultdict(lambda: defaultdict(int))
+for r in RESP.values():
+    if r["grupo"] is not None and r["cuest"] in ALUMNOS:
+        _cuenta[r["grupo"]][r["cuest"]] += 1
+for g, cs in _cuenta.items():
+    CUEST_GRUPO[g] = max(cs, key=lambda c: (cs[c], -ord(CUEST[c]["codigo"][0])))
+GRUPOS_TUT = sorted(set(CUEST_GRUPO) | set(TUTOR), key=lambda g: GRUPO[g]["nombre"])
+
+informes_tut = {}
+for version in ("completa", "tutor"):
+    como_direccion(version)
+    ap = f"Tutoría · versión {version}"
+    ocultos = defaultdict(set)
+    for g in GRUPOS_TUT:
+        cur.execute("select privado.informe_tutoria(%s, %s)", (CURSO, g))
+        inf = cur.fetchone()[0]
+        informes_tut[f"{version}:{g}"] = inf
+        donde = GRUPO[g]["nombre"]
+        c = CUEST_GRUPO.get(g)
+        etapa = GRUPO[g]["etapa"]
+        cmp(ap, donde, "tutor/a", TUTOR.get(g), (inf["tutor"] or {}).get("id"))
+        cmp(ap, donde, "cuestionario", CUEST[c]["codigo"] if c else None, inf["grupo"]["cuestionario"])
+        cmp(ap, donde, "preguntas", [x for x in TUTORIA_GRUPO if c and (c, PREG_COD[x]) in PC], [p["codigo"] for p in inf["preguntas"]])
+        for p in inf["preguntas"]:
+            q = PREG_COD[p["codigo"]]
+            w = f"{donde} · {p['codigo'][26:70]}"
+            s = stats(items_q(q, {c}, lambda i, g=g: i["grupo"] == g), True, q)
+            comprobar_fila(ap, f"{w} · grupo", version, s, p["grupo"])
+            if p["grupo"]["suprimido"]:
+                ocultos[(c, q)].add(donde)
+            se = stats(items_q(q, {x for x in ALUMNOS if CUEST[x]["etapa"] == etapa}), True, q)
+            comprobar_fila(ap, f"{w} · toda la etapa", version, se, p["etapa"])
+            resumen_esperado[f"{version}:{g}|grupo|{p['codigo']}|0"] = celda_esperada(s, p["grupo"])
+            resumen_esperado[f"{version}:{g}|grupo|{p['codigo']}|1"] = celda_esperada(se, p["etapa"])
+        cmp(ap, donde, "referencias del Colegio", TUTORIA_COLEGIO, [x["codigo"] for x in inf["colegio"]])
+        for x in inf["colegio"]:
+            q = PREG_COD[x["codigo"]]
+            col = colectivo_de(x["codigo"])
+            cmp(ap, donde, f"colectivo de {x['codigo'][:40]}", col, x["colectivo"])
+            s = stats(items_q(q, DE_COLECTIVO[col]), True, q)
+            comprobar_fila(ap, f"{donde} · Colegio · {col}", version, s, x["total"])
+            resumen_esperado[f"{version}:{g}|colegio|{x['codigo']}|0"] = celda_esperada(s, x["total"])
+    if version == "tutor":
+        # Complementaria entre los grupos de cada cuestionario: nunca un solo grupo oculto. Las respuestas sin grupo son
+        # una parte más: si tienen 5 o más, no se sabe si están ocultas y no se comprueba.
+        for c in ALUMNOS:
+            for codigo in TUTORIA_GRUPO:
+                q = PREG_COD[codigo]
+                if (c, q) not in PC:
+                    continue
+                sin = items_q(q, {c}, lambda i: i["grupo"] is None)
+                n_sin = stats(sin, True)["n"]
+                if sin and n_sin >= MIN:
+                    continue
+                k = len(ocultos[(c, q)]) + (1 if sin else 0)
+                regla(ap, f"{CUEST[c]['codigo']} · {codigo[26:70]}", k != 1, f"un solo grupo oculto: {sorted(ocultos[(c, q)])}")
+(SALIDA / "informes_tutoria.json").write_text(json.dumps(informes_tut))
+
+cur.execute("select id, codigo, nombre from public.servicio where curso_id = %s order by orden", (CID,))
+SERV = cur.fetchall()
+DEF = {c: (n, p, e) for c, n, p, e in SERVICIOS}
+cmp("Servicios · catálogo", "etl/informes_2526.py", "servicios", [(c, n) for c, n, _, _ in SERVICIOS], [(c, n) for _, c, n in SERV])
+
+informes_srv = {}
+for version in ("completa", "responsable"):
+    como_direccion(version)
+    ap = f"Servicios · versión {version}"
+    for sid, codigo_s, nombre in SERV:
+        cur.execute("select privado.informe_servicio(%s, %s)", (CURSO, sid))
+        inf = cur.fetchone()[0]
+        informes_srv[f"{version}:{sid}"] = inf
+        _, principales, propias = DEF.get(codigo_s, (None, [], []))
+        cols = [c for c in ("alumnos", "familias", "personal") if any(colectivo_de(x) == c for x in principales + propias)]
+        cmp(ap, nombre, "colectivos", cols, [x["colectivo"] for x in inf["colectivos"]])
+        for x in inf["colectivos"]:
+            col = x["colectivo"]
+            cuests = DE_COLECTIVO[col]
+            esperadas = [(c, True) for c in principales if colectivo_de(c) == col] + [(c, False) for c in propias if colectivo_de(c) == col]
+            cmp(ap, f"{nombre} · {col}", "preguntas", esperadas, [(p["codigo"], p["principal"]) for p in x["preguntas"]])
+            etapas_tabla = set()
+            for p in x["preguntas"]:
+                q = PREG_COD[p["codigo"]]
+                w = f"{nombre} · {col} · {p['codigo'][:60]}"
+                todos = items_q(q, cuests)
+                st = stats(todos, True, q)
+                comprobar_fila(ap, f"{w} · total", version, st, p["total"])
+                resumen_esperado[f"{version}:{sid}|{col}|{p['codigo']}|total"] = celda_esperada(st, p["total"])
+                partes = defaultdict(list)
+                for i in todos:
+                    if col == "alumnos":
+                        partes[GRUPO[i["grupo"]]["etapa"] if i["grupo"] is not None else CUEST[i["cuest"]]["etapa"]].append(i)
+                    elif col == "familias":
+                        for e in ETAPAS_FAM.get(i["resp"], ()):
+                            partes[e].append(i)
+                cmp(ap, w, "etapas", sorted(partes), sorted(e["clave"]["etapa"] for e in p["etapas"]))
+                etapas_tabla |= set(partes)
+                for e in p["etapas"]:
+                    et = e["clave"]["etapa"]
+                    se = stats(partes.get(et, []), True, q)
+                    comprobar_fila(ap, f"{w} · {et}", version, se, e)
+                    resumen_esperado[f"{version}:{sid}|{col}|{p['codigo']}|{et}"] = celda_esperada(se, e)
+                if version != "completa" and col == "alumnos" and not p["total"]["suprimido"]:
+                    regla(ap, w, sum(1 for e in p["etapas"] if e["suprimido"]) != 1, "una sola etapa oculta")
+            resumen_esperado[f"{version}:{sid}|{col}|etapas"] = [e for e in ORDEN_ETAPAS if e in etapas_tabla]
+            sref = stats(items_metrica({"tipo": "bloque", "codigo": "servicios"}, cuests, False), False)
+            if x["servicios"] is not None:
+                comprobar_fila(ap, f"{nombre} · {col} · media de todos los servicios", version, sref, x["servicios"], por_pregunta=False)
+                resumen_esperado[f"{version}:{sid}|{col}|referencia"] = celda_esperada(sref, x["servicios"])
+            else:
+                regla(ap, f"{nombre} · {col}", not any(i["bloque"] == "servicios" for i in CUR_ITEMS if i["cuest"] in cuests),
+                      "falta la media de todos los servicios")
+(SALIDA / "informes_servicio.json").write_text(json.dumps(informes_srv))
+
 cur.conn.close()
 
 # ---------------------------------------------------------------- tabla «Detalle por pregunta» del frontend
@@ -595,9 +805,54 @@ if tf.exists():
         else:
             cmp(ap, w, "nota", esperado["nota"], v.get("nota"))
 
+# Tablas de tutoría y de servicios del frontend (src/data/tablasResumen.ts): cada celda como la que se espera.
+rf = SALIDA / "resumen_frontend.json"
+if rf.exists():
+    front = json.loads(rf.read_text())
+
+    def cmp_celda(ap, w, esperado, v):
+        if v is None:
+            diferencias.append(f"[{ap}] {w} · falta en la tabla")
+        elif "media" in esperado:
+            cmp(ap, w, "media", esperado["media"], v.get("media"))
+            cmp(ap, w, "respuestas", esperado["n"], v.get("n"))
+        else:
+            cmp(ap, w, "nota", esperado["nota"], v.get("nota"))
+
+    for k, esperado in resumen_esperado.items():
+        clave, tabla, *resto = k.split("|")
+        version = clave.split(":")[0]
+        if tabla in ("grupo", "colegio"):
+            cmp_celda(f"Tablas de tutoría (frontend) · versión {version}", k, esperado, front.get(k))
+            continue
+        ap = f"Tablas de servicios (frontend) · versión {version}"
+        if resto == ["etapas"]:
+            cols = front.get(f"{clave}|{tabla}|columnas") or []
+            cmp(ap, k, "columnas de etapa", esperado, [ETIQUETA_ETAPA.get(c, c) for c in cols[1:]])
+        elif resto == ["referencia"]:
+            cmp_celda(ap, k, esperado, front.get(k))
+        else:
+            codigo, col = resto
+            cols = front.get(f"{clave}|{tabla}|columnas") or []
+            if col == "total":
+                i = 0
+            else:
+                etiquetas = [ETIQUETA_ETAPA.get(c) for c in cols]
+                i = etiquetas.index(col) if col in etiquetas else -1
+            cmp_celda(ap, k, esperado, front.get(f"{clave}|{tabla}|{codigo}|{i}") if i >= 0 else None)
+    # Las celdas de etapas en las que no se pregunta, «no se pregunta».
+    for k, v in front.items():
+        partes = k.split("|")
+        if len(partes) == 4 and partes[1] in ("alumnos", "familias") and partes[3] != "0":
+            clave, col, codigo, i = partes
+            cols = front.get(f"{clave}|{col}|columnas") or []
+            et = ETIQUETA_ETAPA.get(cols[int(i)]) if int(i) < len(cols) else None
+            if f"{clave}|{col}|{codigo}|{et}" not in resumen_esperado:
+                cmp(f"Tablas de servicios (frontend) · versión {clave.split(':')[0]}", k, "nota", "no_se_pregunta", v.get("nota"))
+
 # ---------------------------------------------------------------- resumen
 lineas = [f"# Verificación independiente de los informes {CURSO} ({'nube' if ARGS.remoto else 'local'})", "",
-          f"Docentes: {len(DOCENTES)} · jefaturas de departamento: {len(JEFES)}", "", "## Cifras comparadas", ""]
+          f"Docentes: {len(DOCENTES)} · jefaturas de departamento: {len(JEFES)} · grupos (tutoría): {len(GRUPOS_TUT)} · servicios: {len(SERV)}", "", "## Cifras comparadas", ""]
 lineas += [f"- {k}: {comparadas[k]:,}".replace(",", ".") for k in sorted(comparadas)]
 lineas += [f"- **Total: {sum(comparadas.values()):,}**".replace(",", "."), "", "## Comprobaciones del criterio de anonimato", ""]
 lineas += [f"- {k}: {anonimato[k]:,}".replace(",", ".") for k in sorted(anonimato)]

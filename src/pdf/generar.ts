@@ -19,6 +19,11 @@ import type { SelloDescarga } from "../exportacion/modelo";
 import { t } from "../i18n";
 import { InformeProfesorPdf } from "./InformeProfesorPdf";
 import { InformeNivelPdf, type AlumnosDepartamentoPdf, type DatosNivelPdf, type SeccionPdf } from "./InformeNivelPdf";
+import { InformeResumenPdf, type DatosResumenPdf } from "./InformeResumenPdf";
+import { tablasServicio, tablasTutoria } from "../data/tablasResumen";
+import {
+  informeServicio, informeTutoria, type InformeServicio, type InformeTutoria, type VersionServicio, type VersionTutoria,
+} from "../data/tutoriaServicios";
 import { protegerPdf } from "./proteger";
 
 /** Informe_2526_Apellidos_Nombre.pdf (la versión docente, la que recibe el docente) o
@@ -178,4 +183,52 @@ export async function descargarJefaturaEnlace(token: string, nombre: string, dat
   const sello = await descargaEnlace(token, archivo);
   const doc = createElement(InformeNivelPdf, { ...datos, sello });
   descargar(await pdfProtegido(doc, `${datos.eyebrow} · ${nombre}`), archivo);
+}
+
+// Tutoría y servicios (§7.12 y §7.13) ------------------------------------------------------------------------------------
+
+const etapaDe = (e: string) => t.etapas[e as keyof typeof t.etapas] ?? e;
+
+/** Lo que va en el PDF del informe de tutoría de un grupo (también desde el enlace del tutor/a). */
+export function datosTutoria(inf: InformeTutoria): Omit<DatosResumenPdf, "sello"> {
+  const tutor = inf.tutor ? `${inf.tutor.nombre} ${inf.tutor.apellidos}` : t.tut_sin_tutor;
+  return {
+    eyebrow: t.tut_informe, titulo: inf.grupo.nombre, subtitulo: `${t.tut_tutor}: ${tutor} · ${etapaDe(inf.grupo.etapa)}`,
+    aviso: inf.preguntas.length === 0 ? t.tut_sin_respuestas : undefined, tablas: tablasTutoria(inf), version: inf.version,
+  };
+}
+
+/** Lo que va en el PDF del informe de un servicio (también desde el enlace del responsable). */
+export function datosServicio(inf: InformeServicio): Omit<DatosResumenPdf, "sello"> {
+  const r = inf.responsable ? `${inf.responsable.nombre} ${inf.responsable.apellidos}` : t.srv_sin_responsable;
+  return { eyebrow: t.srv_informe, titulo: inf.servicio.nombre, subtitulo: `${t.srv_responsable}: ${r}`, tablas: tablasServicio(inf), version: inf.version };
+}
+
+async function descargarResumen(base: string, datos: Omit<DatosResumenPdf, "sello">, registro: Omit<Parameters<typeof registrarDescarga>[1], "archivo"> & { tipo: TipoDescarga }) {
+  const archivo = `Informe_2526_${limpio(base)}${datos.version === "completa" ? "_completo" : ""}.pdf`;
+  const { tipo, ...resto } = registro;
+  const sello = await registrarDescarga(tipo, { ...resto, archivo, version: datos.version });
+  descargar(await pdfProtegido(createElement(InformeResumenPdf, { ...datos, sello }), `${datos.eyebrow} · ${datos.titulo}`), archivo);
+}
+
+/** PDF del informe de tutoría de un grupo, completo o la versión para el tutor/a (queda en el registro). */
+export async function descargarInformeTutoria(grupo: number, version: VersionTutoria = "completa"): Promise<void> {
+  const inf = await informeTutoria(grupo, true, version);
+  await descargarResumen(`Tutoria_${inf.grupo.nombre}`, datosTutoria(inf),
+    { tipo: "informe_tutoria", objeto: `${t.tut_informe} · ${inf.grupo.nombre}`, persona: inf.tutor?.id, grupo: inf.grupo.nombre });
+}
+
+/** PDF del informe de un servicio, completo o la versión para el responsable (queda en el registro). */
+export async function descargarInformeServicio(servicio: number, version: VersionServicio = "completa"): Promise<void> {
+  const inf = await informeServicio(servicio, true, version);
+  await descargarResumen(`Servicio_${inf.servicio.nombre}`, datosServicio(inf),
+    { tipo: "informe_servicio", objeto: `${t.srv_informe} · ${inf.servicio.nombre}`, persona: inf.responsable?.id, servicio: inf.servicio.nombre });
+}
+
+/** Desde el enlace personal del tutor/a o del responsable (sin cuenta): su versión, anotada a su nombre. */
+export async function descargarResumenEnlace(token: string, datos: Omit<DatosResumenPdf, "sello">, archivoBase: string): Promise<void> {
+  const { descargaEnlace } = await import("../data/envio");
+  const archivo = `Informe_2526_${limpio(archivoBase)}.pdf`;
+  const sello = await descargaEnlace(token, archivo);
+  descargar(await pdfProtegido(createElement(InformeResumenPdf, { ...datos, sello }), `${datos.eyebrow} · ${datos.titulo}`), archivo);
 }

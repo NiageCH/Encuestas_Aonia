@@ -380,3 +380,14 @@ body:has(.en-aviso-validacion)::before { top: 34px; }
 /* Buscador de docentes: el rótulo encima y el campo a todo el ancho de su columna */
 .en-prof-buscador .en-filters { grid-template-columns: 1fr; gap: .35rem; }
 .en-prof-buscador .en-filters .en-input { width: 100%; }
+
+/* Informes de tutoría y de servicios (§7.12 y §7.13) */
+.en-tabla-resumen .en-n { display: block; color: var(--muted); font-size: .78rem; white-space: nowrap; }
+.en-tabla-resumen td.n .en-menos5 { display: block; width: max-content; margin: .15rem 0 0 auto; }
+.en-tabla-resumen th:not(:first-child), .en-tabla-resumen td.n { min-width: 5.5rem; }
+.en-tabla-resumen tr.en-fila-secundaria td:first-child { padding-left: 1.4rem; color: var(--muted); }
+.en-referencia { margin-top: .6rem; }
+.en-responsable { margin: .5rem 0; }
+.en-form-responsable { display: grid; gap: .5rem; max-width: 420px; margin-top: .4rem; }
+.en-form-responsable label { display: grid; gap: .2rem; font-size: .88rem; font-weight: 600; }
+.en-muestra { border-left: 4px solid var(--en-neutro, var(--line)); }

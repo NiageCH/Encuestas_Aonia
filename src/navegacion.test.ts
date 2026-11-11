@@ -18,8 +18,8 @@ describe("navegación de la coordinación de etapa", () => {
     expect(ir("#/informes", "coordinacion")).toBe("#/informes/profesores");
     expect(ir("#/informes/profesores", "coordinacion")).toBe("#/informes/profesores");
   });
-  it("no llega a Dirección, Equipos ni Departamentos", () => {
-    for (const nivel of ["direccion", "equipos", "departamentos"]) {
+  it("no llega a Dirección, Equipos, Departamentos, Tutoría, Servicios ni al envío", () => {
+    for (const nivel of ["direccion", "equipos", "departamentos", "tutoria", "servicios", "envio"]) {
       expect(ir(`#/informes/${nivel}`, "coordinacion")).toBe("#/informes/profesores");
     }
     expect(nivelesPermitidos("coordinacion")).toEqual(["profesores"]);
@@ -47,8 +47,8 @@ describe("navegación de dirección y administración", () => {
     expect(ir("#/personal/encuesta", "direccion")).toBe("#/personal");
   });
   it("Informes por persona: todos los niveles, en orden jerárquico, empezando por Dirección", () => {
-    expect(nivelesPermitidos("direccion")).toEqual(["direccion", "equipos", "departamentos", "profesores"]);
-    expect(nivelesPermitidos("administrador")).toEqual(["direccion", "equipos", "departamentos", "profesores", "envio"]);
+    expect(nivelesPermitidos("direccion")).toEqual(["direccion", "equipos", "departamentos", "profesores", "tutoria", "servicios"]);
+    expect(nivelesPermitidos("administrador")).toEqual(["direccion", "equipos", "departamentos", "profesores", "tutoria", "servicios", "envio"]);
     expect(ir("#/informes", "direccion")).toBe("#/informes/direccion");
     expect(ir("#/informes/departamentos", "direccion")).toBe("#/informes/departamentos");
     expect(ir("#/informes/no-existe", "direccion")).toBe("#/informes/direccion");

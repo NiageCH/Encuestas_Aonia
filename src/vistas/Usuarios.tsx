@@ -281,8 +281,15 @@ function describir(e: EntradaRegistro): string {
           : k === "etapa" ? t.etapas[v as keyof typeof t.etapas] ?? String(v)
           : `${k}: ${v}`).join(", "));
     }
-    case "informe_responsable": return t.reg_informe_responsable(e.usuario, String(d.ambito ?? d.tipo ?? ""))
-      + (d.version === "completa" ? ` · ${t.version_completa_corta}` : d.version === "jefatura" ? ` · ${t.version_jefatura_corta}` : "");
+    case "informe_responsable": {
+      const version = d.version === "completa" ? ` · ${t.version_completa_corta}` : d.version === "jefatura" ? ` · ${t.version_jefatura_corta}`
+        : d.version === "tutor" ? ` · ${t.version_tutor_corta}` : d.version === "responsable" ? ` · ${t.version_responsable_corta}` : "";
+      if (d.tipo === "tutoria") return t.reg_informe_tutoria(e.usuario, String(d.ambito ?? "")) + version;
+      if (d.tipo === "servicio") return t.reg_informe_servicio(e.usuario, String(d.ambito ?? "")) + version;
+      return t.reg_informe_responsable(e.usuario, String(d.ambito ?? d.tipo ?? "")) + version;
+    }
+    case "responsable_servicio": return t.reg_responsable_servicio(e.usuario, String(d.nombre ?? ""), String(d.servicio ?? ""));
+    case "responsable_servicio_quitar": return t.reg_responsable_servicio_quitar(e.usuario, String(d.nombre ?? ""), String(d.servicio ?? ""));
     case "exportacion": {
       const filtros = Object.entries((d.filtros ?? {}) as Record<string, string>).map(([k, v]) => `${k}: ${v}`).join(" · ");
       return t.reg_exportacion(e.usuario, t.exp_vistas[String(d.vista)] ?? String(d.vista), String(d.formato).toUpperCase(), filtros);

@@ -239,7 +239,7 @@ python3 -m venv .venv && .venv/bin/pip install -r etl/requirements.txt
 ```
 
 - Cada columna de cada fichero se carga o se descarta con un motivo; una columna sin regla detiene la carga.
-- **Después de cada carga y de cada cambio en los informes** (profesorado, jefaturas, Equipo de Individuación, sus RPC o la tabla de `src/data/tablaProfesor.ts`): `etl/verificar_informes_2526.py`, en local y, tras subir, con `--remoto`. Recalcula desde las respuestas, sin funciones de la plataforma, cada cifra de los informes en la versión completa y en la del destinatario, y comprueba los motivos de lo oculto. Debe dar 0 diferencias. Resultado (solo cifras) en `datos_locales/informes/verificacion_informes_2526[_nube].md`; los informes que descarga solo pasan por una carpeta temporal.
+- **Después de cada carga y de cada cambio en los informes** (profesorado, jefaturas, Equipo de Individuación, tutoría, servicios, sus RPC o las tablas de `src/data/tablaProfesor.ts` y `src/data/tablasResumen.ts`): `etl/verificar_informes_2526.py`, en local y, tras subir, con `--remoto`. Recalcula desde las respuestas, sin funciones de la plataforma, cada cifra de los informes en la versión completa y en la del destinatario, y comprueba los motivos de lo oculto. Debe dar 0 diferencias. Resultado (solo cifras) en `datos_locales/informes/verificacion_informes_2526[_nube].md`; los informes que descarga solo pasan por una carpeta temporal.
 - `validar_2526.py` y `verificar_informes_2526.py` piden los resultados con una **cuenta técnica de verificación** (`etl/cuenta_tecnica.py`): un acceso de Dirección que solo existe dentro de transacciones que se deshacen, sin contraseña, que ninguna otra sesión ve y que no queda aunque el script falle o se corte. Cada uso deja en el registro de actividad, a nombre de «Cuenta técnica de verificación (Niage)», su alta temporal y su baja con el resultado (o «interrumpida»).
 - Nunca se cargan identificadores, fechas, IP, correo, nombres, sexo ni las preguntas cerradas del Plan de Igualdad. Las respuestas abiertas se cargan aparte, con `etl/cargar_abiertas_2526.py` (§7.9).
 - El nombre del profesor/a o de la optativa que escribe el alumnado solo se usa en memoria para atribuir la respuesta a un docente; el texto nunca se carga. Del nivel de tutoría del personal solo se carga el tramo, y solo para el bloque del Equipo de Individuación.
@@ -255,6 +255,9 @@ Asignación docente y responsables (orden de carga: encuestas, conversión, asig
 .venv/bin/python etl/cargar_asignaciones.py RUTA.xlsx                  # carga (sustituye las del curso)
 .venv/bin/python etl/cargar_abiertas_2526.py --ensayo                  # respuestas abiertas: solo el recuento por pregunta, sin textos
 .venv/bin/python etl/cargar_abiertas_2526.py                           # carga (después de cargar_2526.py, que las borra al recargar)
+.venv/bin/python etl/cargar_informes_2526.py                           # preguntas de los informes de tutoría y de servicios (etl/informes_2526.py)
+.venv/bin/python etl/cargar_tutores_2526.py --ensayo                   # tutores de la hoja «Tutores» de Alexia: solo el emparejamiento de grupos
+.venv/bin/python etl/cargar_tutores_2526.py                            # carga (sustituye los del curso; el cotutor/a no se carga)
 .venv/bin/python etl/ejemplo_asignaciones.py                          # docentes inventados para probar (datos_locales/)
 ```
 - Para cargar en otra base de datos: `DATABASE_URL` en `.env` y `--remoto`. Una `DATABASE_URL` en el entorno tiene prioridad sobre `.env` (por ejemplo, la local: `DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:55422/postgres`).
@@ -359,6 +362,8 @@ Detalle en [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md). Orden de cada subida:
 4. Web: `npx clever-tools deploy` (sube el último commit; Clever compila y sirve con el `Caddyfile`).
 
 ## Forma de trabajo
+
+Guía completa para desarrolladores: [`docs/GUIA_DESARROLLO.md`](docs/GUIA_DESARROLLO.md).
 
 - Commits pequeños, en español.
 - Al cerrar cada paso del plan: actualizar `docs/PROGRESO.md`, pasar los tests, hacer la comprobación de datos y push.

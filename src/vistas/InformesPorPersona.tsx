@@ -23,6 +23,7 @@ import { aHash, nivelesPermitidos, type Nivel } from "../navegacion";
 import type { SeccionPedida } from "../pdf/generar";
 import { EnvioInformes } from "./Envio";
 import { InformesProfesor } from "./Profesores";
+import { NivelServicios, NivelTutoria } from "./TutoriaServicios";
 
 export function InformesPorPersona({ perfil, nivel }: { perfil: Perfil; nivel: Nivel }) {
   const niveles = nivelesPermitidos(perfil.rol);
@@ -44,11 +45,13 @@ export function InformesPorPersona({ perfil, nivel }: { perfil: Perfil; nivel: N
           ))}
         </nav>
       )}
-      {nivel !== "profesores" && nivel !== "envio" && !hayPersonal && <SinResultados colectivo="personal" />}
+      {["direccion", "equipos", "departamentos"].includes(nivel) && !hayPersonal && <SinResultados colectivo="personal" />}
       {nivel === "direccion" && hayPersonal && <NivelDireccion />}
       {nivel === "equipos" && hayPersonal && <NivelEquipos />}
       {nivel === "departamentos" && hayPersonal && <NivelDepartamentos />}
       {nivel === "profesores" && (hayAlumnos ? <InformesProfesor perfil={perfil} /> : <SinResultados colectivo="alumnos" />)}
+      {nivel === "tutoria" && (hayAlumnos ? <NivelTutoria /> : <SinResultados colectivo="alumnos" />)}
+      {nivel === "servicios" && (hayAlumnos ? <NivelServicios perfil={perfil} /> : <SinResultados colectivo="alumnos" />)}
       {nivel === "envio" && (hayAlumnos ? <EnvioInformes /> : <SinResultados colectivo="alumnos" />)}
     </div>
   );

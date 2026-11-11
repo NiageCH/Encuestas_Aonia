@@ -4,8 +4,10 @@
 import { CURSO, supabase } from "./cliente";
 import type { SelloDescarga } from "../exportacion/modelo";
 
-export type TipoDescarga = "informe_profesor" | "informe_jefatura" | "informe_equipo" | "informe_direccion" | "vista_pdf" | "csv" | "zip";
-export const TIPOS_DESCARGA: TipoDescarga[] = ["informe_profesor", "informe_jefatura", "informe_equipo", "informe_direccion", "vista_pdf", "csv", "zip"];
+export type TipoDescarga = "informe_profesor" | "informe_jefatura" | "informe_equipo" | "informe_direccion" | "informe_tutoria"
+  | "informe_servicio" | "vista_pdf" | "csv" | "zip";
+export const TIPOS_DESCARGA: TipoDescarga[] = ["informe_profesor", "informe_jefatura", "informe_equipo", "informe_direccion",
+  "informe_tutoria", "informe_servicio", "vista_pdf", "csv", "zip"];
 
 export interface DatosDescarga {
   /** De quién es el informe o de qué vista: «García Pérez, Ana», «Alumnado». */
@@ -13,11 +15,14 @@ export interface DatosDescarga {
   docente?: number;
   persona?: number;
   tramos?: string[];
+  /** Informe de tutoría: el grupo; de servicio: el servicio. */
+  grupo?: string;
+  servicio?: string;
   vista?: string;
   filtros?: Record<string, string>;
   archivo: string;
   /** Informe del profesor/a: versión completa o docente. */
-  version?: "completa" | "docente" | "jefatura";
+  version?: "completa" | "docente" | "jefatura" | "tutor" | "responsable";
   /** Solo en un ZIP: sus informes, cada uno con su código. */
   informes?: { objeto: string; docente?: number }[];
 }

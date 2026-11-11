@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Deja Supabase local listo para probar con los datos reales de 2025/26 (que están en datos_locales/, fuera de git):
-# recrea la base de datos con las migraciones, carga encuestas, asignación docente y responsables, crea los
+# recrea la base de datos con las migraciones, carga encuestas, asignación docente, responsables, respuestas abiertas,
+# el catálogo de los informes de tutoría y servicios y los tutores, crea los
 # usuarios de prueba y desactiva en local el doble factor de administradores (solo desarrollo).
 #
 # Uso, desde la raíz del proyecto y con Docker arrancado:
@@ -23,6 +24,8 @@ DATABASE_URL=$LOCAL .venv/bin/python etl/cargar_2526.py | tail -2
 DATABASE_URL=$LOCAL .venv/bin/python etl/cargar_asignaciones.py datos_locales/asignacion_2526_desde_alexia.xlsx | tail -1
 DATABASE_URL=$LOCAL .venv/bin/python etl/cargar_responsables.py
 DATABASE_URL=$LOCAL .venv/bin/python etl/cargar_abiertas_2526.py | tail -3
+DATABASE_URL=$LOCAL .venv/bin/python etl/cargar_informes_2526.py
+DATABASE_URL=$LOCAL .venv/bin/python etl/cargar_tutores_2526.py | tail -1
 DATABASE_URL=$LOCAL .venv/bin/python etl/validar_2526.py >/dev/null && echo "Validación de 2025/26: sin diferencias"
 DATABASE_URL=$LOCAL .venv/bin/python etl/verificar_informes_2526.py >/dev/null && echo "Informes de 2025/26: recálculo independiente sin diferencias"
 

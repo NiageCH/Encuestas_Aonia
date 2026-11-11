@@ -58,13 +58,15 @@ python3 supabase/scripts/probar_invitacion_local.py   # prueba invitaciones, con
 .venv/bin/python etl/cargar_abiertas_2526.py         # respuestas abiertas de 2025/26 (--ensayo: solo el recuento, sin textos)
 npx supabase functions serve                         # en local, para probar la Edge Function nueva enviar-informes (correo al buzón de pruebas)
 .venv/bin/python etl/cargar_responsables.py          # jefes de departamento y del Equipo de Individuación (datos_locales/)
+.venv/bin/python etl/cargar_informes_2526.py         # qué preguntas van en los informes de tutoría y de servicios (etl/informes_2526.py)
+.venv/bin/python etl/cargar_tutores_2526.py          # tutor/a de cada grupo, desde la hoja «Tutores» de Alexia (--ensayo: solo el emparejamiento)
 npm run dev                                    # frontend en http://127.0.0.1:5173
 python3 supabase/scripts/crear_usuario_local.py CORREO CLAVE direccion   # usuario de prueba local
 python3 scripts/extraer_plantilla.py           # regenera los bloques A y B de la plantilla
 .venv/bin/python scripts/generar_recursos_pdf.py   # logos PNG y Raleway TTF para los PDF
 ```
 
-Despliegue: orden y comandos en README («Despliegue») y `docs/DESPLIEGUE.md`.
+Despliegue: orden y comandos en README («Despliegue») y `docs/DESPLIEGUE.md`. Guía para desarrolladores (entorno, organización, reglas, comprobaciones y despliegue): `docs/GUIA_DESARROLLO.md`.
 
 ## Estado
 

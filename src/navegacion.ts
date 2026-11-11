@@ -5,8 +5,8 @@
 //   #/                                  Inicio (panel general)
 //   #/alumnos · #/familias
 //   #/personal                          Encuesta de personal (no para la coordinación)
-//   #/informes/<nivel>                  Informes por persona: direccion · equipos · departamentos · profesores · envio
-//                                       (envío al profesorado, solo administración)
+//   #/informes/<nivel>                  Informes por persona: direccion · equipos · departamentos · profesores · tutoria ·
+//                                       servicios · envio (envío de los informes, solo administración)
 //   #/abiertas                          Respuestas abiertas: solo Dirección y administración
 //   #/usuarios[/descargas]              Solo administradores: personas y actividad, o el registro de descargas
 //
@@ -15,10 +15,10 @@
 
 export type Rol = "administrador" | "direccion" | "coordinacion";
 export type Seccion = "/" | "/alumnos" | "/familias" | "/personal" | "/abiertas" | "/informes" | "/usuarios";
-export type Nivel = "direccion" | "equipos" | "departamentos" | "profesores" | "envio";
+export type Nivel = "direccion" | "equipos" | "departamentos" | "profesores" | "tutoria" | "servicios" | "envio";
 
-/** De arriba abajo en la jerarquía del colegio y, al final, el envío de los informes al profesorado. */
-export const NIVELES: Nivel[] = ["direccion", "equipos", "departamentos", "profesores", "envio"];
+/** De arriba abajo en la jerarquía del colegio, la tutoría y los servicios y, al final, el envío de los informes. */
+export const NIVELES: Nivel[] = ["direccion", "equipos", "departamentos", "profesores", "tutoria", "servicios", "envio"];
 
 export interface Ruta {
   seccion: Seccion;
@@ -38,6 +38,8 @@ export const PARAMETROS: Record<string, string[]> = {
   "/informes/equipos": COMUNES,
   "/informes/departamentos": ["jefe", "departamento", ...COMUNES],
   "/informes/profesores": ["cuestionario", "grupo", "asignatura", "departamento", "profesor", "clase", ...COMUNES],
+  "/informes/tutoria": ["grupo", ...COMUNES],
+  "/informes/servicios": ["servicio", ...COMUNES],
 };
 
 const clavePantalla = (r: Ruta) => (r.seccion === "/informes" ? `/informes/${r.nivel}` : r.seccion);

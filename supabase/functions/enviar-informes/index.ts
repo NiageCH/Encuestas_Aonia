@@ -1,4 +1,4 @@
-// Edge Function: envío de los informes al profesorado (§7.10). La usa un administrador activo con doble factor (aal2)
+// Edge Function: envío de los informes por correo (§7.10 y §7.14): profesorado, jefaturas, tutoría y servicios. La usa un administrador activo con doble factor (aal2)
 // después de crear el envío (admin_envio_crear, con su vista previa). Lee los correos pendientes con la clave de
 // servicio (los tokens nunca llegan al navegador), los envía por SMTP y marca cada uno.
 //
@@ -49,7 +49,8 @@ const fecha = (iso: string) =>
 
 interface Pendiente {
   enlace: string; token: string; destinatario: string; prueba: boolean; caduca: string;
-  tipo: "profesor" | "jefatura_departamento" | "jefatura_equipo"; tramo: string | null;
+  tipo: "profesor" | "jefatura_departamento" | "jefatura_equipo" | "tutoria" | "servicio"; tramo: string | null;
+  grupo: string | null; servicio: string | null;
   nombre: string; apellidos: string; correo_docente: string | null; curso: string; modo: string;
 }
 
@@ -57,13 +58,18 @@ const TRAMOS: Record<string, string> = { infantil: "Infantil", y1_y5: "Y1 a Y5",
 
 function correo(p: Pendiente, sitio: string) {
   const enlace = `${sitio.replace(/\/$/, "")}/#/informe/${p.token}`;
-  const jefatura = p.tipo !== "profesor";
   const que = p.tipo === "profesor" ? `su informe de las encuestas de satisfacción del alumnado del curso ${p.curso}, con los resultados de sus clases`
     : p.tipo === "jefatura_departamento" ? `el informe de su jefatura de departamento del curso ${p.curso}, con los resultados de las encuestas de personal`
-    : `el informe del Equipo de Individuación (${TRAMOS[p.tramo ?? ""] ?? p.tramo}) del curso ${p.curso}, con los resultados de las encuestas de personal`;
-  const asunto = `${p.prueba ? "[PRUEBA] " : ""}${jefatura ? "Su informe de jefatura" : "Su informe de las encuestas del alumnado"} ${p.curso}`;
+    : p.tipo === "jefatura_equipo" ? `el informe del Equipo de Individuación (${TRAMOS[p.tramo ?? ""] ?? p.tramo}) del curso ${p.curso}, con los resultados de las encuestas de personal`
+    : p.tipo === "tutoria" ? `el informe de tutoría de ${p.grupo} del curso ${p.curso}, con lo que dice el alumnado de su grupo en las encuestas de satisfacción`
+    : `el informe del servicio «${p.servicio}» del curso ${p.curso}, con la valoración del alumnado, las familias y el personal en las encuestas de satisfacción`;
+  const titulo = p.tipo === "profesor" ? "Su informe de las encuestas del alumnado"
+    : p.tipo === "tutoria" ? `Su informe de tutoría (${p.grupo})`
+    : p.tipo === "servicio" ? `Informe del servicio «${p.servicio}»` : "Su informe de jefatura";
+  const asunto = `${p.prueba ? "[PRUEBA] " : ""}${titulo} ${p.curso}`;
+  const quien = { profesor: "el docente", jefatura_departamento: "la jefatura", jefatura_equipo: "la jefatura", tutoria: "el tutor/a", servicio: "el responsable del servicio" }[p.tipo];
   const prueba = p.prueba
-    ? `ESTO ES UNA PRUEBA. Este correo no se ha enviado a ${jefatura ? "la jefatura" : "el docente"}: iría a ${p.nombre} ${p.apellidos} (${p.correo_docente ?? "sin correo"}).\n\n`
+    ? `ESTO ES UNA PRUEBA. Este correo no se ha enviado a ${quien}: iría a ${p.nombre} ${p.apellidos} (${p.correo_docente ?? "sin correo"}).\n\n`
     : "";
   const texto = `${prueba}Hola, ${p.nombre}:
 
